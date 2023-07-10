@@ -7,13 +7,12 @@ plugins {
 }
 
 repositories {
-    if (project.hasProperty("centralRepo")) {
-        maven {
-            name "MavenCentral"
-            url project.property("centralRepo")
-            allowInsecureProtocol true // Local Nexus in CI uses HTTP
-        }
-    } else {
-        mavenCentral()
+    mavenCentral()
+}
+
+gradlePlugin {
+    plugins.register("mozac.GitHubPlugin") {
+        id = "mozac.GitHubPlugin"
+        implementationClass = "GitHubPlugin"
     }
 }

@@ -3,9 +3,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.Plugin
+import org.gradle.api.initialization.Settings
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import java.io.File
+
+class GitHubPlugin : Plugin<Settings> {
+    override fun apply(settings: Settings) = Unit
+}
 
 /**
  * Helper to write to the "customCheckRunText.md" file for Taskcluster.
@@ -14,7 +20,8 @@ import java.io.File
 open class GithubDetailsTask : DefaultTask() {
 
     /**
-     * Text to write to the file.
+     * Text to display in the Github Checks panel under "Details". Any markdown works here.
+     * The text is written to a markdown file which is used by Taskcluster.
      * Links are automatically rewritten to point to the correct Taskcluster URL.
      */
     @Input
