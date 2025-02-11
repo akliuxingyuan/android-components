@@ -35,6 +35,7 @@ class AndroidSrcXmlDetector : ResourceXmlDetector() {
 
         const val ERROR_MESSAGE = "Using android:src to define resource instead of app:srcCompat"
 
+        @VisibleForTesting
         val ISSUE_XML_SRC_USAGE = Issue.create(
             id = "AndroidSrcXmlDetector",
             briefDescription = "Prohibits using android:src in ImageViews and ImageButtons",
