@@ -7,6 +7,7 @@ package mozilla.components.browser.toolbar.display
 import android.animation.LayoutTransition
 import android.content.Context
 import android.graphics.Typeface
+import android.text.Spanned
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
@@ -17,6 +18,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.view.isVisible
 import mozilla.components.browser.toolbar.BrowserToolbar
 import mozilla.components.browser.toolbar.R
+import mozilla.components.concept.toolbar.Toolbar
 
 /**
  * View displaying the URL and optionally the title of a website.
@@ -136,7 +138,31 @@ internal class OriginView @JvmOverloads constructor(
 
     internal var url: CharSequence
         get() = urlView.text
-        set(value) { urlView.text = value }
+        set(value) {
+            urlView.text = value
+            urlView.scrollTo(0, 0)
+
+            if (value is Spanned) {
+                val spans = value.getSpans<Toolbar.RegistrableDomainColorSpan>(
+                    0,
+                    value.length,
+                    Toolbar.RegistrableDomainColorSpan::class.java,
+                )
+
+                if (spans.size != 1) {
+                    return
+                }
+
+                val valueUntilRegistrableDomainEnd = value.subSequence(0, value.getSpanEnd(spans[0]))
+
+                val urlViewWidth = urlView.getWidth()
+                val valueWidth = urlView.getPaint().measureText(valueUntilRegistrableDomainEnd.toString())
+
+                if (valueWidth > urlViewWidth) {
+                    urlView.scrollTo((valueWidth - urlViewWidth).toInt(), 0)
+                }
+            }
+        }
 
     /**
      * Sets the colour of the text to be displayed when the URL of the toolbar is empty.
