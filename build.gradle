@@ -290,21 +290,6 @@ if (findProject(":geckoview") == null) {
     }
 }
 
-dependencyAnalysis {
-    structure {
-        // Ignore Android KTX dependencies. See https://developer.android.com/kotlin/ktx#modules
-        //ignoreKtx(true)
-    }
-    issues {
-        all {
-            onAny {
-                // Fail the run if any issues are found (default = 'warn')
-                //severity('fail')
-            }
-        }
-    }
-}
-
 detekt {
     input = files("$projectDir/components", "$projectDir/buildSrc", "$projectDir/samples")
     config = files("$projectDir/config/detekt.yml")
