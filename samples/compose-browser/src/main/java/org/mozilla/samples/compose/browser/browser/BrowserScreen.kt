@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +46,6 @@ import mozilla.components.feature.fxsuggest.FxSuggestSuggestionProvider
 import mozilla.components.lib.state.Store
 import mozilla.components.lib.state.ext.composableStore
 import mozilla.components.lib.state.ext.observeAsComposableState
-import mozilla.components.lib.state.ext.observeAsState
 import org.mozilla.samples.compose.browser.browser.BrowserToolbarMiddleware.Companion.Dependencies
 import org.mozilla.samples.compose.browser.components
 import mozilla.components.feature.awesomebar.R as awesomebarR
@@ -76,7 +76,7 @@ fun BrowserScreen(navController: NavController) {
         )
     }
 
-    val toolbarState by toolbarStore.observeAsState(initialValue = toolbarStore.state) { it }
+    val toolbarState by toolbarStore.stateFlow.collectAsState()
     val showTabs = store.observeAsComposableState { state -> state.showTabs }
 
     BackHandler(enabled = toolbarState.isEditMode()) {
