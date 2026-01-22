@@ -178,7 +178,7 @@ class TabListActionTest {
 
     @Test
     fun `RemoveTabAction - Removes tab from partition`() {
-        val tabGroup = TabGroup("test1", tabIds = listOf("a", "b"))
+        val tabGroup = TabGroup("test1", tabIds = setOf("a", "b"))
         val tabPartition = TabPartition("testPartition", tabGroups = listOf(tabGroup))
 
         var state = BrowserState(
@@ -193,7 +193,7 @@ class TabListActionTest {
         assertEquals(1, state.tabs.size)
         assertEquals("https://www.firefox.com", state.tabs[0].content.url)
         assertEquals(
-            listOf("b"),
+            setOf("b"),
             state.tabPartitions[tabPartition.id]?.getGroupById(tabGroup.id)?.tabIds,
         )
     }
@@ -216,7 +216,7 @@ class TabListActionTest {
 
     @Test
     fun `RemoveTabsAction - Removes tabs from partition`() {
-        val tabGroup = TabGroup("test1", tabIds = listOf("a", "b"))
+        val tabGroup = TabGroup("test1", tabIds = setOf("a", "b"))
         val tabPartition = TabPartition("testPartition", tabGroups = listOf(tabGroup))
 
         var state = BrowserState(
@@ -1050,7 +1050,7 @@ class TabListActionTest {
 
     @Test
     fun `RemoveAllTabsAction - Removes tabs from partition`() {
-        val tabGroup = TabGroup("test1", tabIds = listOf("a", "b"))
+        val tabGroup = TabGroup("test1", tabIds = setOf("a", "b"))
         val tabPartition = TabPartition("testPartition", tabGroups = listOf(tabGroup))
 
         var state = BrowserState(
@@ -1117,8 +1117,8 @@ class TabListActionTest {
 
     @Test
     fun `RemoveAllPrivateTabsAction - Removes tabs from partition`() {
-        val normalTabGroup = TabGroup("test1", tabIds = listOf("a"))
-        val privateTabGroup = TabGroup("test2", tabIds = listOf("b"))
+        val normalTabGroup = TabGroup("test1", tabIds = setOf("a"))
+        val privateTabGroup = TabGroup("test2", tabIds = setOf("b"))
         val tabPartition =
             TabPartition("testPartition", tabGroups = listOf(normalTabGroup, privateTabGroup))
 
@@ -1191,8 +1191,8 @@ class TabListActionTest {
 
     @Test
     fun `RemoveAllNormalTabsAction - Removes tabs from partition`() {
-        val normalTabGroup = TabGroup("test1", tabIds = listOf("a"))
-        val privateTabGroup = TabGroup("test2", tabIds = listOf("b"))
+        val normalTabGroup = TabGroup("test1", tabIds = setOf("a"))
+        val privateTabGroup = TabGroup("test2", tabIds = setOf("b"))
         val tabPartition =
             TabPartition("testPartition", tabGroups = listOf(normalTabGroup, privateTabGroup))
 

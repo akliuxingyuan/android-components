@@ -699,7 +699,7 @@ class TabsUseCases(
         operator fun invoke(
             partition: String,
             group: String,
-            tabIds: List<String>,
+            tabIds: Set<String>,
         ) {
             store.dispatch(
                 TabGroupAction.AddTabsAction(
@@ -748,7 +748,7 @@ class TabsUseCases(
         operator fun invoke(
             partition: String,
             group: String,
-            tabIds: List<String>,
+            tabIds: Set<String>,
         ) {
             store.dispatch(
                 TabGroupAction.RemoveTabsAction(

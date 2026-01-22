@@ -118,7 +118,7 @@ internal object TabListReducer {
                     state.copy(
                         tabs = updatedTabList,
                         selectedTabId = updatedSelection,
-                        tabPartitions = state.tabPartitions.removeTabs(listOf(action.tabId)),
+                        tabPartitions = state.tabPartitions.removeTabs(setOf(action.tabId)),
                     )
                 }
             }
@@ -155,7 +155,7 @@ internal object TabListReducer {
                     state.copy(
                         tabs = updatedTabList,
                         selectedTabId = updatedSelection,
-                        tabPartitions = state.tabPartitions.removeTabs(action.tabIds),
+                        tabPartitions = state.tabPartitions.removeTabs(action.tabIds.toSet()),
                     )
                 }
             }
@@ -222,7 +222,7 @@ internal object TabListReducer {
                     } else {
                         state.selectedTabId
                     },
-                    tabPartitions = state.tabPartitions.removeTabs(partition.first.map { it.id }),
+                    tabPartitions = state.tabPartitions.removeTabs(partition.first.map { it.id }.toSet()),
                 )
             }
 
@@ -239,7 +239,7 @@ internal object TabListReducer {
                     } else {
                         state.selectedTabId
                     },
-                    tabPartitions = state.tabPartitions.removeTabs(partition.second.map { it.id }),
+                    tabPartitions = state.tabPartitions.removeTabs(partition.second.map { it.id }.toSet()),
                 )
             }
         }
@@ -341,12 +341,12 @@ private fun requireUniqueTab(state: BrowserState, tab: TabSessionState) {
 /**
  * Removes references to the provided tabs from all [TabPartition]s.
  */
-private fun Map<String, TabPartition>.removeTabs(removedTabIds: List<String>) =
+private fun Map<String, TabPartition>.removeTabs(removedTabIds: Set<String>) =
     mapValues {
         val partition = it.value
         partition.copy(
             tabGroups = partition.tabGroups.map { group ->
-                group.copy(tabIds = group.tabIds.filterNot { tabId -> removedTabIds.contains(tabId) })
+                group.copy(tabIds = group.tabIds - removedTabIds)
             },
         )
     }
@@ -358,6 +358,6 @@ private fun Map<String, TabPartition>.removeAllTabs() =
     mapValues {
         val partition = it.value
         partition.copy(
-            tabGroups = partition.tabGroups.map { group -> group.copy(tabIds = emptyList()) },
+            tabGroups = partition.tabGroups.map { group -> group.copy(tabIds = emptySet()) },
         )
     }

@@ -325,7 +325,7 @@ sealed class TabGroupAction : BrowserAction() {
     data class AddTabsAction(
         val partition: String,
         val group: String,
-        val tabIds: List<String>,
+        val tabIds: Set<String>,
     ) : TabGroupAction()
 
     /**
@@ -351,7 +351,7 @@ sealed class TabGroupAction : BrowserAction() {
     data class RemoveTabsAction(
         val partition: String,
         val group: String,
-        val tabIds: List<String>,
+        val tabIds: Set<String>,
     ) : TabGroupAction()
 }
 

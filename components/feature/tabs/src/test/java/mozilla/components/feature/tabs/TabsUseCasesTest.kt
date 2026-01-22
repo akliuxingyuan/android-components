@@ -694,7 +694,7 @@ class TabsUseCasesTest {
         val tab = createTab("https://mozilla.org")
         store.dispatch(TabListAction.AddTabAction(tab))
 
-        val group = TabGroup(id = "group1", name = "Group 1", tabIds = listOf(tab.id))
+        val group = TabGroup(id = "group1", name = "Group 1", tabIds = setOf(tab.id))
         tabsUseCases.addTabGroup(partition = "partition1", group = group)
 
         val partition = store.state.tabPartitions["partition1"]
@@ -706,7 +706,7 @@ class TabsUseCasesTest {
     fun `WHEN CloseTabGroupUseCase is invoked THEN group and tabs are removed`() {
         val tab = createTab("https://mozilla.org")
         store.dispatch(TabListAction.AddTabAction(tab))
-        val group = TabGroup(id = "group1", name = "Group 1", tabIds = listOf(tab.id))
+        val group = TabGroup(id = "group1", name = "Group 1", tabIds = setOf(tab.id))
         store.dispatch(TabGroupAction.AddTabGroupAction(partition = "partition1", group = group))
 
         assertEquals(1, store.state.tabs.size)
@@ -726,7 +726,7 @@ class TabsUseCasesTest {
     fun `WHEN RemoveTabGroupUseCase is invoked THEN group is removed`() {
         val tab = createTab("https://mozilla.org")
         store.dispatch(TabListAction.AddTabAction(tab))
-        val group = TabGroup(id = "group1", name = "Group 1", tabIds = listOf(tab.id))
+        val group = TabGroup(id = "group1", name = "Group 1", tabIds = setOf(tab.id))
         store.dispatch(TabGroupAction.AddTabGroupAction(partition = "partition1", group = group))
 
         assertEquals(1, store.state.tabs.size)
@@ -751,11 +751,11 @@ class TabsUseCasesTest {
         tabsUseCases.addTabsInGroup(partition = "partition1", group = "group1", tabId = tab1.id)
         var group = store.state.tabPartitions["partition1"]?.getGroupById("group1")
         assertNotNull(group)
-        assertEquals(listOf(tab1.id), group?.tabIds)
+        assertEquals(setOf(tab1.id), group?.tabIds)
 
-        tabsUseCases.addTabsInGroup("partition1", "group1", tabIds = listOf(tab2.id))
+        tabsUseCases.addTabsInGroup("partition1", "group1", tabIds = setOf(tab2.id))
         group = store.state.tabPartitions["partition1"]?.getGroupById("group1")
-        assertEquals(listOf(tab1.id, tab2.id), group?.tabIds)
+        assertEquals(setOf(tab1.id, tab2.id), group?.tabIds)
     }
 
     @Test
@@ -767,15 +767,15 @@ class TabsUseCasesTest {
             TabGroupAction.AddTabsAction(
                 partition = "partition1",
                 group = "group1",
-                tabIds = listOf(tab1.id, tab2.id),
+                tabIds = setOf(tab1.id, tab2.id),
             ),
         )
 
         tabsUseCases.removeTabsInGroup(partition = "partition1", group = "group1", tabId = tab1.id)
         var group = store.state.tabPartitions["partition1"]?.getGroupById("group1")
-        assertEquals(listOf(tab2.id), group?.tabIds)
+        assertEquals(setOf(tab2.id), group?.tabIds)
 
-        tabsUseCases.removeTabsInGroup(partition = "partition1", group = "group1", tabIds = listOf(tab2.id))
+        tabsUseCases.removeTabsInGroup(partition = "partition1", group = "group1", tabIds = setOf(tab2.id))
         group = store.state.tabPartitions["partition1"]?.getGroupById("group1")
         assertTrue(group?.tabIds?.isEmpty() == true)
     }
