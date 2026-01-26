@@ -589,16 +589,14 @@ class TabsUseCases(
         /**
          * Adds a new tab group. If the corresponding partition doesn't exist it will be created.
          *
-         * @property partition The ID of the partition the group belongs to.
          * @property group The [TabGroup] to add.
          */
         operator fun invoke(
-            partition: String,
             group: TabGroup,
         ) {
             store.dispatch(
                 TabGroupAction.AddTabGroupAction(
-                    partition = partition,
+                    partition = TabPartitionKeys.TAB_GROUPS,
                     group = group,
                 ),
             )
@@ -614,19 +612,17 @@ class TabsUseCases(
         /**
          * Removes a tab group and provided list of tabs.
          *
-         * @property partition The ID of the partition the group belongs to.
          * @property group The [TabGroup] to remove.
          * @property tabIds The IDs of the tabs to remove.
          */
         operator fun invoke(
-            partition: String,
             group: String,
             tabIds: List<String>,
         ) {
             store.dispatch(TabListAction.RemoveTabsAction(tabIds = tabIds))
             store.dispatch(
                 TabGroupAction.RemoveTabGroupAction(
-                    partition = partition,
+                    partition = TabPartitionKeys.TAB_GROUPS,
                     group = group,
                 ),
             )
@@ -642,16 +638,14 @@ class TabsUseCases(
         /**
          * Removes a tab group in a tab partition.
          *
-         * @property partition The ID of the partition the group belongs to.
          * @property group The [TabGroup] to remove.
          */
         operator fun invoke(
-            partition: String,
             group: String,
         ) {
             store.dispatch(
                 TabGroupAction.RemoveTabGroupAction(
-                    partition = partition,
+                    partition = TabPartitionKeys.TAB_GROUPS,
                     group = group,
                 ),
             )
@@ -667,20 +661,17 @@ class TabsUseCases(
         /**
          * Adds the provided tab to a group.
          *
-         * @property partition The ID of the partition the group belongs to. If the corresponding
-         * partition doesn't exist it will be created.
          * @property group The ID of the group.
          * @property tabId The ID of the tab to add to the group. If the corresponding tab is
          * already in the group, it won't be added again.
          */
         operator fun invoke(
-            partition: String,
             group: String,
             tabId: String,
         ) {
             store.dispatch(
                 TabGroupAction.AddTabAction(
-                    partition = partition,
+                    partition = TabPartitionKeys.TAB_GROUPS,
                     group = group,
                     tabId = tabId,
                 ),
@@ -690,20 +681,17 @@ class TabsUseCases(
         /**
          * Adds the provided tabs to a group.
          *
-         * @property partition The ID of the partition the group belongs to. If the corresponding
-         * partition doesn't exist it will be created.
          * @property group The ID of the group.
          * @property tabIds The IDs of the tabs to add to the group. If a tab is already in the
          * group, it won't be added again.
          */
         operator fun invoke(
-            partition: String,
             group: String,
             tabIds: Set<String>,
         ) {
             store.dispatch(
                 TabGroupAction.AddTabsAction(
-                    partition = partition,
+                    partition = TabPartitionKeys.TAB_GROUPS,
                     group = group,
                     tabIds = tabIds,
                 ),
@@ -720,18 +708,16 @@ class TabsUseCases(
         /**
          * Removes the provided tab from a group.
          *
-         * @property partition The ID of the partition the group belongs to.
          * @property group The ID of the group.
          * @property tabId The ID of the tab to remove from the group.
          */
         operator fun invoke(
-            partition: String,
             group: String,
             tabId: String,
         ) {
             store.dispatch(
                 TabGroupAction.RemoveTabAction(
-                    partition = partition,
+                    partition = TabPartitionKeys.TAB_GROUPS,
                     group = group,
                     tabId = tabId,
                 ),
@@ -741,18 +727,16 @@ class TabsUseCases(
         /**
          * Removes the provided tabs from a group.
          *
-         * @property partition The ID of the partition the group belongs to.
          * @property group The ID of the group.
          * @property tabIds The IDs of the tabs to remove from the group.
          */
         operator fun invoke(
-            partition: String,
             group: String,
             tabIds: Set<String>,
         ) {
             store.dispatch(
                 TabGroupAction.RemoveTabsAction(
-                    partition = partition,
+                    partition = TabPartitionKeys.TAB_GROUPS,
                     group = group,
                     tabIds = tabIds,
                 ),
