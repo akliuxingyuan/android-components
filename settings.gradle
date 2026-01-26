@@ -20,12 +20,14 @@ pluginManagement {
         }
     }
 
+    includeBuild("../gradle/plugins/conventions")
     includeBuild("plugins/dependencies")
     includeBuild("plugins/publicsuffixlist")
     includeBuild("../gradle/plugins/nimbus-gradle-plugin")
 }
 
 plugins {
+    id 'org.mozilla.conventions.settings'
     id 'mozac.DependenciesPlugin'
 }
 
