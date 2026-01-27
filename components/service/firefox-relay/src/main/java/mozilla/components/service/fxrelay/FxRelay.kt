@@ -10,10 +10,12 @@ import mozilla.appservices.relay.RelayApiException
 import mozilla.appservices.relay.RelayClient
 import mozilla.appservices.relay.RelayProfile
 import mozilla.components.concept.sync.OAuthAccount
+import mozilla.components.service.fxrelay.eligibility.RelayPlanTier
 import mozilla.components.support.base.log.logger.Logger
 
-const val RELAY_SCOPE_URL = "https://identity.mozilla.com/apps/relay"
-const val RELAY_BASE_URL = "https://relay.firefox.com"
+private const val FREE_MAX_MASKS = 5
+private const val RELAY_SCOPE_URL = "https://identity.mozilla.com/apps/relay"
+private const val RELAY_BASE_URL = "https://relay.firefox.com"
 
 /**
  * Service wrapper for Firefox Relay APIs.
@@ -138,4 +140,49 @@ class FxRelay(
             client.fetchProfile()
         }
     }
+
+    /**
+     * Retrieves the Relay account status for the authenticated user.
+     *
+     * @return The user's [RelayAccountDetails] or [RelayPlanTier.NONE] if the operation failed.
+     */
+    suspend fun fetchAccountDetails(): Result<RelayAccountDetails> = withContext(Dispatchers.IO) {
+        runCatching {
+            val profile = fetchProfile()
+                ?: return@runCatching RelayAccountDetails(RelayPlanTier.NONE, 0)
+
+            mapProfileToDetails(profile)
+        }.onFailure {
+            logger.warn("Failed to fetch Relay status", it)
+        }
+    }
+
+    private fun mapProfileToDetails(profile: RelayProfile): RelayAccountDetails {
+        val relayPlanTier = when {
+            profile.hasPremium || profile.hasMegabundle -> RelayPlanTier.PREMIUM
+            else -> RelayPlanTier.FREE
+        }
+
+        val remainingMasks = when (relayPlanTier) {
+            RelayPlanTier.PREMIUM -> null
+            RelayPlanTier.FREE -> FREE_MAX_MASKS
+            else -> 0
+        }
+
+        return RelayAccountDetails(
+            relayPlanTier = relayPlanTier,
+            remainingMasksForFreeUsers = remainingMasks,
+        )
+    }
 }
+
+/**
+ * Represents the Relay account details for the currently signed-in user.
+ *
+ * @param relayPlanTier The user’s current Relay plan (e.g., FREE or PREMIUM).
+ * @param remainingMasksForFreeUsers The number of remaining free aliases for FREE users.
+ */
+data class RelayAccountDetails(
+    val relayPlanTier: RelayPlanTier,
+    val remainingMasksForFreeUsers: Int?,
+)

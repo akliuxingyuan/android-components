@@ -12,6 +12,8 @@ import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.service.fxa.manager.FxaAccountManager
+import mozilla.components.service.fxrelay.FxRelay
+import mozilla.components.service.fxrelay.RelayAccountDetails
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 
@@ -23,7 +25,6 @@ private const val FETCH_TIMEOUT_MS: Long = 300_000L
 class RelayEligibilityFeature(
     private val accountManager: FxaAccountManager,
     private val store: RelayEligibilityStore,
-    private val relayStatusFetcher: RelayStatusFetcher,
     private val fetchTimeoutMs: Long = FETCH_TIMEOUT_MS,
 ) : LifecycleAwareFeature {
 
@@ -57,14 +58,27 @@ class RelayEligibilityFeature(
         val ttlExpired = lastCheck == NO_ENTITLEMENT_CHECK_YET_MS || now - lastCheck >= fetchTimeoutMs
 
         if (loggedIn && ttlExpired) {
-            val relayStatus = relayStatusFetcher.fetch()
-            val relayStatusResult = relayStatus.getOrNull()
+            val account = accountManager.authenticatedAccount()
+            if (account == null) {
+                store.dispatch(
+                    RelayEligibilityAction.RelayStatusResult(
+                        fetchSucceeded = false,
+                        relayPlanTier = null,
+                        remaining = 0,
+                        lastCheckedMs = System.currentTimeMillis(),
+                    ),
+                )
+                return
+            }
+
+            val relayStatusRes: Result<RelayAccountDetails> = FxRelay(account).fetchAccountDetails()
+            val relayDetails = relayStatusRes.getOrNull()
 
             store.dispatch(
                 RelayEligibilityAction.RelayStatusResult(
-                    fetchSucceeded = relayStatus.isSuccess,
-                    relayPlanTier = relayStatusResult?.relayPlanTier,
-                    remaining = relayStatusResult?.remainingMasksForFreeUsers ?: 0,
+                    fetchSucceeded = relayStatusRes.isSuccess,
+                    relayPlanTier = relayDetails?.relayPlanTier,
+                    remaining = relayDetails?.remainingMasksForFreeUsers ?: 0,
                     lastCheckedMs = System.currentTimeMillis(),
                 ),
             )

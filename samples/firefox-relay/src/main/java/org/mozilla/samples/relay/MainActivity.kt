@@ -34,14 +34,10 @@ import mozilla.components.service.fxa.manager.SCOPE_SYNC
 import mozilla.components.service.fxa.sync.SyncReason
 import mozilla.components.service.fxa.toAuthType
 import mozilla.components.service.fxrelay.FxRelay
-import mozilla.components.service.fxrelay.eligibility.AppServicesRelayStatusFetcher
 import mozilla.components.service.fxrelay.eligibility.Eligible
 import mozilla.components.service.fxrelay.eligibility.Ineligible
-import mozilla.components.service.fxrelay.eligibility.RelayAccountDetails
 import mozilla.components.service.fxrelay.eligibility.RelayEligibilityFeature
 import mozilla.components.service.fxrelay.eligibility.RelayEligibilityStore
-import mozilla.components.service.fxrelay.eligibility.RelayPlanTier
-import mozilla.components.service.fxrelay.eligibility.RelayStatusFetcher
 import mozilla.components.support.AppServicesInitializer
 import mozilla.components.support.base.log.Log
 import mozilla.components.support.base.log.sink.AndroidLogSink
@@ -78,14 +74,6 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
         RelayEligibilityFeature(
             accountManager = accountManager,
             store = relayEligibilityStore,
-            relayStatusFetcher = object : RelayStatusFetcher {
-                override suspend fun fetch(): Result<RelayAccountDetails> {
-                    val account = accountManager.authenticatedAccount()
-                        ?: return Result.success(RelayAccountDetails(RelayPlanTier.NONE, 0))
-
-                    return AppServicesRelayStatusFetcher(account).fetch()
-                }
-            },
         )
     }
     private val accountObserver = object : AccountObserver {
