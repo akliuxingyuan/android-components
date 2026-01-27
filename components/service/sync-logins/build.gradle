@@ -31,6 +31,15 @@ dependencies {
 
     implementation libs.kotlinx.coroutines
     implementation libs.mozilla.glean
+
+    testImplementation project(':components:support-test')
+
+    testImplementation ComponentsDependencies.mozilla_appservices_full_megazord_libsForTests
+    testImplementation ComponentsDependencies.mozilla_appservices_init_rust_components
+    testImplementation libs.androidx.test.core
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.robolectric
 }
 
 apply from: '../../../common-config.gradle'
