@@ -49,15 +49,6 @@ android {
                 srcDir "${gradle.mozconfig.topobjdir}/mobile/android/android-components/components/lib/crash/src/main/java"
             }
         }
-
-        androidTest {
-            jniLibs {
-                // We use libcrashtools.so in the Android tests, and it is
-                // placed in this folder for geckoview as part of the mach
-                // build.
-                srcDir "${gradle.mozconfig.topobjdir}/dist/geckoview/lib"
-            }
-        }
     }
 
     ksp {
@@ -104,6 +95,10 @@ dependencies {
     androidTestImplementation project(':components:support-android-test')
     androidTestImplementation libs.androidx.test.junit
     androidTestImplementation libs.mozilla.glean
+
+    // Depend on browser-engine-gecko to get the libcrashtools.so binary for tests. We don't use jniLibs because it
+    // is only available as part of the geckoview APK artifact in CI.
+    androidTestRuntimeOnly project(':components:browser-engine-gecko')
 }
 
 ext {

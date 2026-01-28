@@ -1669,15 +1669,25 @@ projects:
     path: components/lib/crash
     publish: true
     upstream_dependencies:
+    - components:browser-engine-gecko
+    - components:browser-errorpages
+    - components:browser-state
+    - components:concept-awesomebar
     - components:concept-base
+    - components:concept-engine
     - components:concept-fetch
+    - components:concept-storage
     - components:lib-publicsuffixlist
+    - components:lib-state
+    - components:service-nimbus
     - components:support-android-test
     - components:support-base
     - components:support-ktx
+    - components:support-locale
     - components:support-test
     - components:support-utils
     - components:tooling-lint
+    - components:ui-icons
   components:lib-crash-sentry:
     description: A crash reporter for Sentry.io that that uses lib-crash.
     path: components/lib/crash-sentry
