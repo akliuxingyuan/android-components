@@ -30,6 +30,16 @@ android {
                 arguments += ["room.incremental": "true"]
             }
         }
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        debug {
+            // We use this in androidTest to disable tests which will fail without the crashreporter
+            // enabled (since they rely on the crashtools binary).
+            buildConfigField 'boolean', 'MOZ_CRASHREPORTER', gradle.mozconfig.substs.MOZ_CRASHREPORTER ? 'true' : 'false';
+        }
     }
 
     sourceSets {
@@ -37,6 +47,15 @@ android {
             java {
                 // Generated files are output in the objdir
                 srcDir "${gradle.mozconfig.topobjdir}/mobile/android/android-components/components/lib/crash/src/main/java"
+            }
+        }
+
+        androidTest {
+            jniLibs {
+                // We use libcrashtools.so in the Android tests, and it is
+                // placed in this folder for geckoview as part of the mach
+                // build.
+                srcDir "${gradle.mozconfig.topobjdir}/dist/geckoview/lib"
             }
         }
     }
@@ -81,6 +100,10 @@ dependencies {
     testImplementation libs.mozilla.glean
     testImplementation libs.mozilla.glean.forUnitTests
     testImplementation libs.robolectric
+
+    androidTestImplementation project(':components:support-android-test')
+    androidTestImplementation libs.androidx.test.junit
+    androidTestImplementation libs.mozilla.glean
 }
 
 ext {

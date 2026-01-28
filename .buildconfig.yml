@@ -1672,6 +1672,7 @@ projects:
     - components:concept-base
     - components:concept-fetch
     - components:lib-publicsuffixlist
+    - components:support-android-test
     - components:support-base
     - components:support-ktx
     - components:support-test
