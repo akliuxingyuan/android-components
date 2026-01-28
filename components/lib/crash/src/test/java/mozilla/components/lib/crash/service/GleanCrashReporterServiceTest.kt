@@ -22,7 +22,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.spy
 import java.io.File
-import mozilla.components.lib.crash.GleanMetrics.Pings as GleanPings
 
 @RunWith(AndroidJUnit4::class)
 class GleanCrashReporterServiceTest {
@@ -34,7 +33,6 @@ class GleanCrashReporterServiceTest {
         // We're using the WorkManager in a bunch of places, and Glean will crash
         // in tests without this line. Let's simply put it here.
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
-        Glean.registerPings(GleanPings)
         Glean.resetGlean(
             context = context,
             config = Configuration(),
