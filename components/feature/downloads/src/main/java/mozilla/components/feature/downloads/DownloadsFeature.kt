@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
-import android.os.Environment
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.annotation.VisibleForTesting
@@ -26,7 +25,7 @@ import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.downloads.DownloadDialogFragment.Companion.FRAGMENT_TAG
 import mozilla.components.feature.downloads.dialog.DeniedPermissionDialogFragment
-import mozilla.components.feature.downloads.ext.getRealFilenameOrGuessed
+import mozilla.components.feature.downloads.ext.realFilenameOrGuessed
 import mozilla.components.feature.downloads.facts.emitPromptDismissedFact
 import mozilla.components.feature.downloads.facts.emitPromptDisplayedFact
 import mozilla.components.feature.downloads.manager.AndroidDownloadManager
@@ -44,8 +43,6 @@ import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.content.isPermissionGranted
 import mozilla.components.support.ktx.kotlin.isSameOriginAs
 import mozilla.components.support.utils.Browsers
-import mozilla.components.support.utils.DefaultDownloadFileUtils
-import mozilla.components.support.utils.DownloadFileUtils
 import mozilla.components.support.utils.ext.packageManagerCompatHelper
 
 /**
@@ -134,15 +131,7 @@ class DownloadsFeature(
     private val fileSystemHelper: FileSystemHelper = DefaultFileSystemHelper(),
     override var onNeedToRequestPermissions: OnNeedToRequestPermissions = { },
     onDownloadStopped: onDownloadStopped = noop,
-    private val downloadFileUtils: DownloadFileUtils = DefaultDownloadFileUtils(
-        context = applicationContext,
-        downloadLocationGetter = {
-            Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS,
-            ).path
-        },
-    ),
-    private val downloadManager: DownloadManager = AndroidDownloadManager(applicationContext, store, downloadFileUtils),
+    private val downloadManager: DownloadManager = AndroidDownloadManager(applicationContext, store),
     private val tabId: String? = null,
     private val fragmentManager: FragmentManager? = null,
     private val promptsStyling: PromptsStyling? = null,
@@ -269,7 +258,7 @@ class DownloadsFeature(
                     customFirstPartyDownloadDialog != null && !download.skipConfirmation -> {
                         val downloadWithSameEtag = findDownloadWithSameEtag(download)
                         customFirstPartyDownloadDialog.invoke(
-                            Filename(download.getRealFilenameOrGuessed(downloadFileUtils)),
+                            Filename(download.realFilenameOrGuessed),
                             ContentSize(download.contentLength ?: 0),
                             FileNameOfDuplicateIfAlreadyDownloaded(downloadWithSameEtag?.fileName),
                             PositiveActionCallback {
@@ -291,10 +280,7 @@ class DownloadsFeature(
                     }
 
                     fragmentManager != null && !download.skipConfirmation -> {
-                        showDownloadDialog(
-                            tab = tab,
-                            download = download,
-                        )
+                        showDownloadDialog(tab, download)
                         false
                     }
 
@@ -329,7 +315,7 @@ class DownloadsFeature(
 
         if (isDownloadBiggerThanAvailableSpace(download)) {
             fileHasNotEnoughStorageDialog.invoke(
-                Filename(download.getRealFilenameOrGuessed(downloadFileUtils)),
+                Filename(download.realFilenameOrGuessed),
             )
             download.sessionId?.let { useCases.cancelDownloadRequest.invoke(it, download.id) }
             return false
@@ -389,10 +375,7 @@ class DownloadsFeature(
         download: DownloadState,
         dialog: DownloadDialogFragment = getDownloadDialog(),
     ) {
-        dialog.setDownload(
-            download = download,
-            fileName = download.getRealFilenameOrGuessed(downloadFileUtils),
-        )
+        dialog.setDownload(download)
 
         dialog.onStartDownload = {
             startDownload(download)

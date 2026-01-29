@@ -60,7 +60,6 @@ import mozilla.components.support.ktx.kotlin.isPhone
 import mozilla.components.support.ktx.kotlin.sanitizeFileName
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import mozilla.components.support.utils.CertificateUtils
-import mozilla.components.support.utils.DownloadFileUtils
 import mozilla.components.support.utils.DownloadUtils
 import mozilla.components.support.utils.DownloadUtils.RESPONSE_CODE_SUCCESS
 import mozilla.components.support.utils.DownloadUtils.makePdfContentDisposition
@@ -91,7 +90,6 @@ class GeckoEngineSession(
     private val runtime: GeckoRuntime,
     private val privateMode: Boolean = false,
     private val defaultSettings: Settings? = null,
-    private val downloadFileUtils: DownloadFileUtils? = null,
     contextId: String? = null,
     private val geckoSessionProvider: () -> GeckoSession = {
         val settings = GeckoSessionSettings.Builder()
@@ -260,8 +258,8 @@ class GeckoEngineSession(
                 val contentLength = 0L
                 // NB: If the title is an empty string, there is a chance the PDF will not have a name.
                 // See https://github.com/mozilla-mobile/android-components/issues/12276
-                val fileName = downloadFileUtils?.guessFileName(
-                    contentDisposition = disposition,
+                val fileName = DownloadUtils.guessFileName(
+                    disposition,
                     url = url,
                     mimeType = contentType,
                 )
@@ -983,12 +981,7 @@ class GeckoEngineSession(
             uri: String,
         ): GeckoResult<GeckoSession> {
             val newEngineSession =
-                GeckoEngineSession(
-                    runtime = runtime,
-                    privateMode = privateMode,
-                    downloadFileUtils = downloadFileUtils,
-                    openGeckoSession = false,
-                )
+                GeckoEngineSession(runtime, privateMode, defaultSettings, openGeckoSession = false)
             notifyObservers {
                 onWindowRequest(GeckoWindowRequest(uri, newEngineSession))
             }
@@ -1301,8 +1294,8 @@ class GeckoEngineSession(
                 val contentLength = headers[CONTENT_LENGTH]?.trim()?.toLongOrNull()
                 val contentDisposition = headers[CONTENT_DISPOSITION]?.trim()
                 val url = uri
-                val fileName = downloadFileUtils?.guessFileName(
-                    contentDisposition = contentDisposition,
+                val fileName = DownloadUtils.guessFileName(
+                    contentDisposition,
                     url = url,
                     mimeType = contentType,
                 )
@@ -1312,7 +1305,7 @@ class GeckoEngineSession(
                         url = url,
                         contentLength = contentLength,
                         contentType = DownloadUtils.sanitizeMimeType(contentType),
-                        fileName = fileName?.sanitizeFileName(),
+                        fileName = fileName.sanitizeFileName(),
                         response = response,
                         isPrivate = privateMode,
                         openInApp = webResponse.requestExternalApp,

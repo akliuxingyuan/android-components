@@ -51,7 +51,6 @@ import mozilla.components.support.test.expectException
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import mozilla.components.support.utils.DownloadUtils.RESPONSE_CODE_SUCCESS
-import mozilla.components.support.utils.FakeDownloadFileUtils
 import mozilla.components.support.utils.ThreadUtils
 import mozilla.components.test.ReflectionUtils
 import org.json.JSONObject
@@ -338,7 +337,6 @@ class GeckoEngineSessionTest {
             mock(),
             geckoSessionProvider = geckoSessionProvider,
             privateMode = true,
-            downloadFileUtils = FakeDownloadFileUtils(guessFileName = { _, _, _ -> "image name.png" }),
         )
 
         val observer: EngineSession.Observer = mock()
@@ -378,7 +376,6 @@ class GeckoEngineSessionTest {
             mock(),
             geckoSessionProvider = geckoSessionProvider,
             privateMode = true,
-            downloadFileUtils = FakeDownloadFileUtils(guessFileName = { _, _, _ -> "image image.png" }),
         )
 
         val observer: EngineSession.Observer = mock()
@@ -419,7 +416,6 @@ class GeckoEngineSessionTest {
             mock(),
             geckoSessionProvider = geckoSessionProvider,
             privateMode = true,
-            downloadFileUtils = FakeDownloadFileUtils(guessFileName = { _, _, _ -> "image.png" }),
         )
 
         val observer: EngineSession.Observer = mock()
@@ -457,7 +453,6 @@ class GeckoEngineSessionTest {
             mock(),
             geckoSessionProvider = geckoSessionProvider,
             privateMode = true,
-            downloadFileUtils = FakeDownloadFileUtils(guessFileName = { _, _, _ -> "image.png" }),
         )
 
         val observer: EngineSession.Observer = mock()
@@ -4624,7 +4619,6 @@ class GeckoEngineSessionTest {
         val engineSession = GeckoEngineSession(
             runtime = mock(),
             geckoSessionProvider = geckoSessionProvider,
-            downloadFileUtils = FakeDownloadFileUtils(guessFileName = { _, _, _ -> "Mozilla.pdf" }),
         ).apply {
             currentUrl = "https://mozilla.org"
             currentTitle = "Mozilla"
