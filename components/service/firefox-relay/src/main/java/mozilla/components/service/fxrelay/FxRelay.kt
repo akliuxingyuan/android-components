@@ -38,8 +38,6 @@ class FxRelay(
      * Defines supported Relay operations for logging and error handling.
      */
     enum class RelayOperation {
-        CREATE_ADDRESS,
-        ACCEPT_TERMS,
         FETCH_ALL_ADDRESSES,
         FETCH_PROFILE,
     }
@@ -97,17 +95,6 @@ class FxRelay(
                 }
             }
             fallback()
-        }
-    }
-
-    /**
-     * Accept the Relay terms of service.
-     */
-    suspend fun acceptTerms() = withContext(Dispatchers.IO) {
-        handleRelayExceptions(RelayOperation.ACCEPT_TERMS, { false }) {
-            val client = getOrCreateClient()
-            client.acceptTerms()
-            true
         }
     }
 
