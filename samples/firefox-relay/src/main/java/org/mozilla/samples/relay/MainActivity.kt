@@ -33,7 +33,7 @@ import mozilla.components.service.fxa.manager.SCOPE_SESSION
 import mozilla.components.service.fxa.manager.SCOPE_SYNC
 import mozilla.components.service.fxa.sync.SyncReason
 import mozilla.components.service.fxa.toAuthType
-import mozilla.components.service.fxrelay.FxRelay
+import mozilla.components.service.fxrelay.createFxRelay
 import mozilla.components.service.fxrelay.eligibility.Eligible
 import mozilla.components.service.fxrelay.eligibility.Ineligible
 import mozilla.components.service.fxrelay.eligibility.RelayEligibilityFeature
@@ -162,7 +162,7 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
                         return@launch
                     }
 
-                val addressList = FxRelay(account).fetchAllAddresses()
+                val addressList = createFxRelay(account).fetchAllAddresses()
                 Toast.makeText(applicationContext, "Fetched ${addressList.size} addresses", Toast.LENGTH_SHORT).show()
             }
         }

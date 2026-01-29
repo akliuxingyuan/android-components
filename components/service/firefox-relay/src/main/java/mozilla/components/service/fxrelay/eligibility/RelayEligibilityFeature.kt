@@ -12,8 +12,8 @@ import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.service.fxa.manager.FxaAccountManager
-import mozilla.components.service.fxrelay.FxRelay
 import mozilla.components.service.fxrelay.RelayAccountDetails
+import mozilla.components.service.fxrelay.createFxRelay
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 
@@ -71,7 +71,7 @@ class RelayEligibilityFeature(
                 return
             }
 
-            val relayStatusRes: Result<RelayAccountDetails> = FxRelay(account).fetchAccountDetails()
+            val relayStatusRes: Result<RelayAccountDetails> = createFxRelay(account).fetchAccountDetails()
             val relayDetails = relayStatusRes.getOrNull()
 
             store.dispatch(
