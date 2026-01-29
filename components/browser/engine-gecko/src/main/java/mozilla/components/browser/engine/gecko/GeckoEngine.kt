@@ -5,6 +5,7 @@
 package mozilla.components.browser.engine.gecko
 
 import android.content.Context
+import android.os.Environment
 import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.JsonReader
@@ -82,6 +83,8 @@ import mozilla.components.concept.engine.webnotifications.WebNotificationDelegat
 import mozilla.components.concept.engine.webpush.WebPushDelegate
 import mozilla.components.concept.engine.webpush.WebPushHandler
 import mozilla.components.support.ktx.kotlin.isResourceUrl
+import mozilla.components.support.utils.DefaultDownloadFileUtils
+import mozilla.components.support.utils.DownloadFileUtils
 import mozilla.components.support.utils.ThreadUtils
 import org.json.JSONObject
 import org.mozilla.geckoview.AllowOrDeny
@@ -114,6 +117,14 @@ class GeckoEngine(
     private val geckoPreferenceAccessor: GeckoPreferenceAccessor = DefaultGeckoPreferenceAccessor(),
     private val runtimeTranslationAccessor: RuntimeTranslationAccessor = DefaultRuntimeTranslationAccessor(),
     private val addressStructureAccessor: RuntimeAddressStructureAccessor = DefaultRuntimeAddressStructureAccessor(),
+    private val downloadFileUtils: DownloadFileUtils = DefaultDownloadFileUtils(
+        context = context,
+        downloadLocationGetter = {
+            Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS,
+            ).path
+        },
+    ),
 ) : Engine, WebExtensionRuntime, TranslationsRuntime, BrowserPreferencesRuntime {
     private val executor by lazy { executorProvider.invoke() }
     private val localeUpdater = LocaleSettingUpdater(context, runtime)
@@ -133,8 +144,9 @@ class GeckoEngine(
             return webExtensionDelegate?.onToggleActionPopup(
                 extension,
                 GeckoEngineSession(
-                    runtime,
+                    runtime = runtime,
                     defaultSettings = defaultSettings,
+                    downloadFileUtils = downloadFileUtils,
                 ),
                 action,
             )
@@ -219,7 +231,13 @@ class GeckoEngine(
     override fun createSession(private: Boolean, contextId: String?): EngineSession {
         ThreadUtils.assertOnUiThread()
         val speculativeSession = speculativeConnectionFactory.get(private, contextId)
-        return speculativeSession ?: GeckoEngineSession(runtime, private, defaultSettings, contextId)
+        return speculativeSession ?: GeckoEngineSession(
+            runtime = runtime,
+            privateMode = private,
+            downloadFileUtils = downloadFileUtils,
+            defaultSettings = defaultSettings,
+            contextId = contextId,
+        )
     }
 
     /**
@@ -241,7 +259,13 @@ class GeckoEngine(
      */
     override fun speculativeCreateSession(private: Boolean, contextId: String?) {
         ThreadUtils.assertOnUiThread()
-        speculativeConnectionFactory.create(runtime, private, contextId, defaultSettings)
+        speculativeConnectionFactory.create(
+            runtime = runtime,
+            private = private,
+            contextId = contextId,
+            defaultSettings = defaultSettings,
+            downloadFileUtils = downloadFileUtils,
+        )
     }
 
     /**
@@ -347,7 +371,11 @@ class GeckoEngine(
         runtime.webExtensionController.update((extension as GeckoWebExtension).nativeExtension).then(
             { geckoExtension ->
                 val updatedExtension = if (geckoExtension != null) {
-                    GeckoWebExtension(geckoExtension, runtime).also {
+                    GeckoWebExtension(
+                        nativeExtension = geckoExtension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ).also {
                         it.registerActionHandler(webExtensionActionHandler)
                         it.registerTabHandler(webExtensionTabHandler, defaultSettings)
                     }
@@ -383,7 +411,11 @@ class GeckoEngine(
                 val result = GeckoResult<NativePermissionPromptResponse>()
 
                 webExtensionDelegate.onInstallPermissionRequest(
-                    GeckoWebExtension(ext, runtime),
+                    GeckoWebExtension(
+                        nativeExtension = ext,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
                     permissions.toList(),
                     origins.toList(),
                     dataCollectionPermissions.toList(),
@@ -408,7 +440,11 @@ class GeckoEngine(
             ): GeckoResult<AllowOrDeny>? {
                 val result = GeckoResult<AllowOrDeny>()
                 webExtensionDelegate.onUpdatePermissionRequest(
-                    GeckoWebExtension(extension, runtime),
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
                     newPermissions.toList(),
                     newOrigins.toList(),
                     newDataCollectionPermissions.toList(),
@@ -426,7 +462,11 @@ class GeckoEngine(
             ): GeckoResult<AllowOrDeny>? {
                 val result = GeckoResult<AllowOrDeny>()
                 webExtensionDelegate.onOptionalPermissionsRequest(
-                    GeckoWebExtension(extension, runtime),
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
                     permissions.toList(),
                     origins.toList(),
                     dataCollectionPermissions.toList(),
@@ -445,23 +485,51 @@ class GeckoEngine(
 
         val addonManagerDelegate = object : WebExtensionController.AddonManagerDelegate {
             override fun onDisabled(extension: org.mozilla.geckoview.WebExtension) {
-                webExtensionDelegate.onDisabled(GeckoWebExtension(extension, runtime))
+                webExtensionDelegate.onDisabled(
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
+                )
             }
 
             override fun onEnabled(extension: org.mozilla.geckoview.WebExtension) {
-                webExtensionDelegate.onEnabled(GeckoWebExtension(extension, runtime))
+                webExtensionDelegate.onEnabled(
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
+                )
             }
 
             override fun onReady(extension: org.mozilla.geckoview.WebExtension) {
-                webExtensionDelegate.onReady(GeckoWebExtension(extension, runtime))
+                webExtensionDelegate.onReady(
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
+                )
             }
 
             override fun onUninstalled(extension: org.mozilla.geckoview.WebExtension) {
-                webExtensionDelegate.onUninstalled(GeckoWebExtension(extension, runtime))
+                webExtensionDelegate.onUninstalled(
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
+                )
             }
 
             override fun onInstalled(extension: org.mozilla.geckoview.WebExtension) {
-                val installedExtension = GeckoWebExtension(extension, runtime)
+                val installedExtension = GeckoWebExtension(
+                    nativeExtension = extension,
+                    runtime = runtime,
+                    downloadFileUtils = downloadFileUtils,
+                )
                 webExtensionDelegate.onInstalled(installedExtension)
                 installedExtension.registerActionHandler(webExtensionActionHandler)
                 installedExtension.registerTabHandler(webExtensionTabHandler, defaultSettings)
@@ -480,7 +548,13 @@ class GeckoEngine(
             }
 
             override fun onOptionalPermissionsChanged(extension: org.mozilla.geckoview.WebExtension) {
-                webExtensionDelegate.onOptionalPermissionsChanged(GeckoWebExtension(extension, runtime))
+                webExtensionDelegate.onOptionalPermissionsChanged(
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    ),
+                )
             }
         }
 
@@ -503,7 +577,11 @@ class GeckoEngine(
         runtime.webExtensionController.list().then(
             {
                 val extensions = it?.map { extension ->
-                    GeckoWebExtension(extension, runtime)
+                    GeckoWebExtension(
+                        nativeExtension = extension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    )
                 } ?: emptyList()
 
                 extensions.forEach { extension ->
@@ -532,7 +610,11 @@ class GeckoEngine(
     ) {
         runtime.webExtensionController.enable((extension as GeckoWebExtension).nativeExtension, source.id).then(
             {
-                val enabledExtension = GeckoWebExtension(it!!, runtime)
+                val enabledExtension = GeckoWebExtension(
+                    nativeExtension = it!!,
+                    runtime = runtime,
+                    downloadFileUtils = downloadFileUtils,
+                )
                 onSuccess(enabledExtension)
                 GeckoResult<Void>()
             },
@@ -570,7 +652,11 @@ class GeckoEngine(
             dataCollectionPermissions.toTypedArray(),
         ).then(
             {
-                val enabledExtension = GeckoWebExtension(it!!, runtime)
+                val enabledExtension = GeckoWebExtension(
+                    nativeExtension = it!!,
+                    runtime = runtime,
+                    downloadFileUtils = downloadFileUtils,
+                )
                 onSuccess(enabledExtension)
                 GeckoResult<Void>()
             },
@@ -608,7 +694,11 @@ class GeckoEngine(
             dataCollectionPermissions.toTypedArray(),
         ).then(
             {
-                val enabledExtension = GeckoWebExtension(it!!, runtime)
+                val enabledExtension = GeckoWebExtension(
+                    nativeExtension = it!!,
+                    runtime = runtime,
+                    downloadFileUtils = downloadFileUtils,
+                )
                 onSuccess(enabledExtension)
                 GeckoResult<Void>()
             },
@@ -630,7 +720,11 @@ class GeckoEngine(
     ) {
         runtime.webExtensionController.disable((extension as GeckoWebExtension).nativeExtension, source.id).then(
             {
-                val disabledExtension = GeckoWebExtension(it!!, runtime)
+                val disabledExtension = GeckoWebExtension(
+                    nativeExtension = it!!,
+                    runtime = runtime,
+                    downloadFileUtils = downloadFileUtils,
+                )
                 onSuccess(disabledExtension)
                 GeckoResult<Void>()
             },
@@ -663,7 +757,11 @@ class GeckoEngine(
                         ),
                     )
                 } else {
-                    val ext = GeckoWebExtension(geckoExtension, runtime)
+                    val ext = GeckoWebExtension(
+                        nativeExtension = geckoExtension,
+                        runtime = runtime,
+                        downloadFileUtils = downloadFileUtils,
+                    )
                     webExtensionDelegate?.onAllowedInPrivateBrowsingChanged(ext)
                     onSuccess(ext)
                 }
@@ -780,6 +878,7 @@ class GeckoEngine(
         runtime.serviceWorkerDelegate = GeckoServiceWorkerDelegate(
             delegate = serviceWorkerDelegate,
             runtime = runtime,
+            downloadFileUtils = downloadFileUtils,
             engineSettings = defaultSettings,
         )
     }
@@ -1842,8 +1941,9 @@ class GeckoEngine(
     internal fun org.mozilla.geckoview.WebExtension?.toSafeWebExtension(): GeckoWebExtension? {
         return if (this != null) {
             GeckoWebExtension(
-                this,
-                runtime,
+                nativeExtension = this,
+                runtime = runtime,
+                downloadFileUtils = downloadFileUtils,
             )
         } else {
             null
@@ -1854,7 +1954,11 @@ class GeckoEngine(
         ext: org.mozilla.geckoview.WebExtension,
         onSuccess: ((WebExtension) -> Unit),
     ) {
-        val installedExtension = GeckoWebExtension(ext, runtime)
+        val installedExtension = GeckoWebExtension(
+            nativeExtension = ext,
+            runtime = runtime,
+            downloadFileUtils = downloadFileUtils,
+        )
         webExtensionDelegate?.onInstalled(installedExtension)
         installedExtension.registerActionHandler(webExtensionActionHandler)
         installedExtension.registerTabHandler(webExtensionTabHandler, defaultSettings)

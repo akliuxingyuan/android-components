@@ -67,6 +67,7 @@ dependencies {
 
     testImplementation project(':components:support-test')
     testImplementation project(':components:tooling-fetch-tests')
+    testImplementation testFixtures(project(':components:support-utils'))
 
     testImplementation libs.androidx.test.core
     testImplementation libs.androidx.test.junit
