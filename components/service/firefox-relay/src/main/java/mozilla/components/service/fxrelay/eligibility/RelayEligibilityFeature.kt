@@ -15,6 +15,7 @@ import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.service.fxrelay.RelayAccountDetails
 import mozilla.components.service.fxrelay.createFxRelay
 import mozilla.components.support.base.feature.LifecycleAwareFeature
+import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 
 private const val FETCH_TIMEOUT_MS: Long = 300_000L
@@ -27,6 +28,8 @@ class RelayEligibilityFeature(
     private val store: RelayEligibilityStore,
     private val fetchTimeoutMs: Long = FETCH_TIMEOUT_MS,
 ) : LifecycleAwareFeature {
+
+    private val logger = Logger("RelayEligibilityFeature")
 
     private var scope: CoroutineScope? = null
     private val accountObserver = RelayAccountObserver()
@@ -60,6 +63,8 @@ class RelayEligibilityFeature(
         if (loggedIn && ttlExpired) {
             val account = accountManager.authenticatedAccount()
             if (account == null) {
+                logger.debug("A status check is due but there is no authenticated account.")
+
                 store.dispatch(
                     RelayEligibilityAction.RelayStatusResult(
                         fetchSucceeded = false,
@@ -71,12 +76,11 @@ class RelayEligibilityFeature(
                 return
             }
 
-            val relayStatusRes: Result<RelayAccountDetails> = createFxRelay(account).fetchAccountDetails()
-            val relayDetails = relayStatusRes.getOrNull()
+            val relayDetails: RelayAccountDetails? = createFxRelay(account).fetchAccountDetails()
 
             store.dispatch(
                 RelayEligibilityAction.RelayStatusResult(
-                    fetchSucceeded = relayStatusRes.isSuccess,
+                    fetchSucceeded = relayDetails != null,
                     relayPlanTier = relayDetails?.relayPlanTier,
                     remaining = relayDetails?.remainingMasksForFreeUsers ?: 0,
                     lastCheckedMs = System.currentTimeMillis(),

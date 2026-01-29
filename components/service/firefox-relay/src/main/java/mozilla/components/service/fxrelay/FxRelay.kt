@@ -29,11 +29,11 @@ interface FxRelay {
     suspend fun fetchAllAddresses(): List<RelayAddress>
 
     /**
-     * Retrieves the Relay account status for the user.
+     * Retrieves the Relay account details or `null` if the operation failed.
      *
-     * @return The user's [RelayAccountDetails] or [RelayPlanTier.NONE] if the operation failed.
+     * @return The user's [RelayAccountDetails].
      */
-    suspend fun fetchAccountDetails(): Result<RelayAccountDetails>
+    suspend fun fetchAccountDetails(): RelayAccountDetails?
 }
 
 /**
@@ -130,15 +130,9 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
         }
     }
 
-    override suspend fun fetchAccountDetails(): Result<RelayAccountDetails> = withContext(Dispatchers.IO) {
-        runCatching {
-            val profile = fetchProfile()
-                ?: return@runCatching RelayAccountDetails(RelayPlanTier.NONE, 0)
-
-            mapProfileToDetails(profile)
-        }.onFailure {
-            logger.warn("Failed to fetch Relay status", it)
-        }
+    override suspend fun fetchAccountDetails(): RelayAccountDetails? = withContext(Dispatchers.IO) {
+        val profile = fetchProfile() ?: return@withContext null
+        mapProfileToDetails(profile)
     }
 
     private suspend fun fetchProfile(): RelayProfile? = withContext(Dispatchers.IO) {
