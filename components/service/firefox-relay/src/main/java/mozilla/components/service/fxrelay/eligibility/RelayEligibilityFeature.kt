@@ -12,8 +12,9 @@ import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.service.fxa.manager.FxaAccountManager
+import mozilla.components.service.fxrelay.FxRelay
+import mozilla.components.service.fxrelay.FxRelayImpl
 import mozilla.components.service.fxrelay.RelayAccountDetails
-import mozilla.components.service.fxrelay.createFxRelay
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
@@ -33,6 +34,7 @@ class RelayEligibilityFeature(
 
     private var scope: CoroutineScope? = null
     private val accountObserver = RelayAccountObserver()
+    private var fxRelay: FxRelay? = null
 
     override fun start() {
         accountManager.register(accountObserver)
@@ -60,38 +62,27 @@ class RelayEligibilityFeature(
         val now = System.currentTimeMillis()
         val ttlExpired = lastCheck == NO_ENTITLEMENT_CHECK_YET_MS || now - lastCheck >= fetchTimeoutMs
 
-        if (loggedIn && ttlExpired) {
-            val account = accountManager.authenticatedAccount()
-            if (account == null) {
-                logger.debug("A status check is due but there is no authenticated account.")
+        if (!loggedIn || !ttlExpired) return
 
-                store.dispatch(
-                    RelayEligibilityAction.RelayStatusResult(
-                        fetchSucceeded = false,
-                        relayPlanTier = null,
-                        remaining = 0,
-                        lastCheckedMs = System.currentTimeMillis(),
-                    ),
-                )
-                return
-            }
+        val relayDetails: RelayAccountDetails? = fxRelay?.fetchAccountDetails()
+        store.dispatch(
+            RelayEligibilityAction.RelayStatusResult(
+                fetchSucceeded = relayDetails != null,
+                relayPlanTier = relayDetails?.relayPlanTier,
+                remaining = relayDetails?.remainingMasksForFreeUsers ?: 0,
+                lastCheckedMs = System.currentTimeMillis(),
+            ),
+        )
 
-            val relayDetails: RelayAccountDetails? = createFxRelay(account).fetchAccountDetails()
-
-            store.dispatch(
-                RelayEligibilityAction.RelayStatusResult(
-                    fetchSucceeded = relayDetails != null,
-                    relayPlanTier = relayDetails?.relayPlanTier,
-                    remaining = relayDetails?.remainingMasksForFreeUsers ?: 0,
-                    lastCheckedMs = System.currentTimeMillis(),
-                ),
-            )
+        if (fxRelay == null) {
+            logger.debug("A status check is due but there is no FxRelay instance.")
         }
     }
 
     private inner class RelayAccountObserver : AccountObserver {
         override fun onAuthenticated(account: OAuthAccount, authType: AuthType) {
             store.dispatch(RelayEligibilityAction.AccountLoginStatusChanged(true))
+            fxRelay = FxRelayImpl(account)
         }
 
         override fun onProfileUpdated(profile: Profile) {
@@ -100,6 +91,7 @@ class RelayEligibilityFeature(
 
         override fun onLoggedOut() {
             store.dispatch(RelayEligibilityAction.AccountLoginStatusChanged(false))
+            fxRelay = null
         }
     }
 }
