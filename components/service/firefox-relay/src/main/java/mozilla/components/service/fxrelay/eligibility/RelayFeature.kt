@@ -12,6 +12,7 @@ import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.service.fxa.manager.FxaAccountManager
+import mozilla.components.service.fxrelay.EmailMask
 import mozilla.components.service.fxrelay.FxRelay
 import mozilla.components.service.fxrelay.FxRelayImpl
 import mozilla.components.service.fxrelay.RelayAccountDetails
@@ -22,9 +23,9 @@ import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 private const val FETCH_TIMEOUT_MS: Long = 300_000L
 
 /**
- * Coordinates when and how Relay eligibility is (re)evaluated.
+ * Feature for accessing Firefox Relay service.
  */
-class RelayEligibilityFeature(
+class RelayFeature(
     private val accountManager: FxaAccountManager,
     private val store: RelayEligibilityStore,
     private val fetchTimeoutMs: Long = FETCH_TIMEOUT_MS,
@@ -77,6 +78,15 @@ class RelayEligibilityFeature(
         if (fxRelay == null) {
             logger.debug("A status check is due but there is no FxRelay instance.")
         }
+    }
+
+    /**
+     * Fetches a list of email masks for a Relay user.
+     *
+     * @return a list of email masks or `null` if the operation fails.
+     */
+    suspend fun fetchEmailMasks(): List<EmailMask>? {
+        return fxRelay?.fetchEmailMasks()
     }
 
     private inner class RelayAccountObserver : AccountObserver {

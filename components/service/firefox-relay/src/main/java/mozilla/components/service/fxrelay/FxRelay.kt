@@ -6,6 +6,7 @@ package mozilla.components.service.fxrelay
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mozilla.appservices.relay.RelayAddress
 import mozilla.appservices.relay.RelayApiException
 import mozilla.appservices.relay.RelayClient
 import mozilla.appservices.relay.RelayProfile
@@ -22,11 +23,11 @@ private const val RELAY_BASE_URL = "https://relay.firefox.com"
  */
 interface FxRelay {
     /**
-     * Fetch all Relay addresses.
+     * Fetches a list of email masks.
      *
-     * @return [List<RelayAddress>] or `null` if the operation fails with a known Relay API error.
+     * @return a list of email masks or `null` if the operation fails.
      */
-    suspend fun fetchAllAddresses(): List<RelayAddress>
+    suspend fun fetchEmailMasks(): List<EmailMask>?
 
     /**
      * Retrieves the Relay account details or `null` if the operation failed.
@@ -35,11 +36,6 @@ interface FxRelay {
      */
     suspend fun fetchAccountDetails(): RelayAccountDetails?
 }
-
-/**
- * Create a default [FxRelay] for the given account.
- */
-fun createFxRelay(account: OAuthAccount): FxRelay = FxRelayImpl(account)
 
 /**
  * Service wrapper for Firefox Relay APIs.
@@ -60,7 +56,7 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
      * Defines supported Relay operations for logging and error handling.
      */
     enum class RelayOperation {
-        FETCH_ALL_ADDRESSES,
+        FETCH_ADDRESSES,
         FETCH_PROFILE,
     }
 
@@ -120,13 +116,12 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
         }
     }
 
-    override suspend fun fetchAllAddresses(): List<RelayAddress> = withContext(Dispatchers.IO) {
+    override suspend fun fetchEmailMasks(): List<EmailMask>? = withContext(Dispatchers.IO) {
         handleRelayExceptions(
-            RelayOperation.FETCH_ALL_ADDRESSES,
-            { emptyList() },
+            RelayOperation.FETCH_ADDRESSES,
+            { null },
         ) {
-            val client = getOrCreateClient()
-            client.fetchAddresses().map { it.into() }
+            getOrCreateClient().fetchAddresses().map { it.asEmailMask() }
         }
     }
 
@@ -174,3 +169,14 @@ data class RelayAccountDetails(
     val relayPlanTier: RelayPlanTier,
     val remainingMasksForFreeUsers: Int?,
 )
+
+/**
+ * A reduced [RelayAddress] intended for client use.
+ */
+data class EmailMask(
+    val fullAddress: String,
+)
+
+internal fun RelayAddress.asEmailMask(): EmailMask {
+    return EmailMask(fullAddress = this.fullAddress)
+}
