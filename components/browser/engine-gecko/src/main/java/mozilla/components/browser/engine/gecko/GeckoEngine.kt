@@ -1018,6 +1018,27 @@ class GeckoEngine(
     }
 
     /**
+     * See [BrowserPreferencesRuntime.registerPrefsForObservation].
+     */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    override fun registerPrefsForObservation(
+        prefs: List<String>,
+        onSuccess: () -> Unit,
+        onError: (Throwable) -> Unit,
+    ) {
+        geckoPreferenceAccessor.registerGeckoPrefsForObservation(prefs).then(
+            {
+                onSuccess()
+                GeckoResult<Void>()
+            },
+            { throwable ->
+                onError(throwable)
+                GeckoResult<Void>()
+            },
+        )
+    }
+
+    /**
      * See [BrowserPreferencesRuntime.unregisterPrefForObservation].
      */
     @OptIn(ExperimentalGeckoViewApi::class)
@@ -1027,6 +1048,27 @@ class GeckoEngine(
         onError: (Throwable) -> Unit,
     ) {
         geckoPreferenceAccessor.unregisterGeckoPrefForObservation(pref).then(
+            {
+                onSuccess()
+                GeckoResult<Void>()
+            },
+            { throwable ->
+                onError(throwable)
+                GeckoResult<Void>()
+            },
+        )
+    }
+
+    /**
+     * See [BrowserPreferencesRuntime.unregisterPrefsForObservation].
+     */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    override fun unregisterPrefsForObservation(
+        prefs: List<String>,
+        onSuccess: () -> Unit,
+        onError: (Throwable) -> Unit,
+    ) {
+        geckoPreferenceAccessor.unregisterGeckoPrefsForObservation(prefs).then(
             {
                 onSuccess()
                 GeckoResult<Void>()
