@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.service.fxrelay.view
+package mozilla.components.feature.prompts.emailmask
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
@@ -24,15 +24,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.ui.icons.R
+import mozilla.components.feature.prompts.R
+import mozilla.components.ui.icons.R as iconsR
 
 /**
- * A bar for displaying relay related actions.
+ * A bar for displaying email mask related actions.
  *
  * @param onMaskEmailClicked a mask email chip click listener.
  */
 @Composable
-fun RelayPromptBar(
+fun EmailMaskPromptBar(
     onMaskEmailClicked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -66,7 +67,7 @@ private fun MaskEmailChip(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                painter = painterResource(R.drawable.mozac_ic_mask_email_24),
+                painter = painterResource(id = iconsR.drawable.mozac_ic_mask_email_24),
                 contentDescription = null, // talkback should focus on the whole element
                 modifier = Modifier.size(16.dp),
             )
@@ -74,7 +75,7 @@ private fun MaskEmailChip(
             Spacer(modifier = Modifier.size(8.dp))
 
             Text(
-                text = stringResource(mozilla.components.service.fxrelay.R.string.mozac_feature_relay_chip_text),
+                text = stringResource(id = R.string.mozac_feature_relay_chip_text),
                 style = AcornTheme.typography.headline8,
             )
         }
@@ -83,9 +84,9 @@ private fun MaskEmailChip(
 
 @PreviewLightDark
 @Composable
-private fun RelayPromptBarPreview() {
+private fun EmailMaskPromptBarPreview() {
     AcornTheme {
-        RelayPromptBar(
+        EmailMaskPromptBar(
             onMaskEmailClicked = {},
         )
     }

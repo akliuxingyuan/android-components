@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.service.fxrelay.view
+package mozilla.components.feature.prompts.emailmask
 
 import android.content.Context
 import android.util.AttributeSet
@@ -11,9 +11,9 @@ import androidx.compose.ui.platform.AbstractComposeView
 import mozilla.components.compose.base.theme.AcornTheme
 
 /**
- * The top-level view holder for the Relay Prompt Bar.
+ * The top-level view holder for the Email Mask Prompt Bar.
  */
-class RelayPromptBarView @JvmOverloads constructor(
+class EmailMaskPromptBarView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
@@ -21,7 +21,7 @@ class RelayPromptBarView @JvmOverloads constructor(
     @Composable
     override fun Content() {
         AcornTheme {
-            RelayPromptBar(
+            EmailMaskPromptBar(
                 onMaskEmailClicked = {
                     // logic should be added in https://bugzilla.mozilla.org/show_bug.cgi?id=1996725
                 },
