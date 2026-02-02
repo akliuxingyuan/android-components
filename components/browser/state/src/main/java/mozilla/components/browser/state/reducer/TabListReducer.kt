@@ -188,8 +188,14 @@ internal object TabListReducer {
                     }
                 }
 
+                val combinedTabPartitions = mergeTabPartitions(
+                    currentTabPartitions = state.tabPartitions,
+                    restoredTabPartitions = action.tabPartitions,
+                )
+
                 state.copy(
                     tabs = combinedTabList,
+                    tabPartitions = combinedTabPartitions,
                     selectedTabId = if (action.selectedTabId != null && state.selectedTabId == null) {
                         // We only want to update the selected tab if none has been already selected. Otherwise we may
                         // switch to a restored tab even though the user is already looking at an existing tab (e.g.
@@ -361,3 +367,42 @@ private fun Map<String, TabPartition>.removeAllTabs() =
             tabGroups = partition.tabGroups.map { group -> group.copy(tabIds = emptySet()) },
         )
     }
+
+private fun mergeTabPartitions(
+    currentTabPartitions: Map<String, TabPartition>,
+    restoredTabPartitions: Map<String, TabPartition>,
+): Map<String, TabPartition> {
+    val combinedTabPartitions = currentTabPartitions.toMutableMap()
+
+    restoredTabPartitions.forEach { (id, restoredPartition) ->
+        val existingPartition = combinedTabPartitions[id]
+        combinedTabPartitions[id] = if (existingPartition != null) {
+            mergeTabGroups(existingPartition, restoredPartition)
+        } else {
+            restoredPartition
+        }
+    }
+
+    return combinedTabPartitions
+}
+
+private fun mergeTabGroups(
+    currentTabPartition: TabPartition,
+    restoredTabPartition: TabPartition,
+): TabPartition {
+    val combinedTabGroups = currentTabPartition.tabGroups.toMutableList()
+
+    restoredTabPartition.tabGroups.forEach { restoredGroup ->
+        val existingGroupIndex = combinedTabGroups.indexOfFirst { it.id == restoredGroup.id }
+        if (existingGroupIndex != -1) {
+            val existingGroup = combinedTabGroups[existingGroupIndex]
+            combinedTabGroups[existingGroupIndex] = existingGroup.copy(
+                tabIds = existingGroup.tabIds + restoredGroup.tabIds,
+            )
+        } else {
+            combinedTabGroups.add(restoredGroup)
+        }
+    }
+
+    return currentTabPartition.copy(tabGroups = combinedTabGroups)
+}

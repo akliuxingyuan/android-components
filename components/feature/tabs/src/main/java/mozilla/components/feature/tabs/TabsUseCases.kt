@@ -21,6 +21,7 @@ import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.TabGroup
+import mozilla.components.browser.state.state.TabPartition
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.state.recover.RecoverableTab
@@ -309,17 +310,20 @@ class TabsUseCases(
          * @param tabs The list of tabs to restore.
          * @param selectTabId The ID of the selected tab in [tabs]. Or `null` if no selection was restored.
          * @param restoreLocation [RestoreLocation] indicating where to restore [tabs].
+         * @param tabPartitions a mapping of IDs to the corresponding [TabPartition].
          */
         operator fun invoke(
             tabs: List<RecoverableTab>,
             selectTabId: String? = null,
             restoreLocation: RestoreLocation = RestoreLocation.END,
+            tabPartitions: Map<String, TabPartition> = emptyMap(),
         ) {
             store.dispatch(
                 TabListAction.RestoreAction(
                     tabs = tabs,
                     selectedTabId = selectTabId,
                     restoreLocation = restoreLocation,
+                    tabPartitions = tabPartitions,
                 ),
             )
         }
@@ -336,6 +340,7 @@ class TabsUseCases(
         ) {
             invoke(
                 tabs = state.tabs,
+                tabPartitions = state.tabPartitions,
                 selectTabId = state.selectedTabId,
                 restoreLocation = restoreLocation,
             )

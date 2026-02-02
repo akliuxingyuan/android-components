@@ -15,6 +15,7 @@ import mozilla.components.browser.state.selector.findNormalOrPrivateTabByUrl
 import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.TabGroup
+import mozilla.components.browser.state.state.TabPartition
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.state.getGroupById
@@ -393,6 +394,7 @@ class TabsUseCasesTest {
         val recoverableBrowserState = RecoverableBrowserState(
             tabs = restoredTabs.map { it.toRecoverableTab() },
             selectedTabId = null,
+            tabPartitions = emptyMap(),
         )
         val sessionStorage: SessionStorage = mock()
         whenever(sessionStorage.restore(any())).thenReturn(recoverableBrowserState)
@@ -406,6 +408,35 @@ class TabsUseCasesTest {
 
         assertEquals(restoredTabs.first().id, store.state.tabs.first().id)
         assertEquals(newTab.id, store.state.tabs.last().id)
+    }
+
+    @Test
+    fun `GIVEN a recoverable browser state with tabs and partitions in storage WHEN browsing session is restored THEN restore the tabs and partition from storage`() = runTest {
+        val restoredTabs = listOf(
+            createTab(id = "tab1", url = "https://mozilla.org"),
+            createTab(id = "tab2", url = "https://firefox.com"),
+        )
+        val tabGroup = TabGroup("group1", tabIds = setOf("tab1"))
+        val tabPartition = TabPartition("testFeaturePartition", tabGroups = listOf(tabGroup))
+        val restoredTabPartitions = mapOf("testFeaturePartition" to tabPartition)
+        val recoverableBrowserState = RecoverableBrowserState(
+            tabs = restoredTabs.map { it.toRecoverableTab() },
+            selectedTabId = null,
+            tabPartitions = restoredTabPartitions,
+        )
+        val sessionStorage: SessionStorage = mock()
+        whenever(sessionStorage.restore(any())).thenReturn(recoverableBrowserState)
+
+        tabsUseCases.restore.invoke(
+            storage = sessionStorage,
+        )
+
+        assertEquals(restoredTabs.size, store.state.tabs.size)
+        restoredTabs.forEachIndexed { index, restoredTab ->
+            assertEquals(restoredTab.id, store.state.tabs[index].id)
+            assertEquals(restoredTab.content.url, store.state.tabs[index].content.url)
+        }
+        assertEquals(restoredTabPartitions, store.state.tabPartitions)
     }
 
     @Test

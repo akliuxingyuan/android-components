@@ -604,6 +604,130 @@ class TabListActionTest {
     }
 
     @Test
+    fun `RestoreAction - Adds restored tabs and tab partitions and updates selected tab`() {
+        var state = BrowserState()
+
+        assertEquals(0, state.tabs.size)
+        assertEquals(0, state.tabPartitions.size)
+
+        val restoredTabs = listOf(
+            RecoverableTab(
+                engineSessionState = null,
+                state = TabState(
+                    id = "a",
+                    url = "https://www.mozilla.org",
+                    private = false,
+                ),
+            ),
+            RecoverableTab(
+                engineSessionState = null,
+                state = TabState(id = "b", url = "https://www.firefox.com", private = true),
+            ),
+            RecoverableTab(
+                engineSessionState = null,
+                state = TabState(id = "c", url = "https://www.example.org", private = true),
+            ),
+        )
+        val tabGroup = TabGroup(id = "group1", name = "Group 1", tabIds = setOf("a"))
+        val tabPartition = TabPartition(id = "testFeaturePartition", tabGroups = listOf(tabGroup))
+        val restoredTabPartitions = mapOf("testFeaturePartition" to tabPartition)
+
+        state = BrowserStateReducer.reduce(
+            state,
+            TabListAction.RestoreAction(
+                tabs = restoredTabs,
+                selectedTabId = "c",
+                restoreLocation = TabListAction.RestoreAction.RestoreLocation.BEGINNING,
+                tabPartitions = restoredTabPartitions,
+            ),
+        )
+
+        assertEquals(3, state.tabs.size)
+        assertEquals("a", state.tabs[0].id)
+        assertEquals("b", state.tabs[1].id)
+        assertEquals("c", state.tabs[2].id)
+        assertEquals("c", state.selectedTabId)
+        assertEquals(restoredTabPartitions, state.tabPartitions)
+    }
+
+    @Test
+    fun `RestoreAction - Merges the existing tab partitions with the restored tab partitions`() {
+        val tabGroup = TabGroup(id = "group1", name = "Group 1", tabIds = setOf("a"))
+        val tabPartition = TabPartition(id = "testFeaturePartition1", tabGroups = listOf(tabGroup))
+        val tabPartitions = mapOf("testFeaturePartition1" to tabPartition)
+        var state = BrowserState(
+            tabPartitions = tabPartitions,
+        )
+
+        assertEquals(0, state.tabs.size)
+        assertEquals(tabPartitions, state.tabPartitions)
+
+        val restoredTabs = listOf(
+            RecoverableTab(
+                engineSessionState = null,
+                state = TabState(
+                    id = "a",
+                    url = "https://www.mozilla.org",
+                    private = false,
+                ),
+            ),
+            RecoverableTab(
+                engineSessionState = null,
+                state = TabState(id = "b", url = "https://www.firefox.com", private = true),
+            ),
+            RecoverableTab(
+                engineSessionState = null,
+                state = TabState(id = "c", url = "https://www.example.org", private = true),
+            ),
+        )
+        val restoredTabGroups = listOf(
+            TabGroup(id = "group1", name = "Group 1", tabIds = setOf("b")),
+            TabGroup(id = "group2", name = "Group 2", tabIds = setOf("c")),
+        )
+        val restoredTabPartitions = mapOf(
+            "testFeaturePartition1" to TabPartition(
+                id = "testFeaturePartition1",
+                tabGroups = restoredTabGroups,
+            ),
+            "testFeaturePartition2" to TabPartition(
+                id = "testFeaturePartition2",
+                tabGroups = emptyList(),
+            ),
+        )
+
+        state = BrowserStateReducer.reduce(
+            state,
+            TabListAction.RestoreAction(
+                tabs = restoredTabs,
+                selectedTabId = "c",
+                restoreLocation = TabListAction.RestoreAction.RestoreLocation.BEGINNING,
+                tabPartitions = restoredTabPartitions,
+            ),
+        )
+
+        assertEquals(3, state.tabs.size)
+        assertEquals("a", state.tabs[0].id)
+        assertEquals("b", state.tabs[1].id)
+        assertEquals("c", state.tabs[2].id)
+        assertEquals("c", state.selectedTabId)
+
+        val expectedTabPartitions = mapOf(
+            "testFeaturePartition1" to TabPartition(
+                id = "testFeaturePartition1",
+                tabGroups = listOf(
+                    TabGroup("group1", name = "Group 1", tabIds = setOf("a", "b")),
+                    TabGroup("group2", name = "Group 2", tabIds = setOf("c")),
+                ),
+            ),
+            "testFeaturePartition2" to TabPartition(
+                id = "testFeaturePartition2",
+                tabGroups = emptyList(),
+            ),
+        )
+        assertEquals(expectedTabPartitions, state.tabPartitions)
+    }
+
+    @Test
     fun `RestoreAction - Adds restored tabs to the beginning of existing tabs without updating selection`() {
         val initialState = BrowserState(
             tabs = listOf(
