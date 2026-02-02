@@ -229,6 +229,7 @@ abstract class DependenciesPlugin : Plugin<Settings> {
 // Synchronized dependencies used by (some) modules
 @Suppress("Unused", "MaxLineLength")
 object ComponentsDependencies {
+    val mozilla_appservices_ads_client = "${ApplicationServicesConfig.groupId}:ads-client:${ApplicationServicesConfig.version}"
     val mozilla_appservices_fxaclient = "${ApplicationServicesConfig.groupId}:fxaclient:${ApplicationServicesConfig.version}"
     val mozilla_appservices_nimbus = "${ApplicationServicesConfig.groupId}:nimbus:${ApplicationServicesConfig.version}"
     val mozilla_appservices_autofill = "${ApplicationServicesConfig.groupId}:autofill:${ApplicationServicesConfig.version}"
