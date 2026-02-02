@@ -1241,6 +1241,7 @@ class GeckoEngine(
     /**
      * See [Engine.settings]
      */
+    @kotlin.OptIn(ExperimentalAndroidComponentsApi::class)
     override val settings: Settings = object : Settings() {
         override var javascriptEnabled: Boolean
             get() = runtime.settings.javaScriptEnabled
@@ -1486,6 +1487,30 @@ class GeckoEngine(
             get() = runtime.settings.loginAutofillEnabled
             set(value) { runtime.settings.loginAutofillEnabled = value }
 
+        @ExperimentalAndroidComponentsApi
+        override var firefoxRelay: Engine.FirefoxRelayMode?
+            @OptIn(ExperimentalGeckoViewApi::class)
+            get() = when (runtime.settings.firefoxRelay) {
+                GeckoRuntimeSettings.FIREFOX_RELAY_AVAILABLE -> Engine.FirefoxRelayMode.AVAILABLE
+                GeckoRuntimeSettings.FIREFOX_RELAY_OFFERED -> Engine.FirefoxRelayMode.OFFERED
+                GeckoRuntimeSettings.FIREFOX_RELAY_ENABLED -> Engine.FirefoxRelayMode.ENABLED
+                GeckoRuntimeSettings.FIREFOX_RELAY_DISABLED -> Engine.FirefoxRelayMode.DISABLED
+                else -> null
+            }
+
+            @OptIn(ExperimentalGeckoViewApi::class)
+            set(value) {
+                value?.let {
+                    val mode = when (it) {
+                        Engine.FirefoxRelayMode.AVAILABLE -> GeckoRuntimeSettings.FIREFOX_RELAY_AVAILABLE
+                        Engine.FirefoxRelayMode.OFFERED -> GeckoRuntimeSettings.FIREFOX_RELAY_OFFERED
+                        Engine.FirefoxRelayMode.ENABLED -> GeckoRuntimeSettings.FIREFOX_RELAY_ENABLED
+                        Engine.FirefoxRelayMode.DISABLED -> GeckoRuntimeSettings.FIREFOX_RELAY_DISABLED
+                    }
+                    runtime.settings.setFirefoxRelay(mode)
+                }
+            }
+
         override var forceUserScalableContent: Boolean
             get() = runtime.settings.forceUserScalableEnabled
             set(value) { runtime.settings.forceUserScalableEnabled = value }
@@ -1700,6 +1725,7 @@ class GeckoEngine(
             this.forceUserScalableContent = it.forceUserScalableContent
             this.clearColor = it.clearColor
             this.loginAutofillEnabled = it.loginAutofillEnabled
+            this.firefoxRelay = it.firefoxRelay
             this.enterpriseRootsEnabled = it.enterpriseRootsEnabled
             this.httpsOnlyMode = it.httpsOnlyMode
             this.dohSettingsMode = it.dohSettingsMode
