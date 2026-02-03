@@ -5,14 +5,13 @@ permalink: /changelog/
 ---
 
 # 149.0 (In Development)
-* **browser-engine-gecko**
+* **engine-gecko**
   * ⚠️ **Breaking change**: Added `DownloadFileUtils` parameter to `GeckoServiceWorkerDelegate`,
     `SpeculativeSessionFactory`, `GeckoEngine`, `AndroidDownloadManager` and `GeckoEngineSession` [Bug 2004990] (https://bugzilla.mozilla.org/show_bug.cgi?id=2004990)
-* **browser-engine-gecko** and **concept-engine**
+* **browser-engine-gecko**
   * 🆕 New Engine Settings API `firefoxRelay` that can be see to different modes with `FirefoxRelayMode`.
+* **browser-engine-gecko** and **concept-engine**
   * Updated GeckoEngine and BrowserPreferencesRuntime to accommodate registering and unregistering multiple browser preferences at a time for observation. [Bug 2006095](https://bugzilla.mozilla.org/show_bug.cgi?id=2006095)
-* **concept-storage**
-  * Introduced `Login.hint` for context on the login origin that an embedder can use to determine how to handle it.
 
 # 148.0
 * **support-utils**
