@@ -5,6 +5,9 @@ permalink: /changelog/
 ---
 
 # 149.0 (In Development)
+* **engine-gecko**
+  * ⚠️ **Breaking change**: Added `DownloadFileUtils` parameter to `GeckoServiceWorkerDelegate`,
+    `SpeculativeSessionFactory`, `GeckoEngine`, `AndroidDownloadManager` and `GeckoEngineSession` [Bug 2004990] (https://bugzilla.mozilla.org/show_bug.cgi?id=2004990)
 * **browser-engine-gecko**
   * 🆕 New Engine Settings API `firefoxRelay` that can be see to different modes with `FirefoxRelayMode`.
 * **browser-engine-gecko** and **concept-engine**
