@@ -4,6 +4,7 @@
 
 package mozilla.components.compose.base
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,9 +31,12 @@ import mozilla.components.ui.icons.R as iconsR
  * Default layout of a selectable chip.
  *
  * @param text [String] displayed in this chip.
- * @param selected Whether this should be shown as selected.
+ * @param selected Whether this chip should be shown as selected.
  * @param modifier [Modifier] used to be applied to the layout of the chip.
- * @param selectableChipColors The color set defined by [SelectableChipColors] used to style the chip.
+ * @param enabled Whether this chip is enabled.
+ * @param showIcon Whether to show an icon at the beginning of the chip.
+ * @param colors The color set defined by [SelectableChipColors] used to style the chip.
+ * @param border The border to draw around the container of this chip.
  * @param onClick Callback for when the user taps this chip.
  */
 @Composable
@@ -40,7 +44,10 @@ fun SelectableChip(
     text: String,
     selected: Boolean,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    showIcon: Boolean = true,
     colors: SelectableChipColors = FilterChipDefaults.filterChipColors(),
+    border: BorderStroke? = FilterChipDefaults.filterChipBorder(enabled, selected),
     onClick: () -> Unit,
 ) {
     FilterChip(
@@ -53,7 +60,7 @@ fun SelectableChip(
                 style = if (selected) AcornTheme.typography.headline8 else AcornTheme.typography.body2,
             )
         },
-        leadingIcon = if (selected) {
+        leadingIcon = if (showIcon && selected) {
             {
                 Icon(
                     painter = painterResource(id = iconsR.drawable.mozac_ic_checkmark_16),
@@ -63,8 +70,9 @@ fun SelectableChip(
         } else {
             null
         },
-        colors = colors,
         shape = RoundedCornerShape(16.dp),
+        colors = colors,
+        border = border,
     )
 }
 
