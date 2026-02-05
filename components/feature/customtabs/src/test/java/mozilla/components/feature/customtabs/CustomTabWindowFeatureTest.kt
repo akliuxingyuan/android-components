@@ -8,7 +8,6 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.ColorSchemeParams
@@ -21,7 +20,6 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.window.WindowRequest
 import mozilla.components.support.test.any
-import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.rule.MainCoroutineRule
 import mozilla.components.support.test.whenever
@@ -45,24 +43,23 @@ class CustomTabWindowFeatureTest {
     private lateinit var activity: Activity
     private lateinit var engineSession: EngineSession
 
-    private val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
-
     @Before
     fun setup() {
         activity = mock()
         engineSession = mock()
 
-        store = BrowserStore(
-            initialState = BrowserState(
-                customTabs = listOf(
-                    createCustomTab(
-                        id = sessionId,
-                        url = "https://www.mozilla.org",
-                        engineSession = engineSession,
+        store = spy(
+            BrowserStore(
+                BrowserState(
+                    customTabs = listOf(
+                        createCustomTab(
+                            id = sessionId,
+                            url = "https://www.mozilla.org",
+                            engineSession = engineSession,
+                        ),
                     ),
                 ),
             ),
-            middleware = listOf(captureActionsMiddleware),
         )
 
         whenever(activity.packageName).thenReturn("org.mozilla.firefox")
@@ -79,9 +76,7 @@ class CustomTabWindowFeatureTest {
         store.dispatch(ContentAction.UpdateWindowRequestAction(sessionId, windowRequest))
 
         verify(activity).startActivity(any(), any())
-        captureActionsMiddleware.assertFirstAction(ContentAction.ConsumeWindowRequestAction::class) { action ->
-            assertEquals(sessionId, action.sessionId)
-        }
+        verify(store).dispatch(ContentAction.ConsumeWindowRequestAction(sessionId))
     }
 
     @Test
@@ -163,7 +158,6 @@ class CustomTabWindowFeatureTest {
         whenever(windowRequest.url).thenReturn("https://www.firefox.com")
         store.dispatch(ContentAction.UpdateWindowRequestAction(sessionId, windowRequest))
         verify(activity, never()).startActivity(any(), any())
-
-        captureActionsMiddleware.assertNotDispatched(ContentAction.ConsumeWindowRequestAction::class)
+        verify(store, never()).dispatch(ContentAction.ConsumeWindowRequestAction(sessionId))
     }
 }

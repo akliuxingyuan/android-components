@@ -28,6 +28,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.spy
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.robolectric.RobolectricTestRunner
@@ -392,17 +393,19 @@ class SessionUseCasesTest {
 
     @Test
     fun `CrashRecoveryUseCase will restore list of crashed sessions`() {
-        val store = BrowserStore(
-            middleware = listOf(middleware),
-            initialState = BrowserState(
-                tabs = listOf(
-                    createTab(url = "https://wwww.mozilla.org", id = "tab1", crashed = true),
-                ),
-                customTabs = listOf(
-                    createCustomTab(
-                        "https://wwww.mozilla.org",
-                        id = "customTab1",
-                        crashed = true,
+        val store = spy(
+            BrowserStore(
+                middleware = listOf(middleware),
+                initialState = BrowserState(
+                    tabs = listOf(
+                        createTab(url = "https://wwww.mozilla.org", id = "tab1", crashed = true),
+                    ),
+                    customTabs = listOf(
+                        createCustomTab(
+                            "https://wwww.mozilla.org",
+                            id = "customTab1",
+                            crashed = true,
+                        ),
                     ),
                 ),
             ),

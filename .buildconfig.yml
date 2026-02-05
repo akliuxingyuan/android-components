@@ -1182,7 +1182,6 @@ projects:
     - components:support-base
     - components:support-ktx
     - components:support-test
-    - components:support-test-libstate
     - components:support-utils
     - components:support-webextensions
     - components:tooling-lint
@@ -1379,7 +1378,6 @@ projects:
     - components:support-images
     - components:support-ktx
     - components:support-test
-    - components:support-test-libstate
     - components:support-utils
     - components:tooling-lint
     - components:ui-autocomplete
@@ -1528,7 +1526,6 @@ projects:
     - components:support-base
     - components:support-ktx
     - components:support-test
-    - components:support-test-libstate
     - components:support-utils
     - components:tooling-lint
     - components:ui-icons

@@ -98,7 +98,7 @@ class AwesomeBarFeatureTest {
 
         verify(awesomeBar, never()).addProviders(any())
 
-        feature.addSessionProvider(resources, BrowserStore(), mock())
+        feature.addSessionProvider(resources, mock(), mock())
 
         verify(awesomeBar).addProviders(any())
     }
@@ -127,7 +127,7 @@ class AwesomeBarFeatureTest {
 
         verify(awesomeBar, never()).addProviders(any())
 
-        val store = BrowserStore()
+        val store: BrowserStore = mock()
         feature.addSearchProvider(store = store, searchUseCase = mock(), fetchClient = mock())
 
         val provider = argumentCaptor<SearchSuggestionProvider>()
@@ -261,7 +261,7 @@ class AwesomeBarFeatureTest {
 
         verify(awesomeBar, never()).addProviders(any())
 
-        feature.addSearchActionProvider(BrowserStore(), mock())
+        feature.addSearchActionProvider(mock(), mock())
 
         verify(awesomeBar).addProviders(any())
     }

@@ -18,7 +18,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.TabListAction
 import mozilla.components.browser.state.engine.EngineMiddleware
@@ -70,7 +69,6 @@ import mozilla.components.support.base.facts.Action
 import mozilla.components.support.base.facts.processor.CollectionProcessor
 import mozilla.components.support.test.any
 import mozilla.components.support.test.eq
-import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.rule.MainCoroutineRule
@@ -539,19 +537,17 @@ class PromptFeatureTest {
     @Test
     fun `WHEN dismissDialogRequest is called THEN dismiss and consume the prompt request`() {
         val tab = createTab("https://www.mozilla.org", id = tabId)
-        val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
-
-        val store = BrowserStore(
-            BrowserState(
-                tabs = listOf(tab),
-                customTabs = listOf(
-                    createCustomTab("https://www.mozilla.org", id = "custom-tab"),
+        val store = spy(
+            BrowserStore(
+                BrowserState(
+                    tabs = listOf(tab),
+                    customTabs = listOf(
+                        createCustomTab("https://www.mozilla.org", id = "custom-tab"),
+                    ),
+                    selectedTabId = tabId,
                 ),
-                selectedTabId = tabId,
             ),
-            middleware = listOf(captureActionsMiddleware) + EngineMiddleware.create(mock()),
         )
-
         val feature = PromptFeature(
             activity = mock(),
             store = store,
@@ -571,11 +567,7 @@ class PromptFeatureTest {
 
         feature.dismissDialogRequest(promptRequest, tab)
 
-        captureActionsMiddleware.assertFirstAction(ContentAction.ConsumePromptRequestAction::class) { action ->
-            assertEquals(tab.id, action.sessionId)
-            assertEquals(promptRequest, action.promptRequest)
-        }
-
+        verify(store).dispatch(ContentAction.ConsumePromptRequestAction(tab.id, promptRequest))
         assertTrue(onDismissWasCalled)
     }
 

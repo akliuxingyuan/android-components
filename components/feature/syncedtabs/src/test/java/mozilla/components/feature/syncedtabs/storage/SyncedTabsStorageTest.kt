@@ -46,19 +46,16 @@ class SyncedTabsStorageTest {
 
     @Before
     fun setup() {
-        store = BrowserStore(
-            BrowserState(
-                tabs = listOf(
-                    createTab(id = "tab1", url = "https://www.mozilla.org", lastAccess = 123L),
-                    createTab(id = "tab2", url = "https://www.foo.bar", lastAccess = 124L),
-                    createTab(
-                        id = "private",
-                        url = "https://private.tab",
-                        private = true,
-                        lastAccess = 125L,
+        store = spy(
+            BrowserStore(
+                BrowserState(
+                    tabs = listOf(
+                        createTab(id = "tab1", url = "https://www.mozilla.org", lastAccess = 123L),
+                        createTab(id = "tab2", url = "https://www.foo.bar", lastAccess = 124L),
+                        createTab(id = "private", url = "https://private.tab", private = true, lastAccess = 125L),
                     ),
+                    selectedTabId = "tab1",
                 ),
-                selectedTabId = "tab1",
             ),
         )
         tabsStorage = mock()

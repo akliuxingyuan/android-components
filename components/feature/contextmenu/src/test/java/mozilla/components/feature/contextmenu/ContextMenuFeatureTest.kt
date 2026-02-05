@@ -9,8 +9,6 @@ import android.view.View
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.TabListAction
 import mozilla.components.browser.state.selector.findTab
@@ -25,12 +23,14 @@ import mozilla.components.support.base.facts.processor.CollectionProcessor
 import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
+import mozilla.components.support.test.rule.MainCoroutineRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.doReturn
@@ -40,7 +40,9 @@ import org.mockito.Mockito.`when`
 
 @RunWith(AndroidJUnit4::class)
 class ContextMenuFeatureTest {
-    private val testDispatcher = StandardTestDispatcher()
+    @get:Rule
+    val coroutinesTestRule = MainCoroutineRule()
+    private val dispatcher = coroutinesTestRule.testDispatcher
 
     private lateinit var store: BrowserStore
 
@@ -57,7 +59,7 @@ class ContextMenuFeatureTest {
     }
 
     @Test
-    fun `New HitResult for selected session will cause fragment transaction`() = runTest(testDispatcher) {
+    fun `New HitResult for selected session will cause fragment transaction`() {
         val fragmentManager = mockFragmentManager()
 
         val (engineView, view) = mockEngineView()
@@ -68,7 +70,6 @@ class ContextMenuFeatureTest {
             ContextMenuCandidate.defaultCandidates(testContext, mock(), mock(), mock()),
             engineView,
             mock(),
-            mainDispatcher = testDispatcher,
         )
 
         feature.start()
@@ -80,14 +81,14 @@ class ContextMenuFeatureTest {
             ),
         )
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         verify(fragmentManager).beginTransaction()
         verify(view).performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
     @Test
-    fun `New HitResult for selected session will not cause fragment transaction if feature is stopped`() = runTest(testDispatcher) {
+    fun `New HitResult for selected session will not cause fragment transaction if feature is stopped`() {
         val fragmentManager = mockFragmentManager()
 
         val (engineView, view) = mockEngineView()
@@ -98,7 +99,6 @@ class ContextMenuFeatureTest {
             ContextMenuCandidate.defaultCandidates(testContext, mock(), mock(), mock()),
             engineView,
             mock(),
-            mainDispatcher = testDispatcher,
         )
 
         feature.start()
@@ -111,14 +111,14 @@ class ContextMenuFeatureTest {
             ),
         )
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         verify(fragmentManager, never()).beginTransaction()
         verify(view, never()).performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
     @Test
-    fun `Feature will re-attach to already existing fragment`() = runTest(testDispatcher) {
+    fun `Feature will re-attach to already existing fragment`() {
         val fragment: ContextMenuFragment = mock()
         doReturn("test-tab").`when`(fragment).sessionId
 
@@ -140,19 +140,18 @@ class ContextMenuFeatureTest {
             ContextMenuCandidate.defaultCandidates(testContext, mock(), mock(), mock()),
             engineView,
             mock(),
-            mainDispatcher = testDispatcher,
         )
 
         feature.start()
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         verify(fragment).feature = feature
         verify(view, never()).performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
     @Test
-    fun `Already existing fragment will be removed if session has no HitResult set anymore`() = runTest(testDispatcher) {
+    fun `Already existing fragment will be removed if session has no HitResult set anymore`() {
         val fragment: ContextMenuFragment = mock()
         doReturn("test-tab").`when`(fragment).sessionId
 
@@ -171,12 +170,11 @@ class ContextMenuFeatureTest {
             ContextMenuCandidate.defaultCandidates(testContext, mock(), mock(), mock()),
             engineView,
             mock(),
-            mainDispatcher = testDispatcher,
         )
 
         feature.start()
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         verify(fragmentManager).beginTransaction()
         verify(transaction).remove(fragment)
@@ -184,7 +182,7 @@ class ContextMenuFeatureTest {
         verify(view, never()).performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
-    fun `Already existing fragment will be removed if session does not exist anymore`() = runTest(testDispatcher) {
+    fun `Already existing fragment will be removed if session does not exist anymore`() {
         val fragment: ContextMenuFragment = mock()
         doReturn("test-tab").`when`(fragment).sessionId
 
@@ -203,14 +201,13 @@ class ContextMenuFeatureTest {
             ContextMenuCandidate.defaultCandidates(testContext, mock(), mock(), mock()),
             engineView,
             mock(),
-            mainDispatcher = testDispatcher,
         )
 
         store.dispatch(TabListAction.RemoveTabAction("test-tab"))
 
         feature.start()
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         verify(fragmentManager).beginTransaction()
         verify(transaction).remove(fragment)
@@ -219,7 +216,7 @@ class ContextMenuFeatureTest {
     }
 
     @Test
-    fun `No dialog will be shown if no item wants to be shown`() = runTest(testDispatcher) {
+    fun `No dialog will be shown if no item wants to be shown`() {
         val fragmentManager = mockFragmentManager()
 
         val candidate = ContextMenuCandidate(
@@ -236,8 +233,7 @@ class ContextMenuFeatureTest {
             store,
             listOf(candidate),
             engineView,
-            ContextMenuUseCases(store),
-            mainDispatcher = testDispatcher,
+            ContextMenuUseCases(mock()),
         )
 
         feature.showContextMenu(
@@ -250,7 +246,7 @@ class ContextMenuFeatureTest {
     }
 
     @Test
-    fun `Cancelling context menu item will consume HitResult`() = runTest(testDispatcher) {
+    fun `Cancelling context menu item will consume HitResult`() {
         store = BrowserStore(
             initialState = BrowserState(
                 tabs = listOf(
@@ -274,20 +270,19 @@ class ContextMenuFeatureTest {
             ContextMenuCandidate.defaultCandidates(testContext, mock(), mock(), mock()),
             engineView,
             ContextMenuUseCases(store),
-            mainDispatcher = testDispatcher,
         )
 
         assertNotNull(store.state.findTab("test-tab")!!.content.hitResult)
 
         feature.onMenuCancelled("test-tab")
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         assertNull(store.state.findTab("test-tab")!!.content.hitResult)
     }
 
     @Test
-    fun `Selecting context menu item will invoke action of candidate and consume HitResult`() = runTest(testDispatcher) {
+    fun `Selecting context menu item will invoke action of candidate and consume HitResult`() {
         store = BrowserStore(
             initialState = BrowserState(
                 tabs = listOf(
@@ -319,17 +314,16 @@ class ContextMenuFeatureTest {
             listOf(candidate),
             engineView,
             ContextMenuUseCases(store),
-            mainDispatcher = testDispatcher,
         )
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         assertNotNull(store.state.findTab("test-tab")!!.content.hitResult)
         assertFalse(actionInvoked)
 
         feature.onMenuItemSelected("test-tab", "test-id")
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
 
         assertNull(store.state.findTab("test-tab")!!.content.hitResult)
         assertTrue(actionInvoked)
@@ -337,7 +331,7 @@ class ContextMenuFeatureTest {
     }
 
     @Test
-    fun `Selecting context menu item will emit a click fact`() = runTest(testDispatcher) {
+    fun `Selecting context menu item will emit a click fact`() {
         store = BrowserStore(
             initialState = BrowserState(
                 tabs = listOf(

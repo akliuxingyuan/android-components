@@ -107,7 +107,7 @@ class AdsTelemetryTest {
     @Test
     fun `WHEN installWebExtension is called THEN install a properly configured extension`() {
         val engine: Engine = mock()
-        val store = BrowserStore()
+        val store: BrowserStore = mock()
         val extensionCaptor = argumentCaptor<ExtensionInfo>()
 
         runBlocking {

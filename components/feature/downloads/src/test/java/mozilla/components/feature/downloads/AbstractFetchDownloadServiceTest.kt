@@ -27,9 +27,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.runTest
-import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.DownloadAction
-import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.browser.state.state.content.DownloadState.Status.CANCELLED
 import mozilla.components.browser.state.state.content.DownloadState.Status.COMPLETED
@@ -61,7 +59,6 @@ import mozilla.components.support.base.facts.processor.CollectionProcessor
 import mozilla.components.support.test.any
 import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.eq
-import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.rule.MainCoroutineRule
@@ -142,7 +139,6 @@ class AbstractFetchDownloadServiceTest {
     private lateinit var shadowNotificationService: ShadowNotificationManager
 
     private val delayTime = PROGRESS_UPDATE_INTERVAL.milliseconds
-    private val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
 
     fun createService(
         browserStore: BrowserStore,
@@ -162,10 +158,7 @@ class AbstractFetchDownloadServiceTest {
     @Before
     fun setup() {
         openMocks(this)
-        browserStore = BrowserStore(
-            initialState = BrowserState(),
-            middleware = listOf(captureActionsMiddleware),
-        )
+        browserStore = BrowserStore()
         notificationManagerCompat = spy(NotificationManagerCompat.from(testContext))
         notificationsDelegate = NotificationsDelegate(notificationManagerCompat)
         service = createService(browserStore)
@@ -284,6 +277,7 @@ class AbstractFetchDownloadServiceTest {
     fun `WHEN handleRemovePrivateDownloadIntent with a private download is called THEN removeDownloadJob must be called`() {
         val downloadState = DownloadState(url = "mozilla.org/mozilla.txt", private = true)
         val downloadJobState = DownloadJobState(state = downloadState, status = COMPLETED)
+        val browserStore = mock<BrowserStore>()
         val service = createService(browserStore)
 
         doAnswer { }.`when`(service).removeDownloadJob(any())
@@ -294,15 +288,14 @@ class AbstractFetchDownloadServiceTest {
 
         verify(service, times(0)).cancelDownloadJob(downloadJobState)
         verify(service).removeDownloadJob(downloadJobState)
-        captureActionsMiddleware.assertFirstAction(DownloadAction.RemoveDownloadAction::class) { action ->
-            assertEquals(downloadState.id, action.downloadId)
-        }
+        verify(browserStore).dispatch(DownloadAction.RemoveDownloadAction(downloadState.id))
     }
 
     @Test
     fun `WHEN handleRemovePrivateDownloadIntent is called with a private download AND not COMPLETED status THEN removeDownloadJob and cancelDownloadJob must be called`() {
         val downloadState = DownloadState(url = "mozilla.org/mozilla.txt", private = true)
         val downloadJobState = DownloadJobState(state = downloadState, status = DOWNLOADING)
+        val browserStore = mock<BrowserStore>()
         val service = createService(browserStore)
 
         doAnswer { }.`when`(service).removeDownloadJob(any())
@@ -316,15 +309,14 @@ class AbstractFetchDownloadServiceTest {
             coroutineScope = any(),
         )
         verify(service).removeDownloadJob(downloadJobState)
-        captureActionsMiddleware.assertFirstAction(DownloadAction.RemoveDownloadAction::class) { action ->
-            assertEquals(downloadState.id, action.downloadId)
-        }
+        verify(browserStore).dispatch(DownloadAction.RemoveDownloadAction(downloadState.id))
     }
 
     @Test
     fun `WHEN handleRemovePrivateDownloadIntent is called with with a non-private (or regular) download THEN removeDownloadJob must not be called`() {
         val downloadState = DownloadState(url = "mozilla.org/mozilla.txt", private = false)
         val downloadJobState = DownloadJobState(state = downloadState, status = COMPLETED)
+        val browserStore = mock<BrowserStore>()
 
         doAnswer { }.`when`(service).removeDownloadJob(any())
 
@@ -333,7 +325,7 @@ class AbstractFetchDownloadServiceTest {
         service.handleRemovePrivateDownloadIntent(downloadState)
 
         verify(service, never()).removeDownloadJob(downloadJobState)
-        captureActionsMiddleware.assertNotDispatched(DownloadAction.RemoveDownloadAction::class)
+        verify(browserStore, never()).dispatch(DownloadAction.RemoveDownloadAction(downloadState.id))
     }
 
     @Test
@@ -1388,16 +1380,15 @@ class AbstractFetchDownloadServiceTest {
             status = DOWNLOADING,
         )
         val downloadJob = DownloadJobState(state = mock(), status = DOWNLOADING)
-        val service = createService(browserStore)
+        val mockStore = mock<BrowserStore>()
+        val service = createService(mockStore)
 
         service.downloadJobs[download.id] = downloadJob
 
         service.updateDownloadState(download)
 
         assertEquals(download, service.downloadJobs[download.id]!!.state)
-        captureActionsMiddleware.assertFirstAction(DownloadAction.UpdateDownloadAction::class) { action ->
-            assertEquals(download, action.download)
-        }
+        verify(mockStore).dispatch(DownloadAction.UpdateDownloadAction(download))
     }
 
     @Test

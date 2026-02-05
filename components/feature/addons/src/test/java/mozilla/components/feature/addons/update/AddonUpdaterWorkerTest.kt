@@ -48,7 +48,7 @@ class AddonUpdaterWorkerTest {
     }
 
     private fun initWebExtensionSupport() {
-        val store = BrowserStore()
+        val store = spy(BrowserStore())
         val engine: Engine = mock()
         val extension: WebExtension = mock()
         whenever(extension.id).thenReturn("addonId")

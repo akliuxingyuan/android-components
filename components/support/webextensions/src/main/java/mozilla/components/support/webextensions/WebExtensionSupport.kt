@@ -6,10 +6,8 @@ package mozilla.components.support.webextensions
 
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -176,7 +174,6 @@ object WebExtensionSupport {
         runtime: WebExtensionRuntime,
         store: BrowserStore,
         openPopupInTab: Boolean = false,
-        mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
         onNewTabOverride: ((WebExtension?, EngineSession, String) -> String)? = null,
         onCloseTabOverride: ((WebExtension?, String) -> Unit)? = null,
         onSelectTabOverride: ((WebExtension?, String) -> Unit)? = null,
@@ -189,10 +186,10 @@ object WebExtensionSupport {
         this.onSelectTabOverride = onSelectTabOverride
 
         // Queries the runtime for installed extensions and adds them to the store
-        registerInstalledExtensions(store, runtime, mainDispatcher)
+        registerInstalledExtensions(store, runtime)
 
         // Observes the store and registers action and tab handlers for newly added engine sessions
-        registerHandlersForNewSessions(store, mainDispatcher)
+        registerHandlersForNewSessions(store)
 
         runtime.registerWebExtensionDelegate(
             object : WebExtensionDelegate {
@@ -369,7 +366,7 @@ object WebExtensionSupport {
                 override fun onExtensionListUpdated() {
                     installedExtensions.clear()
                     store.dispatch(WebExtensionAction.UninstallAllWebExtensionsAction)
-                    registerInstalledExtensions(store, runtime, mainDispatcher)
+                    registerInstalledExtensions(store, runtime)
                 }
 
                 override fun onDisabledExtensionProcessSpawning() {
@@ -388,16 +385,12 @@ object WebExtensionSupport {
     /**
      * Queries the [WebExtensionRuntime] for installed web extensions and adds them to the [store].
      */
-    private fun registerInstalledExtensions(
-        store: BrowserStore,
-        runtime: WebExtensionRuntime,
-        mainDispatcher: CoroutineDispatcher,
-    ) {
+    private fun registerInstalledExtensions(store: BrowserStore, runtime: WebExtensionRuntime) {
         runtime.listInstalledWebExtensions(
             onSuccess = { extensions ->
                 extensions.forEach { registerInstalledExtension(store, it) }
                 emitWebExtensionsInitializedFact(extensions)
-                closeUnsupportedTabs(store, extensions, mainDispatcher)
+                closeUnsupportedTabs(store, extensions)
                 initializationResult.complete(Unit)
                 onExtensionsLoaded?.invoke(extensions.filter { !it.isBuiltIn() })
             },
@@ -436,18 +429,14 @@ object WebExtensionSupport {
      * should handle this case to make sure we don't have any unloadable tabs
      * around.
      */
-    private fun closeUnsupportedTabs(
-        store: BrowserStore,
-        extensions: List<WebExtension>,
-        mainDispatcher: CoroutineDispatcher,
-    ) {
+    private fun closeUnsupportedTabs(store: BrowserStore, extensions: List<WebExtension>) {
         val supportedUrls = extensions.mapNotNull { it.getMetadata()?.baseUrl }
 
         // We only need to do this a single time, once tabs are restored. We need to observe the
         // store (instead of querying it directly), as tabs can be restored asynchronously on
         // startup and might not be ready yet.
         var scope: CoroutineScope? = null
-        scope = store.flowScoped(dispatcher = mainDispatcher) { flow ->
+        scope = store.flowScoped { flow ->
             flow.map { state -> state.tabs.filter { it.restored }.size }
                 .distinctUntilChanged()
                 .collect { size ->
@@ -483,10 +472,10 @@ object WebExtensionSupport {
      * Observes the provided store to register session-specific [ActionHandler]s
      * for all installed extensions on newly added sessions.
      */
-    private fun registerHandlersForNewSessions(store: BrowserStore, mainDispatcher: CoroutineDispatcher) {
+    private fun registerHandlersForNewSessions(store: BrowserStore) {
         // We need to observe for the entire lifetime of the application,
         // as web extension support is not tied to any particular view.
-        store.flowScoped(dispatcher = mainDispatcher) { flow ->
+        store.flowScoped { flow ->
             flow.mapNotNull { state -> state.allTabs }
                 .filterChanged {
                     it.engineState.engineSession

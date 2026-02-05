@@ -11,10 +11,10 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.ContentAction.UpdatePermissionHighlightsStateAction
 import mozilla.components.browser.state.action.ContentAction.UpdatePermissionHighlightsStateAction.AutoPlayAudibleBlockingAction
+import mozilla.components.browser.state.action.ContentAction.UpdatePermissionHighlightsStateAction.AutoPlayAudibleChangedAction
 import mozilla.components.browser.state.action.ContentAction.UpdatePermissionHighlightsStateAction.AutoPlayInAudibleBlockingAction
 import mozilla.components.browser.state.action.ContentAction.UpdatePermissionHighlightsStateAction.AutoPlayInAudibleChangedAction
 import mozilla.components.browser.state.action.ContentAction.UpdatePermissionHighlightsStateAction.CameraChangedAction
@@ -63,7 +63,6 @@ import mozilla.components.support.base.facts.processor.CollectionProcessor
 import mozilla.components.support.base.feature.OnNeedToRequestPermissions
 import mozilla.components.support.test.any
 import mozilla.components.support.test.eq
-import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.rule.MainCoroutineRule
@@ -98,13 +97,12 @@ class SitePermissionsFeatureTest {
     private lateinit var mockOnNeedToRequestPermissions: OnNeedToRequestPermissions
     private lateinit var mockStorage: SitePermissionsStorage
     private lateinit var mockFragmentManager: FragmentManager
-    private lateinit var browserStore: BrowserStore
+    private lateinit var mockStore: BrowserStore
     private lateinit var mockContentState: ContentState
     private lateinit var mockPermissionRequest: PermissionRequest
     private lateinit var mockAppPermissionRequest: PermissionRequest
     private lateinit var mockSitePermissionRules: SitePermissionsRules
     private lateinit var selectedTab: TabSessionState
-    private val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
 
     @get:Rule
     val coroutinesTestRule = MainCoroutineRule()
@@ -133,14 +131,17 @@ class SitePermissionsFeatureTest {
         )
         val mockEngine = mock<Engine>()
         whenever(mockEngine.createSession()).thenReturn(mock())
-        browserStore = BrowserStore(
-            initialState = BrowserState(
-                tabs = listOf(selectedTab),
-                selectedTabId = selectedTab.id,
+        mockStore = spy(
+            BrowserStore(
+                initialState = BrowserState(
+                    tabs = listOf(selectedTab),
+                    selectedTabId = selectedTab.id,
+                ),
+                middleware = EngineMiddleware.create(
+                    engine = mockEngine,
+                ),
             ),
-            middleware = listOf(captureActionsMiddleware) + EngineMiddleware.create(engine = mockEngine),
         )
-
         sitePermissionFeature = spy(
             SitePermissionsFeature(
                 context = testContext,
@@ -149,7 +150,7 @@ class SitePermissionsFeatureTest {
                 storage = mockStorage,
                 fragmentManager = mockFragmentManager,
                 onShouldShowRequestPermissionRationale = { false },
-                store = browserStore,
+                store = mockStore,
                 sessionId = SESSION_ID,
             ),
         )
@@ -185,13 +186,12 @@ class SitePermissionsFeatureTest {
         verify(sitePermissionFeature).setupLoadingCollector()
 
         // when
-        browserStore.dispatch(ContentAction.UpdateLoadingStateAction(SESSION_ID, true))
+        mockStore.dispatch(ContentAction.UpdateLoadingStateAction(SESSION_ID, true))
 
         // then
-        captureActionsMiddleware.assertFirstAction(UpdatePermissionHighlightsStateAction.Reset::class) { action ->
-            assertEquals(SESSION_ID, action.tabId)
-        }
-
+        verify(mockStore).dispatch(
+            UpdatePermissionHighlightsStateAction.Reset(SESSION_ID),
+        )
         verify(mockStorage).clearTemporaryPermissions()
     }
 
@@ -204,12 +204,14 @@ class SitePermissionsFeatureTest {
         sitePermissionFeature.stop()
 
         // when
-        browserStore.dispatch(ContentAction.UpdateLoadingStateAction(SESSION_ID, true))
+        mockStore.dispatch(ContentAction.UpdateLoadingStateAction(SESSION_ID, true))
 
         verify(mockStorage).clearTemporaryPermissions()
 
         // then
-        captureActionsMiddleware.assertNotDispatched(UpdatePermissionHighlightsStateAction.Reset::class)
+        verify(mockStore, never()).dispatch(
+            UpdatePermissionHighlightsStateAction.Reset(SESSION_ID),
+        )
     }
 
     @Test
@@ -218,10 +220,10 @@ class SitePermissionsFeatureTest {
         sitePermissionFeature.consumePermissionRequest(mockPermissionRequest, "sessionIdTest")
 
         // then
-        captureActionsMiddleware.assertFirstAction(ContentAction.ConsumePermissionsRequest::class) { action ->
-            assertEquals("sessionIdTest", action.sessionId)
-            assertEquals(mockPermissionRequest, action.permissionRequest)
-        }
+        verify(mockStore).dispatch(
+            ContentAction.ConsumePermissionsRequest
+                ("sessionIdTest", mockPermissionRequest),
+        )
     }
 
     @Test
@@ -230,10 +232,10 @@ class SitePermissionsFeatureTest {
         sitePermissionFeature.consumePermissionRequest(mockPermissionRequest)
 
         // then
-        captureActionsMiddleware.assertFirstAction(ContentAction.ConsumePermissionsRequest::class) { action ->
-            assertEquals(selectedTab.id, action.sessionId)
-            assertEquals(mockPermissionRequest, action.permissionRequest)
-        }
+        verify(mockStore).dispatch(
+            ContentAction.ConsumePermissionsRequest
+                (selectedTab.id, mockPermissionRequest),
+        )
     }
 
     @Test
@@ -242,10 +244,10 @@ class SitePermissionsFeatureTest {
         sitePermissionFeature.consumeAppPermissionRequest(mockAppPermissionRequest, "sessionIdTest")
 
         // then
-        captureActionsMiddleware.assertFirstAction(ContentAction.ConsumeAppPermissionsRequest::class) { action ->
-            assertEquals("sessionIdTest", action.sessionId)
-            assertEquals(mockAppPermissionRequest, action.appPermissionRequest)
-        }
+        verify(mockStore).dispatch(
+            ContentAction.ConsumeAppPermissionsRequest
+                ("sessionIdTest", mockAppPermissionRequest),
+        )
     }
 
     @Test
@@ -254,10 +256,10 @@ class SitePermissionsFeatureTest {
         sitePermissionFeature.consumeAppPermissionRequest(mockAppPermissionRequest)
 
         // then
-        captureActionsMiddleware.assertFirstAction(ContentAction.ConsumeAppPermissionsRequest::class) { action ->
-            assertEquals(selectedTab.id, action.sessionId)
-            assertEquals(mockAppPermissionRequest, action.appPermissionRequest)
-        }
+        verify(mockStore).dispatch(
+            ContentAction.ConsumeAppPermissionsRequest
+                (selectedTab.id, mockAppPermissionRequest),
+        )
     }
 
     @Test
@@ -926,17 +928,11 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED)
 
-        captureActionsMiddleware.assertFirstAction(AutoPlayAudibleBlockingAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(AutoPlayAudibleBlockingAction(tab1.id, true))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED)
 
-        captureActionsMiddleware.assertLastAction(AutoPlayAudibleBlockingAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(AutoPlayAudibleBlockingAction(tab1.id, false))
     }
 
     @Test
@@ -949,17 +945,11 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED)
 
-        captureActionsMiddleware.assertFirstAction(AutoPlayInAudibleBlockingAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(AutoPlayInAudibleBlockingAction(tab1.id, true))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED)
 
-        captureActionsMiddleware.assertLastAction(AutoPlayInAudibleBlockingAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(AutoPlayInAudibleBlockingAction(tab1.id, false))
     }
 
     @Test
@@ -974,21 +964,15 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
 
-        captureActionsMiddleware.assertNotDispatched(NotificationChangedAction::class)
+        verify(mockStore, never()).dispatch(any<NotificationChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(NotificationChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(NotificationChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
 
-        captureActionsMiddleware.assertLastAction(NotificationChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(NotificationChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1002,19 +986,13 @@ class SitePermissionsFeatureTest {
         doReturn(SitePermissionsRules.Action.BLOCKED).`when`(mockSitePermissionRules).localDeviceAccess
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
-        captureActionsMiddleware.assertNotDispatched(LocalDeviceAccessChangedAction::class)
+        verify(mockStore, never()).dispatch(any<LocalDeviceAccessChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
-        captureActionsMiddleware.assertFirstAction(LocalDeviceAccessChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(LocalDeviceAccessChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
-        captureActionsMiddleware.assertLastAction(LocalDeviceAccessChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(LocalDeviceAccessChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1028,20 +1006,13 @@ class SitePermissionsFeatureTest {
         doReturn(SitePermissionsRules.Action.BLOCKED).`when`(mockSitePermissionRules).localNetworkAccess
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
-
-        captureActionsMiddleware.assertNotDispatched(LocalNetworkAccessChangedAction::class)
+        verify(mockStore, never()).dispatch(any<LocalNetworkAccessChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
-        captureActionsMiddleware.assertFirstAction(LocalNetworkAccessChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(LocalNetworkAccessChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
-        captureActionsMiddleware.assertLastAction(LocalNetworkAccessChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(LocalNetworkAccessChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1056,21 +1027,15 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
 
-        captureActionsMiddleware.assertNotDispatched(CameraChangedAction::class)
+        verify(mockStore, never()).dispatch(any<CameraChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(CameraChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(CameraChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
 
-        captureActionsMiddleware.assertLastAction(CameraChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(CameraChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1085,21 +1050,15 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
 
-        captureActionsMiddleware.assertNotDispatched(LocationChangedAction::class)
+        verify(mockStore, never()).dispatch(any<LocationChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(LocationChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(LocationChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
 
-        captureActionsMiddleware.assertLastAction(LocationChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(LocationChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1114,21 +1073,15 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
 
-        captureActionsMiddleware.assertNotDispatched(MicrophoneChangedAction::class)
+        verify(mockStore, never()).dispatch(any<MicrophoneChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(MicrophoneChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(MicrophoneChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
 
-        captureActionsMiddleware.assertLastAction(MicrophoneChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(MicrophoneChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1143,21 +1096,15 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
 
-        captureActionsMiddleware.assertNotDispatched(PersistentStorageChangedAction::class)
+        verify(mockStore, never()).dispatch(any<PersistentStorageChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(PersistentStorageChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(PersistentStorageChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
 
-        captureActionsMiddleware.assertLastAction(PersistentStorageChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(PersistentStorageChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1172,21 +1119,15 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, false)
 
-        captureActionsMiddleware.assertNotDispatched(MediaKeySystemAccesChangedAction::class)
+        verify(mockStore, never()).dispatch(any<MediaKeySystemAccesChangedAction>())
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(MediaKeySystemAccesChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(MediaKeySystemAccesChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
 
-        captureActionsMiddleware.assertLastAction(MediaKeySystemAccesChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(MediaKeySystemAccesChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1201,16 +1142,11 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(UpdatePermissionHighlightsStateAction.AutoPlayAudibleChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(AutoPlayAudibleChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
-        captureActionsMiddleware.assertLastAction(UpdatePermissionHighlightsStateAction.AutoPlayAudibleChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+
+        verify(mockStore).dispatch(AutoPlayAudibleChangedAction(tab1.id, true))
     }
 
     @Test
@@ -1225,17 +1161,11 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, BLOCKED, true)
 
-        captureActionsMiddleware.assertFirstAction(AutoPlayInAudibleChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertFalse(action.value)
-        }
+        verify(mockStore).dispatch(AutoPlayInAudibleChangedAction(tab1.id, false))
 
         sitePermissionFeature.updatePermissionToolbarIndicator(request, ALLOWED, true)
 
-        captureActionsMiddleware.assertLastAction(AutoPlayInAudibleChangedAction::class) { action ->
-            assertEquals(tab1.id, action.tabId)
-            assertTrue(action.value)
-        }
+        verify(mockStore).dispatch(AutoPlayInAudibleChangedAction(tab1.id, true))
     }
 
     @Test

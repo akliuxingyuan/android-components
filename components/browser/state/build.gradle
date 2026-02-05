@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-parcelize'
 
@@ -24,7 +26,6 @@ dependencies {
     // consumer to have to manually import "concept-fetch".
     api project(':components:concept-fetch')
     api project(':components:lib-state')
-    compileOnly libs.mockito
 
     implementation project(':components:concept-awesomebar')
     implementation project(':components:concept-engine')

@@ -39,7 +39,7 @@ class MediaSessionFeatureTest {
 
     @Test
     fun `WHEN the feature starts THEN it starts observing the store`() = runTest {
-        val store = BrowserStore()
+        val store: BrowserStore = mock()
         val feature = MediaSessionFeature(
             mock(),
             MediaSessionServiceDelegate::class.java,
@@ -58,7 +58,7 @@ class MediaSessionFeatureTest {
             val feature = MediaSessionFeature(
                 mock(),
                 MediaSessionServiceDelegate::class.java,
-                BrowserStore(),
+                mock(),
                 mainDispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
             )
 
@@ -97,7 +97,7 @@ class MediaSessionFeatureTest {
             val feature = MediaSessionFeature(
                 mock(),
                 mediaService.javaClass,
-                BrowserStore(),
+                mock(),
                 mainDispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
             )
             feature.mediaService = mock()
