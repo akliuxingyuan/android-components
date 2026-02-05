@@ -16,13 +16,11 @@ import mozilla.components.service.fxrelay.EmailMask
 import mozilla.components.service.fxrelay.FxRelay
 import mozilla.components.service.fxrelay.FxRelayImpl
 import mozilla.components.service.fxrelay.RelayAccountDetails
-import mozilla.components.service.fxrelay.eligibility.ext.relayClient
-import mozilla.components.service.fxrelay.eligibility.ext.shouldCheckStatus
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 
-internal const val FETCH_TIMEOUT_MS: Long = 300_000L
+private const val FETCH_TIMEOUT_MS: Long = 300_000L
 
 /**
  * Feature for accessing Firefox Relay service.
@@ -60,22 +58,14 @@ class RelayFeature(
     }
 
     private suspend fun checkRelayStatus(state: RelayState) {
-        logger.debug("Request to check for relay status..")
-        val shouldCheck = state.shouldCheckStatus(fetchTimeoutMs)
-        if (!shouldCheck) {
-            logger.info("Check status conditions not satisfied.")
-            return
-        }
+        val loggedIn = state.eligibilityState !is Ineligible.FirefoxAccountNotLoggedIn
+        val lastCheck = state.lastEntitlementCheckMs
+        val now = System.currentTimeMillis()
+        val ttlExpired = lastCheck == NO_ENTITLEMENT_CHECK_YET_MS || now - lastCheck >= fetchTimeoutMs
 
-        val existingClient = accountManager.authenticatedAccount()?.relayClient() != null
-        if (!existingClient) {
-            logger.info("Account does not have an existing relay service.")
-            return
-        }
+        if (!loggedIn || !ttlExpired) return
 
         val relayDetails: RelayAccountDetails? = fxRelay?.fetchAccountDetails()
-        logger.info("Updating Relay account state..")
-
         store.dispatch(
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = relayDetails != null,
