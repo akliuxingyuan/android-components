@@ -2166,6 +2166,7 @@ projects:
     - components:service-firefox-accounts
     - components:support-base
     - components:support-ktx
+    - components:support-test
     - components:support-utils
     - components:tooling-lint
     - components:ui-colors
