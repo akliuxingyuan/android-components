@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 149.0 (In Development)
+* **feature-search**
+  * `RegionMiddleware` will not anymore handle `BrowserStore`'s `InitAction`. If you need the region set when the application starts ensure either of `UpdateDistribution` or `RefreshSearchEnginesAction` is dispatched. [Bug 2012962] (https://bugzilla.mozilla.org/show_bug.cgi?id=2012962)
 * **browser-engine-gecko**
   * ⚠️ **Breaking change**: Added `DownloadFileUtils` parameter to `GeckoServiceWorkerDelegate`,
     `SpeculativeSessionFactory`, `GeckoEngine`, `AndroidDownloadManager` and `GeckoEngineSession` [Bug 2004990] (https://bugzilla.mozilla.org/show_bug.cgi?id=2004990)

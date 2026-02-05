@@ -4,7 +4,6 @@
 
 package mozilla.components.feature.search.region
 
-import mozilla.components.browser.state.action.InitAction
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.action.SearchAction.RefreshSearchEnginesAction
 import mozilla.components.browser.state.action.UpdateDistribution
@@ -20,7 +19,6 @@ import mozilla.components.support.test.mock
 import mozilla.components.support.test.rule.MainCoroutineRule
 import mozilla.components.support.test.rule.runTestOnMain
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -50,78 +48,6 @@ class RegionMiddlewareTest {
     }
 
     @Test
-    fun `Updates region on init`() {
-        val middleware = RegionMiddleware(FakeContext(), locationService, dispatcher)
-        middleware.regionManager = regionManager
-
-        locationService.region = LocationService.Region("FR", "France")
-
-        val store = BrowserStore(
-            middleware = listOf(middleware),
-        )
-
-        middleware.updateJob?.joinBlocking()
-
-        assertNotEquals(RegionState.Default, store.state.search.region)
-        assertEquals("FR", store.state.search.region!!.home)
-        assertEquals("FR", store.state.search.region!!.current)
-    }
-
-    @Test
-    fun `Uses default region if could never get updated`() {
-        val middleware = RegionMiddleware(FakeContext(), locationService, dispatcher)
-        middleware.regionManager = regionManager
-
-        val store = BrowserStore(
-            middleware = listOf(middleware),
-        )
-
-        store.dispatch(InitAction)
-
-        dispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(RegionState.Default, store.state.search.region)
-        assertEquals("XX", store.state.search.region!!.home)
-        assertEquals("XX", store.state.search.region!!.current)
-    }
-
-    @Test
-    fun `Dispatches cached home region and update later`() = runTestOnMain {
-        val middleware = RegionMiddleware(FakeContext(), locationService, dispatcher)
-        middleware.regionManager = regionManager
-
-        locationService.region = LocationService.Region("FR", "France")
-        regionManager.update()
-
-        val store = BrowserStore(
-            middleware = listOf(middleware),
-        )
-
-        store.dispatch(InitAction)
-        middleware.updateJob?.joinBlocking()
-
-        assertEquals("FR", store.state.search.region!!.home)
-        assertEquals("FR", store.state.search.region!!.current)
-
-        locationService.region = LocationService.Region("DE", "Germany")
-        regionManager.update()
-
-        store.dispatch(InitAction)
-        middleware.updateJob?.joinBlocking()
-
-        assertEquals("FR", store.state.search.region!!.home)
-        assertEquals("DE", store.state.search.region!!.current)
-
-        clock.advanceBy(1000L * 60L * 60L * 24L * 21L)
-
-        store.dispatch(InitAction)
-        middleware.updateJob?.joinBlocking()
-
-        assertEquals("DE", store.state.search.region!!.home)
-        assertEquals("DE", store.state.search.region!!.current)
-    }
-
-    @Test
     fun `GIVEN a locale is already selected WHEN the locale changes THEN update region on RefreshSearchEngines`() = runTestOnMain {
         val middleware = RegionMiddleware(FakeContext(), locationService, dispatcher)
         middleware.regionManager = regionManager
@@ -133,7 +59,11 @@ class RegionMiddlewareTest {
             middleware = listOf(middleware),
         )
 
-        store.dispatch(InitAction)
+        middleware.invoke(
+            store,
+            {},
+            UpdateDistribution("testId"),
+        )
         middleware.updateJob?.joinBlocking()
 
         assertEquals("FR", store.state.search.region!!.home)
