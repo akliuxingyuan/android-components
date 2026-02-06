@@ -6,6 +6,7 @@ package mozilla.components.browser.engine.gecko
 
 import android.os.Build
 import android.view.WindowManager
+import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +18,7 @@ import mozilla.components.browser.engine.gecko.ext.isExcludedForTrackingProtecti
 import mozilla.components.browser.engine.gecko.fetch.toResponse
 import mozilla.components.browser.engine.gecko.media.GeckoMediaDelegate
 import mozilla.components.browser.engine.gecko.mediasession.GeckoMediaSessionDelegate
+import mozilla.components.browser.engine.gecko.pageextraction.intoPageExtractionError
 import mozilla.components.browser.engine.gecko.permission.GeckoPermissionRequest
 import mozilla.components.browser.engine.gecko.prompt.GeckoPromptDelegate
 import mozilla.components.browser.engine.gecko.translate.GeckoTranslateSessionDelegate
@@ -34,6 +36,7 @@ import mozilla.components.concept.engine.history.HistoryItem
 import mozilla.components.concept.engine.history.HistoryTrackingDelegate
 import mozilla.components.concept.engine.manifest.WebAppManifest
 import mozilla.components.concept.engine.manifest.WebAppManifestParser
+import mozilla.components.concept.engine.pageextraction.PageExtractionError
 import mozilla.components.concept.engine.request.RequestInterceptor
 import mozilla.components.concept.engine.request.RequestInterceptor.InterceptionResponse
 import mozilla.components.concept.engine.translate.TranslationError
@@ -67,6 +70,7 @@ import mozilla.components.support.utils.DownloadUtils.makePdfContentDisposition
 import org.json.JSONObject
 import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.ContentBlocking
+import org.mozilla.geckoview.ExperimentalGeckoViewApi
 import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
@@ -848,6 +852,28 @@ class GeckoEngineSession(
             onException(throwable.intoTranslationError())
             GeckoResult()
         })
+    }
+
+    /**
+     * See [EngineSession.getPageContent]
+     */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    override fun getPageContent(onResult: (String) -> Unit, onException: (Throwable) -> Unit) {
+        geckoSession.sessionPageExtractor.pageContent
+            .then(
+                { content ->
+                    if (content == null) {
+                        onException(PageExtractionError.UnexpectedNull())
+                        return@then GeckoResult()
+                    }
+                    onResult(content)
+                    GeckoResult<Unit>()
+                },
+                { error ->
+                    onException(error.intoPageExtractionError())
+                    GeckoResult()
+                },
+            )
     }
 
     /**
