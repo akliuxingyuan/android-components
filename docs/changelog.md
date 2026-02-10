@@ -8,8 +8,7 @@ permalink: /changelog/
 * **feature-search**
   * `RegionMiddleware` will not anymore handle `BrowserStore`'s `InitAction`. If you need the region set when the application starts ensure either of `UpdateDistribution` or `RefreshSearchEnginesAction` is dispatched. [Bug 2012962] (https://bugzilla.mozilla.org/show_bug.cgi?id=2012962)
 * **browser-engine-gecko**
-  * ⚠️ **Breaking change**: Added `DownloadFileUtils` parameter to `GeckoServiceWorkerDelegate`,
-    `SpeculativeSessionFactory`, `GeckoEngine`, `AndroidDownloadManager` and `GeckoEngineSession` [Bug 2004990] (https://bugzilla.mozilla.org/show_bug.cgi?id=2004990)
+    * 🆕 New Settings API `DownloadDelegate` that used for `getSuggestedFilename` inside `GeckoEngineSession`.[Bug 2014471] (https://bugzilla.mozilla.org/show_bug.cgi?id=2014471)
 * **browser-engine-gecko** and **concept-engine**
   * 🆕 New Engine Settings API `firefoxRelay` that can be see to different modes with `FirefoxRelayMode`.
   * Updated GeckoEngine and BrowserPreferencesRuntime to accommodate registering and unregistering multiple browser preferences at a time for observation. [Bug 2006095](https://bugzilla.mozilla.org/show_bug.cgi?id=2006095)

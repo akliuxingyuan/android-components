@@ -9,7 +9,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.concept.engine.pageextraction.PageExtractionError
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
-import mozilla.components.support.utils.FakeDownloadFileUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -43,7 +42,6 @@ class GeckoEngineSessionPageExtractionTest {
 
         engineSession = GeckoEngineSession(
             runtime = mock(),
-            downloadFileUtils = FakeDownloadFileUtils(),
             geckoSessionProvider = { mockedGeckoSession },
         )
     }
