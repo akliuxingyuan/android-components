@@ -58,6 +58,7 @@ import mozilla.components.support.test.eq
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.whenever
+import mozilla.components.support.utils.FakeDownloadFileUtils
 import mozilla.components.test.ReflectionUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -120,6 +121,7 @@ class GeckoEngineTest {
     private lateinit var runtime: GeckoRuntime
     private lateinit var context: Context
     private lateinit var runtimeTranslationAccessor: RuntimeTranslationAccessor
+    private var downloadFileUtils = FakeDownloadFileUtils()
 
     @Before
     fun setup() {
@@ -1395,7 +1397,8 @@ class GeckoEngineTest {
         val ext = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             nativeExtension,
             runtime,
-        )
+            downloadFileUtils = downloadFileUtils,
+            )
 
         val webExtensionsDelegate: WebExtensionDelegate = mock()
         val engine = GeckoEngine(context, runtime = runtime)
@@ -1435,7 +1438,8 @@ class GeckoEngineTest {
         val ext = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             nativeExtension,
             runtime,
-        )
+            downloadFileUtils = downloadFileUtils,
+            )
 
         val webExtensionsDelegate: WebExtensionDelegate = mock()
         val engine = GeckoEngine(context, runtime = runtime)
@@ -2078,6 +2082,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         var onErrorCalled = false
@@ -2111,6 +2116,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         var onErrorCalled = false
@@ -2142,6 +2148,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         val expected = IOException()
@@ -2169,6 +2176,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         val performUpdate: (GeckoInstallException) -> WebExtensionException = { exception ->
             val updateExtensionResult = GeckoResult<GeckoWebExtension>()
@@ -2283,6 +2291,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         val engine = GeckoEngine(context, runtime = runtime)
 
@@ -2316,6 +2325,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         val expected = IOException()
@@ -2349,6 +2359,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         var onErrorCalled = false
@@ -2380,6 +2391,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         val expected = IOException()
@@ -2415,6 +2427,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         var onErrorCalled = false
@@ -2450,6 +2463,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         val expected = IOException()
@@ -2488,6 +2502,7 @@ class GeckoEngineTest {
         val extension = mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension(
             mockNativeWebExtension(),
             runtime,
+            downloadFileUtils = downloadFileUtils,
         )
         var result: WebExtension? = null
         var throwable: Throwable? = null
