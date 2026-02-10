@@ -1393,6 +1393,7 @@ projects:
     publish: true
     upstream_dependencies:
     - components:browser-errorpages
+    - components:compose-base
     - components:concept-base
     - components:concept-engine
     - components:concept-fetch
@@ -1404,6 +1405,7 @@ projects:
     - components:support-test-fakes
     - components:support-utils
     - components:tooling-lint
+    - components:ui-colors
     - components:ui-icons
   components:feature-syncedtabs:
     description: Feature that provides access to other devices' tabs in the same account.

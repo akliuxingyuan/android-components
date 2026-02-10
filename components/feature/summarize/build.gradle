@@ -26,6 +26,7 @@ android {
 dependencies {
     implementation project(':components:concept-engine')
     implementation project(':components:lib-state')
+    implementation project(':components:compose-base')
 
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.ui.tooling.preview
