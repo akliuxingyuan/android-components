@@ -9,12 +9,12 @@ import kotlinx.coroutines.withContext
 import mozilla.appservices.relay.RelayAddress
 import mozilla.appservices.relay.RelayApiException
 import mozilla.appservices.relay.RelayClient
+import mozilla.appservices.relay.RelayClientInterface
 import mozilla.appservices.relay.RelayProfile
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.service.fxrelay.eligibility.RelayPlanTier
 import mozilla.components.support.base.log.logger.Logger
 
-private const val FREE_MAX_MASKS = 5
 private const val RELAY_SCOPE_URL = "https://identity.mozilla.com/apps/relay"
 private const val RELAY_BASE_URL = "https://relay.firefox.com"
 
@@ -41,15 +41,21 @@ interface FxRelay {
  * Service wrapper for Firefox Relay APIs.
  *
  * @param account An [OAuthAccount] used to obtain and manage FxA access tokens scoped for Firefox Relay.
+ * @param relayClientProvider Produces a [RelayClientInterface] with the token provided.
  */
-internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
+internal class FxRelayImpl(
+    private val account: OAuthAccount,
+    private val relayClientProvider: (String) -> RelayClientInterface = { token ->
+        RelayClient(RELAY_BASE_URL, token)
+    },
+) : FxRelay {
     private val logger = Logger("FxRelay")
 
     /**
      * Cache for RelayClient so we don't recreate the Rust client on every call.
      * We tie it to the access token it was built with.
      */
-    private var cachedClient: RelayClient? = null
+    private var cachedClient: RelayClientInterface? = null
     private var cachedToken: String? = null
 
     /**
@@ -66,12 +72,12 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
      *
      * @throws RelayApiException.Other if no FxA access token is available.
      */
-    private suspend fun getOrCreateClient(): RelayClient {
+    private suspend fun getOrCreateClient(): RelayClientInterface {
         val token = account.getAccessToken(RELAY_SCOPE_URL)?.token
             ?: throw RelayApiException.Other("No FxA access token available for Relay")
 
         return cachedClient.takeIf { cachedToken == token }
-            ?: RelayClient(RELAY_BASE_URL, token).also {
+            ?: relayClientProvider(token).also {
                 cachedClient = it
                 cachedToken = token
             }
@@ -146,15 +152,9 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
             else -> RelayPlanTier.FREE
         }
 
-        val totalMasks = when (relayPlanTier) {
-            RelayPlanTier.PREMIUM -> null
-            RelayPlanTier.FREE -> FREE_MAX_MASKS
-            else -> 0
-        }
-
         return RelayAccountDetails(
             relayPlanTier = relayPlanTier,
-            totalMasksUsed = totalMasks,
+            totalMasksUsed = profile.totalMasks.toInt(),
         )
     }
 }
