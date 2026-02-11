@@ -146,7 +146,7 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
             else -> RelayPlanTier.FREE
         }
 
-        val remainingMasks = when (relayPlanTier) {
+        val totalMasks = when (relayPlanTier) {
             RelayPlanTier.PREMIUM -> null
             RelayPlanTier.FREE -> FREE_MAX_MASKS
             else -> 0
@@ -154,7 +154,7 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
 
         return RelayAccountDetails(
             relayPlanTier = relayPlanTier,
-            remainingMasksForFreeUsers = remainingMasks,
+            totalMasksUsed = totalMasks,
         )
     }
 }
@@ -163,11 +163,11 @@ internal class FxRelayImpl(private val account: OAuthAccount) : FxRelay {
  * Represents the Relay account details for the currently signed-in user.
  *
  * @param relayPlanTier The user’s current Relay plan (e.g., FREE or PREMIUM).
- * @param remainingMasksForFreeUsers The number of remaining free aliases for FREE users.
+ * @param totalMasksUsed The number of mask aliases used.
  */
 data class RelayAccountDetails(
     val relayPlanTier: RelayPlanTier,
-    val remainingMasksForFreeUsers: Int?,
+    val totalMasksUsed: Int?,
 )
 
 /**
