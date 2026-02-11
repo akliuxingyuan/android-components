@@ -4,7 +4,9 @@
 
 package mozilla.components.service.fxrelay.eligibility
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import mozilla.components.concept.sync.AccountObserver
 import mozilla.components.concept.sync.AuthType
@@ -31,6 +33,7 @@ class RelayFeature(
     private val accountManager: FxaAccountManager,
     private val store: RelayEligibilityStore,
     private val fetchTimeoutMs: Long = FETCH_TIMEOUT_MS,
+    private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : LifecycleAwareFeature {
 
     private val logger = Logger("RelayEligibilityFeature")
@@ -45,7 +48,7 @@ class RelayFeature(
         val isLoggedIn = accountManager.authenticatedAccount() != null
         store.dispatch(RelayEligibilityAction.AccountLoginStatusChanged(isLoggedIn))
 
-        scope = store.flowScoped { flow ->
+        scope = store.flowScoped(dispatcher = mainDispatcher) { flow ->
             flow
                 .ifAnyChanged { arrayOf(it.eligibilityState, it.lastEntitlementCheckMs) }
                 .collect { state ->
