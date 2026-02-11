@@ -13,6 +13,8 @@ import mozilla.appservices.relay.RelayClientInterface
 import mozilla.appservices.relay.RelayProfile
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.service.fxrelay.eligibility.RelayPlanTier
+import mozilla.components.service.fxrelay.ext.asEmailMask
+import mozilla.components.service.fxrelay.ext.freeLimitReached
 import mozilla.components.support.base.log.logger.Logger
 
 private const val RELAY_SCOPE_URL = "https://identity.mozilla.com/apps/relay"
@@ -35,6 +37,19 @@ interface FxRelay {
      * @return The user's [RelayAccountDetails].
      */
     suspend fun fetchAccountDetails(): RelayAccountDetails?
+
+    /**
+     * Creates a new email mask with the specified data, otherwise, falls back to using an existing one.
+     *
+     * @param generatedFor The website for which the address is generated.
+     * @param description Optional description of the email address.
+     *
+     * @return the newly created email mask or `null` if the operation fails.
+     */
+    suspend fun createEmailMask(
+        generatedFor: String = "",
+        description: String = "",
+    ): EmailMask?
 }
 
 /**
@@ -64,6 +79,7 @@ internal class FxRelayImpl(
     enum class RelayOperation {
         FETCH_ADDRESSES,
         FETCH_PROFILE,
+        CREATE_ADDRESS,
     }
 
     /**
@@ -131,6 +147,36 @@ internal class FxRelayImpl(
         }
     }
 
+    override suspend fun createEmailMask(
+        generatedFor: String,
+        description: String,
+    ): EmailMask? = withContext(Dispatchers.IO) {
+        handleRelayExceptions(
+            RelayOperation.CREATE_ADDRESS,
+            { null },
+        ) {
+            try {
+                val address = getOrCreateClient().createAddress(
+                    description = description,
+                    generatedFor = generatedFor,
+                    usedOn = "", // always empty string for now until we can surface this property correctly.
+                )
+
+                address.asEmailMask(MaskSource.GENERATED)
+            } catch (e: RelayApiException) {
+                if (e.freeLimitReached()) {
+                    val randomMask = fetchEmailMasks()
+                        ?.randomOrNull()
+                        ?.copy(source = MaskSource.FREE_TIER_LIMIT)
+                    return@handleRelayExceptions randomMask
+                } else {
+                    // re-throw for handling all other exceptions.
+                    throw e
+                }
+            }
+        }
+    }
+
     override suspend fun fetchAccountDetails(): RelayAccountDetails? = withContext(Dispatchers.IO) {
         val profile = fetchProfile() ?: return@withContext null
         mapProfileToDetails(profile)
@@ -175,8 +221,20 @@ data class RelayAccountDetails(
  */
 data class EmailMask(
     val fullAddress: String,
+    val source: MaskSource?,
 )
 
-internal fun RelayAddress.asEmailMask(): EmailMask {
-    return EmailMask(fullAddress = this.fullAddress)
+/**
+ * Indicates the source of the email mask.
+ */
+enum class MaskSource {
+    /**
+     * The mask was newly generated.
+     */
+    GENERATED,
+
+    /**
+     * The mask was reused because the free tier limit was reached.
+     */
+    FREE_TIER_LIMIT,
 }

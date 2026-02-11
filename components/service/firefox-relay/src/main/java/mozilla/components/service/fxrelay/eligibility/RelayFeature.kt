@@ -102,6 +102,15 @@ class RelayFeature(
         return fxRelay?.fetchEmailMasks()
     }
 
+    /**
+     * Tries to create a new email mask and falls back to using a randomly selected existing one.
+     *
+     * @return an email masks or `null` if the operation fails.
+     */
+    suspend fun getOrCreateNewMask(generatedFor: String): EmailMask? {
+        return fxRelay?.createEmailMask(generatedFor)
+    }
+
     private inner class RelayAccountObserver : AccountObserver {
         override fun onAuthenticated(account: OAuthAccount, authType: AuthType) {
             store.dispatch(RelayEligibilityAction.AccountLoginStatusChanged(true))
