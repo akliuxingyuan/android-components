@@ -52,6 +52,7 @@ import mozilla.components.feature.downloads.AbstractFetchDownloadService.CopyInC
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.DownloadJobState
 import mozilla.components.feature.downloads.DownloadNotification.NOTIFICATION_DOWNLOAD_GROUP_ID
 import mozilla.components.feature.downloads.facts.DownloadsFacts.Items.NOTIFICATION
+import mozilla.components.feature.downloads.fake.FakeDateTimeProvider
 import mozilla.components.feature.downloads.fake.FakeFileSizeFormatter
 import mozilla.components.feature.downloads.fake.FakePackageNameProvider
 import mozilla.components.support.base.android.NotificationsDelegate
@@ -64,9 +65,7 @@ import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.rule.MainCoroutineRule
-import mozilla.components.support.utils.DateTimeProvider
 import mozilla.components.support.utils.DownloadFileUtils
-import mozilla.components.support.utils.FakeDateTimeProvider
 import mozilla.components.support.utils.FakeDownloadFileUtils
 import mozilla.components.support.utils.ext.stopForegroundCompat
 import org.junit.Assert.assertEquals

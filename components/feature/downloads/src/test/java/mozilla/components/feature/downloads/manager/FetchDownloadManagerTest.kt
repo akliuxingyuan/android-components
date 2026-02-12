@@ -22,6 +22,7 @@ import mozilla.components.feature.downloads.AbstractFetchDownloadService
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.EXTRA_DOWNLOAD_STATUS
 import mozilla.components.feature.downloads.DownloadEstimator
 import mozilla.components.feature.downloads.FileSizeFormatter
+import mozilla.components.feature.downloads.fake.FakeDateTimeProvider
 import mozilla.components.feature.downloads.fake.FakeFileSizeFormatter
 import mozilla.components.feature.downloads.fake.FakePackageNameProvider
 import mozilla.components.support.base.android.NotificationsDelegate
@@ -30,7 +31,6 @@ import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.grantPermission
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.utils.DownloadFileUtils
-import mozilla.components.support.utils.FakeDateTimeProvider
 import mozilla.components.support.utils.FakeDownloadFileUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
