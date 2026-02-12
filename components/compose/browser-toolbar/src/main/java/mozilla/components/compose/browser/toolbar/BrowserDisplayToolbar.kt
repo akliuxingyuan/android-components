@@ -123,7 +123,7 @@ fun BrowserDisplayToolbar(
                     animatedVisibilityScope = this,
                     enter = fadeIn(),
                     exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(),
                 )
 
             val browserActionsStartTrait = Modifier.sharedElement(
