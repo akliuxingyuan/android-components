@@ -14,8 +14,12 @@
     <!-- Title for the consent title in the "summarize feature" -->
     <string name="mozac_summarize_consent_title" translatable="false">Allow page summaries?</string>
 
-    <!-- Message for the consent to download when using an on-device model in the "summarize feature" -->
-    <string name="mozac_summarize_consent_message_on_device" translatable="false">Firefox uses AI to summarize pages. To keep this faster and more private, Firefox will download an on-device model (~XX MB).</string>
+    <!--
+        Message for the consent to download when using an on-device model in the "summarize feature"
+
+        %1$s is the name of the app (for example "Firefox").
+    -->
+    <string name="mozac_summarize_consent_message_on_device" translatable="false">%1$s uses AI to summarize pages. To keep this faster and more private, %1$s will download an on-device model (~XX MB).</string>
 
     <!-- Positive button text for the consent to download when using an on-device model in the "summarize feature" -->
     <string name="mozac_summarize_consent_button_positive_on_device" translatable="false">Allow and download model</string>
