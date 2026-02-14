@@ -6,6 +6,7 @@ package mozilla.components.service.fxrelay.eligibility
 
 import mozilla.components.lib.state.Action
 import mozilla.components.lib.state.State
+import mozilla.components.service.fxrelay.EmailMask
 
 /**
  * Sentinel value indicating that the Relay entitlement cache
@@ -57,6 +58,7 @@ sealed interface Eligible : EligibilityState {
 data class RelayState(
     val eligibilityState: EligibilityState = Ineligible.FirefoxAccountNotLoggedIn,
     val lastEntitlementCheckMs: Long = NO_ENTITLEMENT_CHECK_YET_MS,
+    val lastUsed: EmailMask? = null,
 ) : State
 
 /**
@@ -79,6 +81,13 @@ sealed interface RelayEligibilityAction : Action {
      * @param nowMs Current system time in milliseconds when TTL expired.
      */
     data class TtlExpired(val nowMs: Long) : RelayEligibilityAction
+
+    /**
+     * The last used email mask provided to the embedder for form autofill.
+     *
+     * @param emailMask the email address.
+     */
+    data class UpdateLastUsed(val emailMask: EmailMask?) : RelayEligibilityAction
 
     /**
      * Result of a Relay status fetch.

@@ -40,6 +40,9 @@ internal fun relayEligibilityReducer(
                 lastEntitlementCheckMs = action.lastCheckedMs,
             )
         }
+        is RelayEligibilityAction.UpdateLastUsed -> {
+            relayState.copy(lastUsed = action.emailMask)
+        }
 
         is RelayEligibilityAction.AccountProfileUpdated,
         is RelayEligibilityAction.TtlExpired,
