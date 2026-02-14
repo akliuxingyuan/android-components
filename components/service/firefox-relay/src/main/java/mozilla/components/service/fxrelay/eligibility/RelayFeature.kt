@@ -83,7 +83,7 @@ class RelayFeature(
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = relayDetails != null,
                 relayPlanTier = relayDetails?.relayPlanTier,
-                totalMasksUsed = relayDetails?.totalMasksUsed ?: 0,
+                remaining = relayDetails?.totalMasksUsed ?: 0,
                 lastCheckedMs = System.currentTimeMillis(),
             ),
         )
@@ -108,9 +108,7 @@ class RelayFeature(
      * @return an email masks or `null` if the operation fails.
      */
     suspend fun getOrCreateNewMask(generatedFor: String): EmailMask? {
-        val mask = fxRelay?.createEmailMask(generatedFor)
-        store.dispatch(RelayEligibilityAction.UpdateLastUsed(mask))
-        return mask
+        return fxRelay?.createEmailMask(generatedFor)
     }
 
     private inner class RelayAccountObserver : AccountObserver {

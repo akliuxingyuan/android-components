@@ -12,7 +12,6 @@ import mozilla.components.service.fxrelay.eligibility.RelayPlanTier
 import mozilla.components.service.fxrelay.eligibility.RelayState
 import mozilla.components.service.fxrelay.eligibility.relayEligibilityReducer
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RelayEligibilityReducerTest {
@@ -62,7 +61,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = false,
                 relayPlanTier = RelayPlanTier.FREE,
-                totalMasksUsed = 10,
+                remaining = 10,
                 lastCheckedMs = 42L,
             ),
         )
@@ -83,7 +82,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = RelayPlanTier.NONE,
-                totalMasksUsed = 5,
+                remaining = 5,
                 lastCheckedMs = 123L,
             ),
         )
@@ -104,7 +103,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = RelayPlanTier.FREE,
-                totalMasksUsed = 3,
+                remaining = 3,
                 lastCheckedMs = 999L,
             ),
         )
@@ -125,7 +124,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = RelayPlanTier.PREMIUM,
-                totalMasksUsed = 0,
+                remaining = 0,
                 lastCheckedMs = 555L,
             ),
         )
@@ -146,7 +145,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = null,
-                totalMasksUsed = 99,
+                remaining = 99,
                 lastCheckedMs = 999L,
             ),
         )
@@ -172,25 +171,5 @@ class RelayEligibilityReducerTest {
 
         assertEquals(initial, afterProfileUpdated)
         assertEquals(initial, afterTtlExpired)
-    }
-
-    @Test
-    fun `WHEN UpdateLastUsed is set THEN update the lastUsed state`() {
-        val initial = RelayState()
-        val emailMask = EmailMask("test@example.com", MaskSource.FREE_TIER_LIMIT)
-
-        val afterUpdate = relayEligibilityReducer(
-            initial,
-            RelayEligibilityAction.UpdateLastUsed(emailMask),
-        )
-
-        assertEquals(emailMask, afterUpdate.lastUsed)
-
-        val afterRemoval = relayEligibilityReducer(
-            afterUpdate,
-            RelayEligibilityAction.UpdateLastUsed(null),
-        )
-
-        assertNull(afterRemoval.lastUsed)
     }
 }

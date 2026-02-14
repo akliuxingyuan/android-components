@@ -197,7 +197,7 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
                 val msg = when (val e = state.eligibilityState) {
                     is Ineligible.FirefoxAccountNotLoggedIn -> "Relay: not logged in"
                     is Ineligible.NoRelay -> "Relay: not eligible / no Relay"
-                    is Eligible.Free -> "Relay: eligible (free), remaining=${e.totalMasksUsed}"
+                    is Eligible.Free -> "Relay: eligible (free), remaining=${e.remaining}"
                     is Eligible.Premium -> "Relay: eligible (premium)"
                 }
                 findViewById<TextView>(R.id.txtView).text = msg

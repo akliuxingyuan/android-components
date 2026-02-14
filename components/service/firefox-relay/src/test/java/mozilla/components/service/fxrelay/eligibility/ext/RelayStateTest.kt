@@ -56,7 +56,7 @@ class RelayStateTest {
     fun `GIVEN logged in user with recent check WHEN shouldCheckStatus is called THEN returns false`() {
         val recentTimestamp = System.currentTimeMillis() - 1000L
         val state = RelayState(
-            eligibilityState = Eligible.Free(totalMasksUsed = 5),
+            eligibilityState = Eligible.Free(remaining = 5),
             lastEntitlementCheckMs = recentTimestamp,
         )
 

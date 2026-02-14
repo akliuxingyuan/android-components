@@ -30,7 +30,7 @@ internal fun relayEligibilityReducer(
             val eligibility = when {
                 !action.fetchSucceeded -> Ineligible.NoRelay
                 action.relayPlanTier == RelayPlanTier.NONE -> Ineligible.NoRelay
-                action.relayPlanTier == RelayPlanTier.FREE -> Eligible.Free(action.totalMasksUsed)
+                action.relayPlanTier == RelayPlanTier.FREE -> Eligible.Free(action.remaining)
                 action.relayPlanTier == RelayPlanTier.PREMIUM -> Eligible.Premium
                 else -> return relayState
             }
@@ -39,9 +39,6 @@ internal fun relayEligibilityReducer(
                 eligibilityState = eligibility,
                 lastEntitlementCheckMs = action.lastCheckedMs,
             )
-        }
-        is RelayEligibilityAction.UpdateLastUsed -> {
-            relayState.copy(lastUsed = action.emailMask)
         }
 
         is RelayEligibilityAction.AccountProfileUpdated,
