@@ -41,9 +41,9 @@ sealed interface Eligible : EligibilityState {
     /**
      * The user has access to the free tier of Firefox Relay.
      *
-     * @property remaining The number of free Relay email masks the user has left.
+     * @property totalMasksUsed The number of free Relay email masks the user has.
      */
-    data class Free(val remaining: Int) : Eligible
+    data class Free(val totalMasksUsed: Int) : Eligible
 
     /**
      * The user has an active Firefox Relay Premium subscription, with
@@ -94,13 +94,13 @@ sealed interface RelayEligibilityAction : Action {
      *
      * @param fetchSucceeded Whether the fetch succeeded.
      * @param relayPlanTier The user’s plan, or NONE if unavailable.
-     * @param remaining Remaining free aliases for FREE users.
+     * @param totalMasksUsed The number of free Relay email masks the user has.
      * @param lastCheckedMs Stores the timestamp for when the last check was performed.
      */
     data class RelayStatusResult(
         val fetchSucceeded: Boolean,
         val relayPlanTier: RelayPlanTier?,
-        val remaining: Int,
+        val totalMasksUsed: Int,
         val lastCheckedMs: Long,
     ) : RelayEligibilityAction
 }

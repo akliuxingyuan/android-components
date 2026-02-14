@@ -62,7 +62,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = false,
                 relayPlanTier = RelayPlanTier.FREE,
-                remaining = 10,
+                totalMasksUsed = 10,
                 lastCheckedMs = 42L,
             ),
         )
@@ -83,7 +83,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = RelayPlanTier.NONE,
-                remaining = 5,
+                totalMasksUsed = 5,
                 lastCheckedMs = 123L,
             ),
         )
@@ -104,7 +104,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = RelayPlanTier.FREE,
-                remaining = 3,
+                totalMasksUsed = 3,
                 lastCheckedMs = 999L,
             ),
         )
@@ -125,7 +125,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = RelayPlanTier.PREMIUM,
-                remaining = 0,
+                totalMasksUsed = 0,
                 lastCheckedMs = 555L,
             ),
         )
@@ -146,7 +146,7 @@ class RelayEligibilityReducerTest {
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = null,
-                remaining = 99,
+                totalMasksUsed = 99,
                 lastCheckedMs = 999L,
             ),
         )
