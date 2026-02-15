@@ -83,7 +83,7 @@ class RelayFeature(
             RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = relayDetails != null,
                 relayPlanTier = relayDetails?.relayPlanTier,
-                remaining = relayDetails?.totalMasksUsed ?: 0,
+                totalMasksUsed = relayDetails?.totalMasksUsed ?: 0,
                 lastCheckedMs = System.currentTimeMillis(),
             ),
         )

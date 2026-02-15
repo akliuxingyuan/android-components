@@ -26,7 +26,7 @@ class ClearLastUsedMiddlewareTest {
     fun setup() {
         store = RelayEligibilityStore(
             initialState = RelayState(
-                eligibilityState = Eligible.Free(remaining = 5),
+                eligibilityState = Eligible.Free(totalMasksUsed = 5),
             ),
             middleware = listOf(ClearLastUsedMiddleware()),
         )
@@ -58,7 +58,7 @@ class ClearLastUsedMiddlewareTest {
             val action = RelayEligibilityAction.RelayStatusResult(
                 fetchSucceeded = true,
                 relayPlanTier = RelayPlanTier.PREMIUM,
-                remaining = 0,
+                totalMasksUsed = 0,
                 lastCheckedMs = System.currentTimeMillis(),
             )
 

@@ -30,7 +30,7 @@ internal fun relayEligibilityReducer(
             val eligibility = when {
                 !action.fetchSucceeded -> Ineligible.NoRelay
                 action.relayPlanTier == RelayPlanTier.NONE -> Ineligible.NoRelay
-                action.relayPlanTier == RelayPlanTier.FREE -> Eligible.Free(action.remaining)
+                action.relayPlanTier == RelayPlanTier.FREE -> Eligible.Free(action.totalMasksUsed)
                 action.relayPlanTier == RelayPlanTier.PREMIUM -> Eligible.Premium
                 else -> return relayState
             }
