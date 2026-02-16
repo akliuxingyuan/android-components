@@ -80,6 +80,8 @@ import mozilla.components.feature.prompts.dialog.SaveLoginDialogFragment
 import mozilla.components.feature.prompts.dialog.TextPromptDialogFragment
 import mozilla.components.feature.prompts.dialog.TimePickerDialogFragment
 import mozilla.components.feature.prompts.dialog.emitGeneratedPasswordShownFact
+import mozilla.components.feature.prompts.emailmask.EmailMaskDelegate
+import mozilla.components.feature.prompts.emailmask.EmailMaskPromptViewListener
 import mozilla.components.feature.prompts.ext.executeIfWindowedPrompt
 import mozilla.components.feature.prompts.facts.emitCreditCardSaveShownFact
 import mozilla.components.feature.prompts.facts.emitPromptConfirmedFact
@@ -167,6 +169,7 @@ internal const val FRAGMENT_TAG = "mozac_feature_prompt_dialog"
  * the user does not want to see a save login dialog for.
  * @property loginDelegate Delegate for login picker.
  * @property suggestStrongPasswordDelegate Delegate for strong password generator.
+ * @property emailMaskDelegate Delegate for email mask.
  * @property onSaveLoginWithStrongPassword A callback invoked to save a new login that uses the
  * generated strong password
  * @property shouldAutomaticallyShowSuggestedPassword A callback invoked to check whether the user
@@ -203,6 +206,7 @@ class PromptFeature private constructor(
     private val loginDelegate: LoginDelegate = object : LoginDelegate {},
     private val suggestStrongPasswordDelegate: SuggestStrongPasswordDelegate = object :
         SuggestStrongPasswordDelegate {},
+    private val emailMaskDelegate: EmailMaskDelegate? = null,
     private var shouldAutomaticallyShowSuggestedPassword: () -> Boolean = { false },
     private val onFirstTimeEngagedWithSignup: () -> Unit = {},
     private val onSaveLoginWithStrongPassword: (String, String) -> Unit = { _, _ -> },
@@ -267,6 +271,7 @@ class PromptFeature private constructor(
         loginDelegate: LoginDelegate = object : LoginDelegate {},
         suggestStrongPasswordDelegate: SuggestStrongPasswordDelegate = object :
             SuggestStrongPasswordDelegate {},
+        emailMaskDelegate: EmailMaskDelegate? = null,
         shouldAutomaticallyShowSuggestedPassword: () -> Boolean = { false },
         onFirstTimeEngagedWithSignup: () -> Unit = {},
         onSaveLoginWithStrongPassword: (String, String) -> Unit = { _, _ -> },
@@ -298,6 +303,7 @@ class PromptFeature private constructor(
         loginExceptionStorage = loginExceptionStorage,
         loginDelegate = loginDelegate,
         suggestStrongPasswordDelegate = suggestStrongPasswordDelegate,
+        emailMaskDelegate = emailMaskDelegate,
         shouldAutomaticallyShowSuggestedPassword = shouldAutomaticallyShowSuggestedPassword,
         onFirstTimeEngagedWithSignup = onFirstTimeEngagedWithSignup,
         onSaveLoginWithStrongPassword = onSaveLoginWithStrongPassword,
@@ -332,6 +338,7 @@ class PromptFeature private constructor(
         loginDelegate: LoginDelegate = object : LoginDelegate {},
         suggestStrongPasswordDelegate: SuggestStrongPasswordDelegate = object :
             SuggestStrongPasswordDelegate {},
+        emailMaskDelegate: EmailMaskDelegate? = null,
         shouldAutomaticallyShowSuggestedPassword: () -> Boolean = { false },
         onFirstTimeEngagedWithSignup: () -> Unit = {},
         onSaveLoginWithStrongPassword: (String, String) -> Unit = { _, _ -> },
@@ -360,6 +367,7 @@ class PromptFeature private constructor(
         loginExceptionStorage = loginExceptionStorage,
         loginDelegate = loginDelegate,
         suggestStrongPasswordDelegate = suggestStrongPasswordDelegate,
+        emailMaskDelegate = emailMaskDelegate,
         shouldAutomaticallyShowSuggestedPassword = shouldAutomaticallyShowSuggestedPassword,
         onFirstTimeEngagedWithSignup = onFirstTimeEngagedWithSignup,
         onSaveLoginWithStrongPassword = onSaveLoginWithStrongPassword,
@@ -403,6 +411,17 @@ class PromptFeature private constructor(
                 StrongPasswordPromptViewListener(store, it, customTabId)
             }
         }
+
+    private var emailMaskPromptViewListener = emailMaskDelegate?.let { delegate ->
+        delegate.emailMaskPromptViewListenerView?.let { view ->
+            EmailMaskPromptViewListener(
+                browserStore = store,
+                emailMaskBar = view,
+                emailMaskDelegate = delegate,
+                sessionId = customTabId,
+            )
+        }
+    }
 
     @VisibleForTesting(otherwise = PRIVATE)
     internal var creditCardPicker =
@@ -705,8 +724,13 @@ class PromptFeature private constructor(
                         }
                     }
                     LoginHint.EMAIL_MASK in loginsByHint -> {
-                        // no-op; implemented with Bug 2012397.
+                        emailMaskPromptViewListener?.apply {
+                            onEmailMaskPromptClick =
+                                { handleDialogsRequest(promptRequest, session) }
+                            handleEmailMaskRequest(loginsByHint[LoginHint.EMAIL_MASK])
+                        } ?: handleDialogsRequest(promptRequest, session)
                     }
+
                     else -> {
                         loginPicker?.handleSelectLoginRequest(promptRequest)
                     }

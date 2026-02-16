@@ -21,6 +21,6 @@ interface EmailMaskPromptView : ToggleablePrompt {
         /**
          * Called when a user clicks on the email mask prompt.
          */
-        fun onEmailMaskPromptClick()
+        fun onEmailMaskPromptClick(generatedFor: String)
     }
 }
