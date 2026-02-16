@@ -4790,6 +4790,27 @@ class GeckoEngineSessionTest {
         shadowOf(getMainLooper()).idle()
     }
 
+    @Test
+    fun `processBackPressed`() {
+        val engineSession = GeckoEngineSession(
+            mock(),
+            geckoSessionProvider = geckoSessionProvider,
+        )
+
+        val ruleResult = GeckoResult<Boolean>()
+        whenever(geckoSession.processBackPressed()).thenReturn(ruleResult)
+
+        var onResultCalled = false
+        engineSession.processBackPressed(
+            onResult = { onResultCalled = true },
+        )
+
+        ruleResult.complete(true)
+        shadowOf(getMainLooper()).idle()
+
+        assertTrue(onResultCalled)
+    }
+
     private fun mockGeckoSession(): GeckoSession {
         val session = mock<GeckoSession>()
         whenever(session.settings).thenReturn(

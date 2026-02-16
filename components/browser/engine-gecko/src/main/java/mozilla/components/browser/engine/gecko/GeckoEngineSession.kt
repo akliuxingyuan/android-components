@@ -898,6 +898,29 @@ class GeckoEngineSession(
     }
 
     /**
+     * See [EngineSession.processBackPressed].
+     */
+    override fun processBackPressed(
+          onResult: (Boolean) -> Unit,
+    ) {
+        geckoSession.processBackPressed().then(
+            { response ->
+                if (response == null) {
+                    logger.error("Did not receive a back key pressed.")
+                    onResult(false)
+                    return@then GeckoResult<Void>()
+                }
+                onResult(response)
+                GeckoResult()
+            },
+            { throwable ->
+                onResult(false)
+                GeckoResult()
+            },
+        )
+    }
+
+    /**
      * NavigationDelegate implementation for forwarding callbacks to observers of the session.
      */
     @Suppress("CognitiveComplexMethod")

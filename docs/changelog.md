@@ -13,6 +13,7 @@ permalink: /changelog/
 * **browser-engine-gecko** and **concept-engine**
   * 🆕 New Engine Settings API `firefoxRelay` that can be see to different modes with `FirefoxRelayMode`.
   * Updated GeckoEngine and BrowserPreferencesRuntime to accommodate registering and unregistering multiple browser preferences at a time for observation. [Bug 2006095](https://bugzilla.mozilla.org/show_bug.cgi?id=2006095)
+  * Added `processBackPressed` API to `EngineSession` to handle back navigation events to dismiss some HTML elements such as &lt;dialog&gt;. [Bug 1966467](https://bugzilla.mozilla.org/show_bug.cgi?id=1966467)
 
 * **concept-storage**
   * Introduced `Login.hint` for context on the login origin that an embedder can use to determine how to handle it.

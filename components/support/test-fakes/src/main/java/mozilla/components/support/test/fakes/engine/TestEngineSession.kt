@@ -101,4 +101,6 @@ open class TestEngineSession(override val settings: Settings = DefaultSettings()
     override fun exitFullScreenMode() = Unit
 
     override fun purgeHistory() = Unit
+
+    override fun processBackPressed(onResult: (Boolean) -> Unit) = Unit
 }

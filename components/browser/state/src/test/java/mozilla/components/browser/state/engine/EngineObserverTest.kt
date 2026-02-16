@@ -119,6 +119,7 @@ class EngineObserverTest {
             }
             override fun requestPdfToDownload() = Unit
             override fun requestPrintContent() = Unit
+            override fun processBackPressed(onResult: (Boolean) -> Unit) {}
             override fun loadUrl(
                 url: String,
                 parent: EngineSession?,
@@ -205,6 +206,7 @@ class EngineObserverTest {
             override fun loadData(data: String, mimeType: String, encoding: String) {}
             override fun requestPdfToDownload() = Unit
             override fun requestPrintContent() = Unit
+            override fun processBackPressed(onResult: (Boolean) -> Unit) {}
             override fun loadUrl(
                 url: String,
                 parent: EngineSession?,
@@ -303,6 +305,7 @@ class EngineObserverTest {
             override fun clearFindMatches() {}
             override fun exitFullScreenMode() {}
             override fun purgeHistory() {}
+            override fun processBackPressed(onResult: (Boolean) -> Unit) {}
         }
         val store = BrowserStore(
             initialState = BrowserState(
@@ -381,6 +384,7 @@ class EngineObserverTest {
             override fun loadData(data: String, mimeType: String, encoding: String) {}
             override fun requestPdfToDownload() = Unit
             override fun requestPrintContent() = Unit
+            override fun processBackPressed(onResult: (Boolean) -> Unit) {}
             override fun loadUrl(
                 url: String,
                 parent: EngineSession?,
@@ -465,6 +469,7 @@ class EngineObserverTest {
             override fun loadData(data: String, mimeType: String, encoding: String) {}
             override fun requestPdfToDownload() = Unit
             override fun requestPrintContent() = Unit
+            override fun processBackPressed(onResult: (Boolean) -> Unit) {}
             override fun loadUrl(
                 url: String,
                 parent: EngineSession?,

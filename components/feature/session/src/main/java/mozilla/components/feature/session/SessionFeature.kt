@@ -42,7 +42,16 @@ class SessionFeature(
             engineView.clearSelection()
             return true
         } else if (tab?.content?.canGoBack == true) {
-            goBackUseCase(tab.id)
+            val engineSession = tab.engineState.engineSession
+            if (engineSession != null) {
+                engineSession.processBackPressed(onResult = { handled ->
+                    if (!handled) {
+                        goBackUseCase(tab.id)
+                    }
+                })
+            } else {
+                goBackUseCase(tab.id)
+            }
             return true
         }
 
