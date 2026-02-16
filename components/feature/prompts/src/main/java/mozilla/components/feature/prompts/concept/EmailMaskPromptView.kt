@@ -20,6 +20,8 @@ interface EmailMaskPromptView : ToggleablePrompt {
     interface Listener {
         /**
          * Called when a user clicks on the email mask prompt.
+         *
+         * @param generatedFor The website for which the address is generated.
          */
         fun onEmailMaskPromptClick(generatedFor: String)
     }

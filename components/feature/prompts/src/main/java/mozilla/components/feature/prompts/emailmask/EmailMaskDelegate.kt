@@ -19,6 +19,8 @@ interface EmailMaskDelegate {
 
     /**
      * Invoked when user clicks on "Email masks".
+     *
+     * @param generatedFor The website for which the address is generated.
      */
     suspend fun onEmailMaskClick(generatedFor: String): String?
 }
