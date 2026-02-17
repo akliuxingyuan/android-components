@@ -49,11 +49,8 @@ class RelayFeature(
         store.dispatch(RelayEligibilityAction.AccountLoginStatusChanged(isLoggedIn))
 
         scope = store.flowScoped(dispatcher = mainDispatcher) { flow ->
-            flow
-                .ifAnyChanged { arrayOf(it.eligibilityState, it.lastEntitlementCheckMs) }
-                .collect { state ->
-                    checkRelayStatus(state)
-                }
+            flow.ifAnyChanged { arrayOf(it.eligibilityState) }
+                .collect { state -> checkRelayStatus(state) }
         }
     }
 
