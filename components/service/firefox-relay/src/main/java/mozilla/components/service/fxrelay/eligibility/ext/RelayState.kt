@@ -8,6 +8,9 @@ import mozilla.components.service.fxrelay.eligibility.FETCH_TIMEOUT_MS
 import mozilla.components.service.fxrelay.eligibility.Ineligible
 import mozilla.components.service.fxrelay.eligibility.NO_ENTITLEMENT_CHECK_YET_MS
 import mozilla.components.service.fxrelay.eligibility.RelayState
+import mozilla.components.support.base.log.logger.Logger
+
+private val logger = Logger("RelayState")
 
 /**
  * Determines if the relay entitlement status should be checked.
@@ -21,6 +24,8 @@ internal fun RelayState.shouldCheckStatus(timeout: Long = FETCH_TIMEOUT_MS): Boo
     val lastCheck = lastEntitlementCheckMs
     val now = System.currentTimeMillis()
     val ttlExpired = lastCheck == NO_ENTITLEMENT_CHECK_YET_MS || now - lastCheck >= timeout
+
+    logger.info("Should Check Status user logged in: $loggedIn, TTL expired: $ttlExpired.")
 
     return loggedIn && ttlExpired
 }
