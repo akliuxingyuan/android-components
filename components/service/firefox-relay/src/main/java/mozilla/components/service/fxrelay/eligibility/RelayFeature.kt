@@ -43,10 +43,21 @@ class RelayFeature(
     private var fxRelay: FxRelay? = null
 
     override fun start() {
+        if (scope != null) {
+            logger.debug("RelayFeature already started, ignoring duplicate start() call")
+            return
+        }
+
+        logger.debug("Starting RelayFeature")
         accountManager.register(accountObserver)
 
-        val isLoggedIn = accountManager.authenticatedAccount() != null
+        val authenticatedAccount = accountManager.authenticatedAccount()
+        val isLoggedIn = authenticatedAccount != null
         store.dispatch(RelayEligibilityAction.AccountLoginStatusChanged(isLoggedIn))
+
+        if (authenticatedAccount != null) {
+            fxRelay = FxRelayImpl(authenticatedAccount)
+        }
 
         scope = store.flowScoped(dispatcher = mainDispatcher) { flow ->
             flow.ifAnyChanged { arrayOf(it.eligibilityState) }
@@ -55,6 +66,12 @@ class RelayFeature(
     }
 
     override fun stop() {
+        if (scope == null) {
+            logger.debug("RelayFeature already stopped, ignoring duplicate stop() call")
+            return
+        }
+
+        logger.debug("Stopping RelayFeature")
         accountManager.unregister(accountObserver)
         scope?.cancel().also { scope = null }
     }
