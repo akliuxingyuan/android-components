@@ -107,7 +107,7 @@ class WebExtensionToolbarTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         verify(imageView).setImageResource(
-            iconsR.drawable.mozac_ic_web_extension_default_icon,
+            iconsR.drawable.mozac_ic_extension_fill_24,
         )
     }
 
