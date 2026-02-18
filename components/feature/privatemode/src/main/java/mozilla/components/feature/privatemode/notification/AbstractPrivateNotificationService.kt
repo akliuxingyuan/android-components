@@ -109,7 +109,7 @@ abstract class AbstractPrivateNotificationService(
             val channelId = getChannelId()
 
             val notification = createNotification(channelId)
-            withContext(Dispatchers.Main) {
+            withContext(mainDispatcher) {
                 notificationsDelegate.notify(notificationId = notificationId, notification = notification)
             }
         }
@@ -133,7 +133,7 @@ abstract class AbstractPrivateNotificationService(
                 )
             }
 
-            withContext(Dispatchers.Main) {
+            withContext(mainDispatcher) {
                 startForeground(notificationId, notification)
             }
         }

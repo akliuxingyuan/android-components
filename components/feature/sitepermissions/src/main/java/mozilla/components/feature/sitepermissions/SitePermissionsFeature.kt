@@ -117,6 +117,7 @@ class SitePermissionsFeature(
     private val exitFullscreenUseCase: SessionUseCases.ExitFullScreenUseCase = SessionUseCases(store).exitFullscreen,
     private val shouldShowDoNotAskAgainCheckBox: Boolean = true,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : LifecycleAwareFeature, PermissionsFeature {
     @VisibleForTesting
     internal val selectOrAddUseCase by lazy {
@@ -136,7 +137,7 @@ class SitePermissionsFeature(
     internal val ioCoroutineScope by lazy { coroutineScopeInitializer() }
 
     internal var coroutineScopeInitializer = {
-        CoroutineScope(Dispatchers.IO)
+        CoroutineScope(ioDispatcher)
     }
     private var sitePermissionScope: CoroutineScope? = null
     private var appPermissionScope: CoroutineScope? = null

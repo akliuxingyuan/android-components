@@ -11,6 +11,8 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.ContentAction.UpdatePermissionHighlightsStateAction
@@ -66,15 +68,12 @@ import mozilla.components.support.test.eq
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
-import mozilla.components.support.test.rule.MainCoroutineRule
-import mozilla.components.support.test.rule.runTestOnMain
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers
@@ -106,9 +105,7 @@ class SitePermissionsFeatureTest {
     private lateinit var selectedTab: TabSessionState
     private val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
 
-    @get:Rule
-    val coroutinesTestRule = MainCoroutineRule()
-    private val scope = coroutinesTestRule.scope
+    private val testDispatcher = StandardTestDispatcher()
 
     companion object {
         const val SESSION_ID = "testSessionId"
@@ -151,6 +148,8 @@ class SitePermissionsFeatureTest {
                 onShouldShowRequestPermissionRationale = { false },
                 store = browserStore,
                 sessionId = SESSION_ID,
+                mainDispatcher = testDispatcher,
+                ioDispatcher = testDispatcher,
             ),
         )
     }
@@ -179,13 +178,15 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN a tab load THEN stale permission indicators should be clear up and temporary permissions`() {
+    fun `GIVEN a tab load THEN stale permission indicators should be clear up and temporary permissions`() = runTest(testDispatcher) {
         sitePermissionFeature.start()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         verify(sitePermissionFeature).setupLoadingCollector()
 
         // when
         browserStore.dispatch(ContentAction.UpdateLoadingStateAction(SESSION_ID, true))
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // then
         captureActionsMiddleware.assertFirstAction(UpdatePermissionHighlightsStateAction.Reset::class) { action ->
@@ -608,7 +609,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN a new permissionRequest WHEN storeSitePermissions() THEN save(permissionRequest) is called`() = runTestOnMain {
+    fun `GIVEN a new permissionRequest WHEN storeSitePermissions() THEN save(permissionRequest) is called`() = runTest {
         // given
         val sitePermissions = SitePermissions(origin = "origin", savedAt = 0)
         doReturn(null).`when`(mockStorage)
@@ -630,8 +631,9 @@ class SitePermissionsFeatureTest {
             mockContentState,
             mockPermissionRequest,
             ALLOWED,
-            scope,
+            this,
         )
+        testScheduler.advanceUntilIdle()
 
         // then
         verify(mockStorage).save(sitePermissions, mockPermissionRequest, private = selectedTab.content.private)
@@ -643,7 +645,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN an already saved permissionRequest WHEN storeSitePermissions() THEN update(permissionRequest) is called`() = runTestOnMain {
+    fun `GIVEN an already saved permissionRequest WHEN storeSitePermissions() THEN update(permissionRequest) is called`() = runTest {
         // given
         val sitePermissions = SitePermissions(origin = "origin", savedAt = 0)
         doReturn(sitePermissions).`when`(mockStorage)
@@ -660,21 +662,22 @@ class SitePermissionsFeatureTest {
             mockContentState,
             mockPermissionRequest,
             ALLOWED,
-            scope,
+            this,
         )
+        testScheduler.advanceUntilIdle()
 
         // then
         verify(mockStorage).update(eq(sitePermissions), anyBoolean())
     }
 
     @Test
-    fun `GIVEN a permissionRequest WITH a private tab WHEN storeSitePermissions() THEN save or update MUST NOT BE called`() = runTestOnMain {
+    fun `GIVEN a permissionRequest WITH a private tab WHEN storeSitePermissions() THEN save or update MUST NOT BE called`() = runTest {
         // then
         sitePermissionFeature.storeSitePermissions(
             selectedTab.content.copy(private = true),
             mockPermissionRequest,
             ALLOWED,
-            scope,
+            this,
         )
 
         // when
@@ -735,7 +738,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN a media permissionRequest without all media permissions granted WHEN onContentPermissionRequested() THEN reject, consumePermissionRequest are called `() {
+    fun `GIVEN a media permissionRequest without all media permissions granted WHEN onContentPermissionRequested() THEN reject, consumePermissionRequest are called `() = runTest {
         // given
         val mockPermissionRequest: PermissionRequest = mock {
             whenever(permissions).thenReturn(listOf(ContentVideoCamera(id = "permission")))
@@ -743,9 +746,7 @@ class SitePermissionsFeatureTest {
         doNothing().`when`(mockPermissionRequest).reject()
 
         // when
-        runTestOnMain {
-            sitePermissionFeature.onContentPermissionRequested(mockPermissionRequest, URL)
-        }
+        sitePermissionFeature.onContentPermissionRequested(mockPermissionRequest, URL)
 
         // then
         verify(mockPermissionRequest).reject()
@@ -753,7 +754,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN sessionId which does not match a selected or custom tab WHEN onContentPermissionRequested() THEN reject, consumePermissionRequest are called `() {
+    fun `GIVEN sessionId which does not match a selected or custom tab WHEN onContentPermissionRequested() THEN reject, consumePermissionRequest are called `() = runTest {
         val mockPermissionRequest: PermissionRequest = mock {
             whenever(permissions).thenReturn(listOf(ContentVideoCamera(id = "permission")))
         }
@@ -762,16 +763,14 @@ class SitePermissionsFeatureTest {
 
         sitePermissionFeature.sessionId = null
 
-        runTestOnMain {
-            sitePermissionFeature.onContentPermissionRequested(mockPermissionRequest, URL)
-        }
+        sitePermissionFeature.onContentPermissionRequested(mockPermissionRequest, URL)
 
         verify(mockPermissionRequest).reject()
         verify(sitePermissionFeature).consumePermissionRequest(mockPermissionRequest)
     }
 
     @Test
-    fun `GIVEN location permissionRequest and shouldApplyRules is true WHEN onContentPermissionRequested() THEN handleRuledFlow is called`() = runTestOnMain {
+    fun `GIVEN location permissionRequest and shouldApplyRules is true WHEN onContentPermissionRequested() THEN handleRuledFlow is called`() = runTest {
         // given
         val mockPermissionRequest: PermissionRequest = mock {
             whenever(permissions).thenReturn(listOf(ContentGeoLocation(id = "permission")))
@@ -784,13 +783,11 @@ class SitePermissionsFeatureTest {
             .handleRuledFlow(mockPermissionRequest, URL)
 
         // when
-        runTestOnMain {
-            sitePermissionFeature.onContentPermissionRequested(
-                mockPermissionRequest,
-                URL,
-                scope,
-            )
-        }
+        sitePermissionFeature.onContentPermissionRequested(
+            mockPermissionRequest,
+            URL,
+            this,
+        )
 
         // then
         verify(mockStorage).findSitePermissionsBy(URL, private = selectedTab.content.private)
@@ -798,7 +795,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN location permissionRequest and shouldApplyRules is false WHEN onContentPermissionRequested() THEN handleNoRuledFlow is called`() = runTestOnMain {
+    fun `GIVEN location permissionRequest and shouldApplyRules is false WHEN onContentPermissionRequested() THEN handleNoRuledFlow is called`() = runTest {
         // given
         val mockPermissionRequest: PermissionRequest = mock {
             whenever(permissions).thenReturn(listOf(ContentGeoLocation(id = "permission")))
@@ -812,13 +809,11 @@ class SitePermissionsFeatureTest {
             .handleNoRuledFlow(sitePermissions, mockPermissionRequest, URL)
 
         // when
-        runTestOnMain {
-            sitePermissionFeature.onContentPermissionRequested(
-                mockPermissionRequest,
-                URL,
-                scope,
-            )
-        }
+        sitePermissionFeature.onContentPermissionRequested(
+            mockPermissionRequest,
+            URL,
+            this,
+        )
 
         // then
         verify(mockStorage).findSitePermissionsBy(URL, private = selectedTab.content.private)
@@ -826,7 +821,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN autoplay permissionRequest and shouldApplyRules is false WHEN onContentPermissionRequested() THEN handleNoRuledFlow is called`() = runTestOnMain {
+    fun `GIVEN autoplay permissionRequest and shouldApplyRules is false WHEN onContentPermissionRequested() THEN handleNoRuledFlow is called`() = runTest {
         // given
         val mockPermissionRequest: PermissionRequest = mock {
             whenever(permissions).thenReturn(listOf(ContentAutoPlayInaudible(id = "permission")))
@@ -840,13 +835,11 @@ class SitePermissionsFeatureTest {
             .handleNoRuledFlow(sitePermissions, mockPermissionRequest, URL)
 
         // when
-        runTestOnMain {
-            sitePermissionFeature.onContentPermissionRequested(
-                mockPermissionRequest,
-                URL,
-                scope,
-            )
-        }
+        sitePermissionFeature.onContentPermissionRequested(
+            mockPermissionRequest,
+            URL,
+            this,
+        )
 
         // then
         verify(mockStorage).findSitePermissionsBy(URL, private = selectedTab.content.private)
@@ -854,7 +847,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `GIVEN shouldShowPrompt with isForAutoplay false AND null permissionFromStorage THEN return true`() = runTestOnMain {
+    fun `GIVEN shouldShowPrompt with isForAutoplay false AND null permissionFromStorage THEN return true`() = runTest {
         // given
         val mockPermissionRequest: PermissionRequest = mock {
             whenever(permissions).thenReturn(listOf(Permission.ContentGeoLocation(id = "permission")))
@@ -1531,7 +1524,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `is SitePermission granted in the storage`() = runTestOnMain {
+    fun `is SitePermission granted in the storage`() = runTest {
         val sitePermissionsList = listOf(
             ContentGeoLocation(),
             ContentNotification(),
@@ -1572,7 +1565,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `is SitePermission blocked in the storage`() = runTestOnMain {
+    fun `is SitePermission blocked in the storage`() = runTest {
         val sitePermissionsList = listOf(
             ContentGeoLocation(),
             ContentNotification(),
@@ -1668,7 +1661,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `getInitialSitePermissions - WHEN sitePermissionsRules is present the function MUST use the sitePermissionsRules values to create a SitePermissions object`() = runTestOnMain {
+    fun `getInitialSitePermissions - WHEN sitePermissionsRules is present the function MUST use the sitePermissionsRules values to create a SitePermissions object`() = runTest {
         val rules = SitePermissionsRules(
             location = SitePermissionsRules.Action.BLOCKED,
             camera = SitePermissionsRules.Action.ASK_TO_ALLOW,
@@ -1702,7 +1695,7 @@ class SitePermissionsFeatureTest {
     }
 
     @Test
-    fun `any media request must be rejected WHEN system permissions are not granted first`() = runTestOnMain {
+    fun `any media request must be rejected WHEN system permissions are not granted first`() = runTest {
         val permissions = listOf(
             ContentVideoCapture("", "back camera"),
             ContentVideoCamera("", "front camera"),

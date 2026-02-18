@@ -4,6 +4,8 @@
 
 package mozilla.components.feature.search.region
 
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.action.SearchAction.RefreshSearchEnginesAction
@@ -12,25 +14,18 @@ import mozilla.components.browser.state.search.RegionState
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.service.location.LocationService
-import mozilla.components.support.test.ext.joinBlocking
 import mozilla.components.support.test.fakes.FakeClock
 import mozilla.components.support.test.fakes.android.FakeContext
 import mozilla.components.support.test.fakes.android.FakeSharedPreferences
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
-import mozilla.components.support.test.rule.MainCoroutineRule
-import mozilla.components.support.test.rule.runTestOnMain
 import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito.`when`
 
 class RegionMiddlewareTest {
-
-    @get:Rule
-    val coroutinesTestRule = MainCoroutineRule()
-    private val dispatcher = coroutinesTestRule.testDispatcher
+    private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var locationService: FakeLocationService
     private lateinit var clock: FakeClock
@@ -49,8 +44,8 @@ class RegionMiddlewareTest {
     }
 
     @Test
-    fun `GIVEN a locale is already selected WHEN the locale changes THEN update region on RefreshSearchEngines`() = runTestOnMain {
-        val middleware = RegionMiddleware(FakeContext(), locationService, dispatcher)
+    fun `GIVEN a locale is already selected WHEN the locale changes THEN update region on RefreshSearchEngines`() = runTest {
+        val middleware = RegionMiddleware(FakeContext(), locationService, testDispatcher)
         middleware.regionManager = regionManager
 
         locationService.region = LocationService.Region("FR", "France")
@@ -65,7 +60,7 @@ class RegionMiddlewareTest {
             {},
             UpdateDistribution("testId"),
         )
-        middleware.updateJob?.joinBlocking()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals("FR", store.state.search.region!!.home)
         assertEquals("FR", store.state.search.region!!.current)
@@ -74,16 +69,16 @@ class RegionMiddlewareTest {
         regionManager.update()
 
         store.dispatch(RefreshSearchEnginesAction)
-        middleware.updateJob?.joinBlocking()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals("FR", store.state.search.region!!.home)
         assertEquals("DE", store.state.search.region!!.current)
     }
 
     @Test
-    fun `WHEN the UpdateDistribution action is received THEN the distribution is updated`() = runTestOnMain {
+    fun `WHEN the UpdateDistribution action is received THEN the distribution is updated`() = runTest {
         val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
-        val middleware = RegionMiddleware(FakeContext(), locationService, dispatcher)
+        val middleware = RegionMiddleware(FakeContext(), locationService, testDispatcher)
         val regionManager: RegionManager = mock()
         middleware.regionManager = regionManager
         val store = BrowserStore(middleware = listOf(captureActionsMiddleware))
@@ -97,7 +92,7 @@ class RegionMiddlewareTest {
             UpdateDistribution("testId"),
         )
 
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         captureActionsMiddleware.assertFirstAction(SearchAction.SetRegionAction::class) { action ->
             assertEquals(RegionState.Default, action.regionState)
@@ -113,7 +108,7 @@ class RegionMiddlewareTest {
             UpdateDistribution("testId"),
         )
 
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         captureActionsMiddleware.assertLastAction(SearchAction.SetRegionAction::class) { action ->
             assertEquals(RegionState("US", "US"), action.regionState)
@@ -130,7 +125,7 @@ class RegionMiddlewareTest {
             UpdateDistribution("testId"),
         )
 
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         captureActionsMiddleware.assertLastAction(SearchAction.SetRegionAction::class) { action ->
             assertEquals(RegionState("DE", "DE"), action.regionState)
@@ -139,9 +134,9 @@ class RegionMiddlewareTest {
     }
 
     @Test
-    fun `WHEN the RefreshSearchEngines action is received THEN the distribution is updated`() = runTestOnMain {
+    fun `WHEN the RefreshSearchEngines action is received THEN the distribution is updated`() = runTest {
         val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
-        val middleware = RegionMiddleware(FakeContext(), locationService, dispatcher)
+        val middleware = RegionMiddleware(FakeContext(), locationService, testDispatcher)
         val regionManager: RegionManager = mock()
         middleware.regionManager = regionManager
         val store = BrowserStore(
@@ -158,7 +153,7 @@ class RegionMiddlewareTest {
             RefreshSearchEnginesAction,
         )
 
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         captureActionsMiddleware.assertFirstAction(SearchAction.SetRegionAction::class) { action ->
             assertEquals(RegionState.Default, action.regionState)
@@ -174,7 +169,7 @@ class RegionMiddlewareTest {
             RefreshSearchEnginesAction,
         )
 
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         captureActionsMiddleware.assertLastAction(SearchAction.SetRegionAction::class) { action ->
             assertEquals(RegionState("US", "US"), action.regionState)
@@ -191,7 +186,7 @@ class RegionMiddlewareTest {
             RefreshSearchEnginesAction,
         )
 
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         captureActionsMiddleware.assertLastAction(SearchAction.SetRegionAction::class) { action ->
             assertEquals(RegionState("DE", "DE"), action.regionState)

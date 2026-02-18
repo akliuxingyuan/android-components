@@ -30,6 +30,7 @@ import org.mockito.Mockito.verify
 
 @RunWith(AndroidJUnit4::class)
 class PrivateNotificationFeatureTest {
+
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var context: Context

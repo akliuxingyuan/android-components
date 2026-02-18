@@ -21,7 +21,6 @@ import org.mockito.Mockito.verify
 
 @RunWith(AndroidJUnit4::class)
 class SyncedTabsCommandsFlushWorkerTest {
-
     private val commands: SyncedTabsCommands = mock()
 
     @Before

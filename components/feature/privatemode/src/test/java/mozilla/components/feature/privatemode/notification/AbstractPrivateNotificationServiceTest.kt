@@ -13,8 +13,10 @@ import android.content.SharedPreferences
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.LocaleAction
 import mozilla.components.browser.state.action.TabListAction
@@ -27,13 +29,10 @@ import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
-import mozilla.components.support.test.rule.MainCoroutineRule
-import mozilla.components.support.test.rule.runTestOnMain
 import mozilla.components.support.test.whenever
 import mozilla.components.support.utils.ext.stopForegroundCompat
 import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.anyInt
@@ -47,15 +46,11 @@ import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class AbstractPrivateNotificationServiceTest {
-
-    @get:Rule
-    val coroutinesTestRule = MainCoroutineRule()
-    private val dispatcher = coroutinesTestRule.testDispatcher
-
     private lateinit var preferences: SharedPreferences
     private lateinit var notificationManager: NotificationManager
 
     private val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
+    internal val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
@@ -68,9 +63,13 @@ class AbstractPrivateNotificationServiceTest {
     }
 
     @Test
-    fun `WHEN the service is created THEN start foreground is called`() = runTestOnMain {
+    fun `WHEN the service is created THEN start foreground is called`() = runTest(testDispatcher) {
         val service = spy(
-            object : MockServiceWithStore(scope = this@runTestOnMain, captureActionsMiddleware) {
+            object : MockServiceWithStore(
+                testDispatcher,
+                scope = this@runTest,
+                captureActionsMiddleware,
+            ) {
                 override fun NotificationCompat.Builder.buildNotification() {
                     setCategory(Notification.CATEGORY_STATUS)
                 }
@@ -83,15 +82,19 @@ class AbstractPrivateNotificationServiceTest {
 
         val notification = argumentCaptor<Notification>()
         service.onCreate()
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         verify(service).startForeground(anyInt(), notification.capture())
         assertEquals(Notification.CATEGORY_STATUS, notification.value.category)
     }
 
     @Test
-    fun `GIVEN an erase intent is received THEN remove all private tabs`() {
-        val service = MockServiceWithStore(captureActionsMiddleware = captureActionsMiddleware)
+    fun `GIVEN an erase intent is received THEN remove all private tabs`() = runTest(testDispatcher) {
+        val service = MockServiceWithStore(
+            testDispatcher,
+            this,
+            captureActionsMiddleware = captureActionsMiddleware,
+        )
         val result = service.onStartCommand(Intent(ACTION_ERASE), 0, 0)
 
         captureActionsMiddleware.findFirstAction(TabListAction.RemoveAllPrivateTabsAction::class)
@@ -99,8 +102,14 @@ class AbstractPrivateNotificationServiceTest {
     }
 
     @Test
-    fun `WHEN task is removed THEN all private tabs are removed`() {
-        val service = spy(MockServiceWithStore(captureActionsMiddleware = captureActionsMiddleware))
+    fun `WHEN task is removed THEN all private tabs are removed`() = runTest(testDispatcher) {
+        val service = spy(
+            MockServiceWithStore(
+                testDispatcher,
+                this,
+                captureActionsMiddleware = captureActionsMiddleware,
+            ),
+        )
         service.onTaskRemoved(mock())
 
         captureActionsMiddleware.findFirstAction(TabListAction.RemoveAllPrivateTabsAction::class)
@@ -110,8 +119,14 @@ class AbstractPrivateNotificationServiceTest {
     }
 
     @Test
-    fun `WHEN task is removed with ignored intents THEN do nothing`() {
-        val service = spy(MockServiceWithStore(captureActionsMiddleware = captureActionsMiddleware))
+    fun `WHEN task is removed with ignored intents THEN do nothing`() = runTest(testDispatcher) {
+        val service = spy(
+            MockServiceWithStore(
+                testDispatcher,
+                this,
+                captureActionsMiddleware = captureActionsMiddleware,
+            ),
+        )
 
         val mockTaskActions = listOf("action1", "action2")
         whenever(service.ignoreTaskActions()).then { mockTaskActions }
@@ -142,20 +157,31 @@ class AbstractPrivateNotificationServiceTest {
     }
 
     @Test
-    fun `WHEN a locale change is made in the browser store THEN the service should notify`() {
-        val service = spy(MockServiceWithStore(captureActionsMiddleware = captureActionsMiddleware))
+    fun `WHEN a locale change is made in the browser store THEN the service should notify`() = runTest(testDispatcher) {
+        val service = spy(
+            MockServiceWithStore(
+                testDispatcher,
+                this,
+                captureActionsMiddleware = captureActionsMiddleware,
+            ),
+        )
         attachContext(service)
         service.onCreate()
+        testDispatcher.scheduler.advanceUntilIdle()
 
-        val mockLocale = Locale.forLanguageTag("English")
+        val mockLocale = Locale.forLanguageTag("French")
         service.store.dispatch(LocaleAction.UpdateLocaleAction(mockLocale))
-        dispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         verify(service).notifyLocaleChanged()
     }
 
-    private open class MockServiceWithStore(scope: CoroutineScope = TestScope(), captureActionsMiddleware: CaptureActionsMiddleware<BrowserState, BrowserAction>) :
-        AbstractPrivateNotificationService(notificationScope = scope) {
+    private open class MockServiceWithStore(
+        testDispatcher: CoroutineDispatcher,
+        scope: CoroutineScope,
+        captureActionsMiddleware: CaptureActionsMiddleware<BrowserState, BrowserAction>,
+    ) :
+        AbstractPrivateNotificationService(testDispatcher, scope) {
         override val store = BrowserStore(
             initialState = BrowserState(),
             middleware = listOf(captureActionsMiddleware),
