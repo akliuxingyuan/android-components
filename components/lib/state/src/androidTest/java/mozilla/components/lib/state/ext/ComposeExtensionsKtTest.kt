@@ -66,11 +66,10 @@ class ComposeExtensionsKtTest {
         )
 
         val value = mutableListOf<String>()
+        val mappedFlow = store.stateFlow.map { if (it.counter < 5) loading else content }
 
         rule.setContent {
-            val composeState = store.stateFlow
-                .map { if (it.counter < 5) loading else content }
-                .collectAsState(initial = loading)
+            val composeState = mappedFlow.collectAsState(initial = loading)
             value.add(composeState.value)
         }
 
