@@ -1096,6 +1096,12 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:feature-protection-dashboard:
+    description: Feature that will store global tracking protection information.
+    path: components/feature/protection-dashboard
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:feature-push:
     description: Feature that implements push notifications with a supported push
       service.
