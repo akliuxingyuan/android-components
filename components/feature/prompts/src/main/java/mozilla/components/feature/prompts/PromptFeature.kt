@@ -170,6 +170,10 @@ internal const val FRAGMENT_TAG = "mozac_feature_prompt_dialog"
  * @property loginDelegate Delegate for login picker.
  * @property suggestStrongPasswordDelegate Delegate for strong password generator.
  * @property emailMaskDelegate Delegate for email mask.
+ * @property isSuggestEmailMaskEnabled A callback invoked before an email mask prompt is triggered.
+ * If false, 'Use email mask' prompt will not be shown.
+ * @property isEmailMaskFeatureEnabled A callback invoked before an email mask prompt is triggered,
+ * which is determined by Nimbus. If false, 'Use email mask' prompt will not be shown.
  * @property onSaveLoginWithStrongPassword A callback invoked to save a new login that uses the
  * generated strong password
  * @property shouldAutomaticallyShowSuggestedPassword A callback invoked to check whether the user
@@ -207,6 +211,8 @@ class PromptFeature private constructor(
     private val suggestStrongPasswordDelegate: SuggestStrongPasswordDelegate = object :
         SuggestStrongPasswordDelegate {},
     private val emailMaskDelegate: EmailMaskDelegate? = null,
+    private val isSuggestEmailMaskEnabled: () -> Boolean,
+    private val isEmailMaskFeatureEnabled: () -> Boolean,
     private var shouldAutomaticallyShowSuggestedPassword: () -> Boolean = { false },
     private val onFirstTimeEngagedWithSignup: () -> Unit = {},
     private val onSaveLoginWithStrongPassword: (String, String) -> Unit = { _, _ -> },
@@ -272,6 +278,8 @@ class PromptFeature private constructor(
         suggestStrongPasswordDelegate: SuggestStrongPasswordDelegate = object :
             SuggestStrongPasswordDelegate {},
         emailMaskDelegate: EmailMaskDelegate? = null,
+        isSuggestEmailMaskEnabled: () -> Boolean,
+        isEmailMaskFeatureEnabled: () -> Boolean,
         shouldAutomaticallyShowSuggestedPassword: () -> Boolean = { false },
         onFirstTimeEngagedWithSignup: () -> Unit = {},
         onSaveLoginWithStrongPassword: (String, String) -> Unit = { _, _ -> },
@@ -304,6 +312,8 @@ class PromptFeature private constructor(
         loginDelegate = loginDelegate,
         suggestStrongPasswordDelegate = suggestStrongPasswordDelegate,
         emailMaskDelegate = emailMaskDelegate,
+        isSuggestEmailMaskEnabled = isSuggestEmailMaskEnabled,
+        isEmailMaskFeatureEnabled = isEmailMaskFeatureEnabled,
         shouldAutomaticallyShowSuggestedPassword = shouldAutomaticallyShowSuggestedPassword,
         onFirstTimeEngagedWithSignup = onFirstTimeEngagedWithSignup,
         onSaveLoginWithStrongPassword = onSaveLoginWithStrongPassword,
@@ -339,6 +349,8 @@ class PromptFeature private constructor(
         suggestStrongPasswordDelegate: SuggestStrongPasswordDelegate = object :
             SuggestStrongPasswordDelegate {},
         emailMaskDelegate: EmailMaskDelegate? = null,
+        isSuggestEmailMaskEnabled: () -> Boolean = { false },
+        isEmailMaskFeatureEnabled: () -> Boolean = { false },
         shouldAutomaticallyShowSuggestedPassword: () -> Boolean = { false },
         onFirstTimeEngagedWithSignup: () -> Unit = {},
         onSaveLoginWithStrongPassword: (String, String) -> Unit = { _, _ -> },
@@ -368,6 +380,8 @@ class PromptFeature private constructor(
         loginDelegate = loginDelegate,
         suggestStrongPasswordDelegate = suggestStrongPasswordDelegate,
         emailMaskDelegate = emailMaskDelegate,
+        isSuggestEmailMaskEnabled = isSuggestEmailMaskEnabled,
+        isEmailMaskFeatureEnabled = isEmailMaskFeatureEnabled,
         shouldAutomaticallyShowSuggestedPassword = shouldAutomaticallyShowSuggestedPassword,
         onFirstTimeEngagedWithSignup = onFirstTimeEngagedWithSignup,
         onSaveLoginWithStrongPassword = onSaveLoginWithStrongPassword,
@@ -723,14 +737,11 @@ class PromptFeature private constructor(
                             strongPasswordPromptViewListener?.handleSuggestStrongPasswordRequest()
                         }
                     }
-                    LoginHint.EMAIL_MASK in loginsByHint -> {
-                        emailMaskPromptViewListener?.apply {
-                            onEmailMaskPromptClick =
-                                { handleDialogsRequest(promptRequest, session) }
-                            handleEmailMaskRequest(loginsByHint[LoginHint.EMAIL_MASK])
-                        } ?: handleDialogsRequest(promptRequest, session)
-                    }
-
+                    LoginHint.EMAIL_MASK in loginsByHint -> handleEmailMaskOrLoginPrompt(
+                        promptRequest,
+                        session,
+                        loginsByHint,
+                    )
                     else -> {
                         loginPicker?.handleSelectLoginRequest(promptRequest)
                     }
@@ -1319,6 +1330,27 @@ class PromptFeature private constructor(
                     promptDialog.dismiss()
                 }
             }
+        }
+    }
+
+    /**
+     * Helper function to handle showing an email mask prompt if the conditions are met
+     * or to fallback to handling the dialog request.
+     */
+    private fun handleEmailMaskOrLoginPrompt(
+        promptRequest: SelectLoginPrompt,
+        session: SessionState,
+        loginsByHint: Map<LoginHint, List<Login>>,
+    ) {
+        val shouldShowEmailMaskSuggestion =
+            isEmailMaskFeatureEnabled() && isSuggestEmailMaskEnabled()
+        if (!shouldShowEmailMaskSuggestion) {
+            return
+        } else {
+            emailMaskPromptViewListener?.apply {
+                onEmailMaskPromptClick = { handleDialogsRequest(promptRequest, session) }
+                handleEmailMaskRequest(loginsByHint[LoginHint.EMAIL_MASK])
+            } ?: handleDialogsRequest(promptRequest, session)
         }
     }
 

@@ -281,6 +281,8 @@ class PromptFeatureTest {
             fragmentManager = fragmentManager,
             tabsUseCases = mock(),
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         feature.start()
@@ -298,15 +300,16 @@ class PromptFeatureTest {
         doReturn(transaction).`when`(fragmentManager).beginTransaction()
         doReturn(transaction).`when`(transaction).remove(any())
 
-        val feature =
-            PromptFeature(
-                activity = mock(),
-                store = store,
-                fragmentManager = fragmentManager,
-                tabsUseCases = mock(),
-                fileUploadsDirCleaner = mock(),
-                onNeedToRequestPermissions = { },
-            )
+        val feature = PromptFeature(
+            activity = mock(),
+            store = store,
+            fragmentManager = fragmentManager,
+            tabsUseCases = mock(),
+            fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
+            onNeedToRequestPermissions = { },
+        )
         feature.start()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -328,15 +331,16 @@ class PromptFeatureTest {
         doReturn(transaction).`when`(fragmentManager).beginTransaction()
         doReturn(transaction).`when`(transaction).remove(any())
 
-        val feature =
-            PromptFeature(
-                activity = mock(),
-                store = store,
-                fragmentManager = fragmentManager,
-                tabsUseCases = mock(),
-                fileUploadsDirCleaner = mock(),
-                onNeedToRequestPermissions = { },
-            )
+        val feature = PromptFeature(
+            activity = mock(),
+            store = store,
+            fragmentManager = fragmentManager,
+            tabsUseCases = mock(),
+            fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
+            onNeedToRequestPermissions = { },
+        )
         feature.start()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -354,6 +358,8 @@ class PromptFeatureTest {
                 fragmentManager = fragmentManager,
                 tabsUseCases = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -378,6 +384,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -411,6 +419,8 @@ class PromptFeatureTest {
                         strongPasswordPromptViewListenerView
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -454,6 +464,8 @@ class PromptFeatureTest {
                 isSaveLoginEnabled = { true },
                 hideUpdateFragmentAfterSavingGeneratedPassword = { _, _ -> false },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -490,6 +502,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 isSaveLoginEnabled = { false },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = {},
             ),
         )
@@ -521,6 +535,8 @@ class PromptFeatureTest {
                 hideUpdateFragmentAfterSavingGeneratedPassword = { _, _ -> true },
                 removeLastSavedGeneratedPassword = { onRemoveLastSavedPasswordCalled = true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = {},
             ),
         )
@@ -550,6 +566,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 isSaveLoginEnabled = { true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = {},
             ),
         )
@@ -582,6 +600,8 @@ class PromptFeatureTest {
             fragmentManager = fragmentManager,
             tabsUseCases = mock(),
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = {},
         )
 
@@ -618,6 +638,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -649,6 +671,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -679,6 +703,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -711,6 +737,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -742,6 +770,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -772,6 +802,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -803,6 +835,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -834,6 +868,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 addressDelegate = addressDelegate,
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -868,6 +904,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 addressDelegate = addressDelegate,
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -893,6 +931,8 @@ class PromptFeatureTest {
                 fragmentManager = fragmentManager,
                 tabsUseCases = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
 
@@ -916,6 +956,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.start()
@@ -941,6 +983,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.start()
@@ -966,6 +1010,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.start()
@@ -991,6 +1037,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
 
@@ -1028,6 +1076,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         var onDismissWasCalled = false
@@ -1052,6 +1102,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         var onConfirmWasCalled = false
@@ -1090,6 +1142,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         var onDismissWasCalled = false
@@ -1130,6 +1184,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
             var onClearWasCalled = false
@@ -1172,6 +1228,8 @@ class PromptFeatureTest {
                 fragmentManager = fragmentManager,
                 tabsUseCases = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.handleDialogsRequest(mock<PromptRequest.File>(), mock())
@@ -1197,6 +1255,8 @@ class PromptFeatureTest {
                 fragmentManager = fragmentManager,
                 tabsUseCases = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         val intent = Intent()
@@ -1229,6 +1289,8 @@ class PromptFeatureTest {
                 fragmentManager = fragmentManager,
                 tabsUseCases = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         val intent = Intent()
@@ -1266,6 +1328,8 @@ class PromptFeatureTest {
                 fragmentManager = fragmentManager,
                 tabsUseCases = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         val intent = Intent()
@@ -1293,6 +1357,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.creditCardPicker = creditCardPicker
@@ -1319,6 +1385,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.creditCardPicker = creditCardPicker
@@ -1345,6 +1413,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.creditCardPicker = creditCardPicker
@@ -1370,6 +1440,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.creditCardPicker = creditCardPicker
@@ -1456,6 +1528,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
 
@@ -1545,6 +1619,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         var onDismissWasCalled = false
@@ -1584,6 +1660,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
 
@@ -1737,6 +1815,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         var onPositiveButtonWasCalled = false
@@ -1798,6 +1878,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         var onCancelWasCalled = false
@@ -1841,6 +1923,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             )
@@ -1880,6 +1964,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         var onDismissWasCalled = false
@@ -1919,6 +2005,8 @@ class PromptFeatureTest {
             tabsUseCases = mock(),
             exitFullscreenUsecase = mock(),
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             mainDispatcher = testDispatcher,
             onNeedToRequestPermissions = { },
         )
@@ -1968,6 +2056,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             )
@@ -2006,6 +2096,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.loginPicker = loginPicker
@@ -2040,6 +2132,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             )
         feature.loginPicker = loginPicker
@@ -2079,6 +2173,8 @@ class PromptFeatureTest {
                     override val onManageLogins = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             )
@@ -2123,6 +2219,8 @@ class PromptFeatureTest {
                     override val onManageCreditCards = {}
                 },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             )
@@ -2169,6 +2267,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 shareDelegate = delegate,
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -2200,6 +2300,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 isCreditCardAutofillEnabled = { true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -2227,6 +2329,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 isCreditCardAutofillEnabled = { true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -2254,6 +2358,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 isCreditCardAutofillEnabled = { false },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -2395,6 +2501,8 @@ class PromptFeatureTest {
                 creditCardValidationDelegate = mock(),
                 isCreditCardAutofillEnabled = { false },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = {},
             ),
         )
@@ -2431,6 +2539,8 @@ class PromptFeatureTest {
                 creditCardValidationDelegate = null,
                 isCreditCardAutofillEnabled = { true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = {},
             ),
         )
@@ -2469,6 +2579,8 @@ class PromptFeatureTest {
                 creditCardValidationDelegate = mock(),
                 isCreditCardAutofillEnabled = { true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = {},
             ),
         )
@@ -2490,6 +2602,8 @@ class PromptFeatureTest {
             shareDelegate = delegate,
             exitFullscreenUsecase = mock(),
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         feature.start()
@@ -2524,6 +2638,8 @@ class PromptFeatureTest {
             shareDelegate = delegate,
             exitFullscreenUsecase = mock(),
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         feature.start()
@@ -2558,6 +2674,8 @@ class PromptFeatureTest {
                 shareDelegate = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -2606,6 +2724,8 @@ class PromptFeatureTest {
                 shareDelegate = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -2648,6 +2768,8 @@ class PromptFeatureTest {
                 shareDelegate = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -2685,6 +2807,8 @@ class PromptFeatureTest {
                 shareDelegate = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = {},
             ),
         )
@@ -2729,6 +2853,8 @@ class PromptFeatureTest {
                 loginValidationDelegate = mock(),
                 isSaveLoginEnabled = { true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -2764,6 +2890,8 @@ class PromptFeatureTest {
             exitFullscreenUsecase = mock(),
             isSaveLoginEnabled = { true },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
 
@@ -2793,6 +2921,8 @@ class PromptFeatureTest {
             isSaveLoginEnabled = { true },
             hideUpdateFragmentAfterSavingGeneratedPassword = { _, _ -> false },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         val loginUsername = "username"
@@ -2833,6 +2963,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 shareDelegate = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -2879,6 +3011,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 shareDelegate = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -2918,6 +3052,8 @@ class PromptFeatureTest {
             loginValidationDelegate = mock(),
             isSaveLoginEnabled = { true },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         val repostPromptRequest: PromptRequest.Repost = mock()
@@ -2947,6 +3083,8 @@ class PromptFeatureTest {
             tabsUseCases = mock(),
             exitFullscreenUsecase = mock(),
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         feature.start()
@@ -2977,6 +3115,8 @@ class PromptFeatureTest {
             tabsUseCases = mock(),
             exitFullscreenUsecase = mock(),
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         feature.start()
@@ -3009,6 +3149,8 @@ class PromptFeatureTest {
             creditCardValidationDelegate = mock(),
             isCreditCardAutofillEnabled = { true },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         val creditCardEntry = CreditCardEntry(
@@ -3091,6 +3233,8 @@ class PromptFeatureTest {
             creditCardValidationDelegate = mock(),
             isCreditCardAutofillEnabled = { true },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         val creditCardEntry = CreditCardEntry(
@@ -3157,6 +3301,8 @@ class PromptFeatureTest {
             creditCardValidationDelegate = mock(),
             isCreditCardAutofillEnabled = { true },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
 
@@ -3181,6 +3327,8 @@ class PromptFeatureTest {
             creditCardValidationDelegate = mock(),
             isCreditCardAutofillEnabled = { true },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         val creditCardEntry = CreditCardEntry(
@@ -3227,6 +3375,8 @@ class PromptFeatureTest {
                 shareDelegate = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -3259,6 +3409,8 @@ class PromptFeatureTest {
                 shareDelegate = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -3302,6 +3454,8 @@ class PromptFeatureTest {
             activity = mock(),
             store = store,
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             tabsUseCases = mock(),
             fragmentManager = fragmentManager,
             onNeedToRequestPermissions = { },
@@ -3327,6 +3481,8 @@ class PromptFeatureTest {
                 shareDelegate = mock(),
                 exitFullscreenUsecase = mock(),
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 onNeedToRequestPermissions = { },
             ),
         )
@@ -3347,6 +3503,8 @@ class PromptFeatureTest {
                 activity = mock(),
                 store = store,
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 tabsUseCases = mock(),
                 fragmentManager = fragmentManager,
                 onNeedToRequestPermissions = {},
@@ -3381,6 +3539,8 @@ class PromptFeatureTest {
                 tabsUseCases = mock(),
                 isCreditCardAutofillEnabled = { true },
                 fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
                 mainDispatcher = testDispatcher,
                 onNeedToRequestPermissions = { },
             ),
@@ -3410,6 +3570,8 @@ class PromptFeatureTest {
             loginValidationDelegate = mock(),
             isSaveLoginEnabled = { true },
             fileUploadsDirCleaner = mock(),
+            isEmailMaskFeatureEnabled = { false },
+            isSuggestEmailMaskEnabled = { false },
             onNeedToRequestPermissions = { },
         )
         val promptRequest: PromptRequest.FolderUploadPrompt = mock()
