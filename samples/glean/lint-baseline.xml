@@ -23,15 +23,4 @@
             column="6"/>
     </issue>
 
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.nimbus_default_endpoint` appears to be unused"
-        errorLine1="    &lt;string name=&quot;nimbus_default_endpoint&quot; translatable=&quot;false&quot;>https://settings.stage.mozaws.net&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/endpoints.xml"
-            line="7"
-            column="13"/>
-    </issue>
-
 </issues>
