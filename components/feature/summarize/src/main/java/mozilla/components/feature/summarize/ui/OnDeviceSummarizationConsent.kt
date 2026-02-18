@@ -4,16 +4,12 @@
 
 package mozilla.components.feature.summarize.ui
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,48 +17,53 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.FilledButton
+import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.summarize.R
-import mozilla.components.feature.summarize.SummarizationAction
-import mozilla.components.feature.summarize.SummarizationAction.ConsentAction
+import mozilla.components.feature.summarize.SummarizationAction.OnDeviceSummarizationShakeConsentAction
 
 /**
- * Composable to be rendered at the summarization consent state where we ask users if they
- * want to use the feature.
+ * Composable to be rendered to request user consent to allow on-device summarization.
  */
 @Composable
-internal fun SummarizationConsent(
-    productName: String,
+internal fun OnDeviceSummarizationConsent(
     modifier: Modifier = Modifier,
-    dispatchAction: (SummarizationAction) -> Unit = {},
+    productName: String,
+    dispatchAction: (OnDeviceSummarizationShakeConsentAction) -> Unit = {},
 ) {
-    // TODO - we need to determine when to show:
-    //  an on-device permission or remote permission.
-    OnDeviceSummarizerConsent(
+    OnDeviceSummarizationConsentContent(
         modifier = modifier,
         productName = productName,
+        onClickLearnMore = {
+            dispatchAction(OnDeviceSummarizationShakeConsentAction.AllowClicked)
+        },
         onClickAllow = {
-            dispatchAction(ConsentAction.AllowClicked)
+            dispatchAction(OnDeviceSummarizationShakeConsentAction.AllowClicked)
         },
         onClickCancel = {
-            dispatchAction(ConsentAction.CancelClicked)
+            dispatchAction(OnDeviceSummarizationShakeConsentAction.CancelClicked)
         },
     )
 }
 
 @Composable
-private fun OnDeviceSummarizerConsent(
-    productName: String,
+private fun OnDeviceSummarizationConsentContent(
     modifier: Modifier,
+    productName: String,
+    onClickLearnMore: () -> Unit,
     onClickAllow: () -> Unit,
     onClickCancel: () -> Unit,
 ) {
     Column(modifier) {
-        OnDeviceSummarizerContent(productName)
+        OnDeviceSummarizationDescription(
+            productName = productName,
+            onClickLearnMore = onClickLearnMore,
+        )
+
         Spacer(modifier = Modifier.height(AcornTheme.layout.space.static300))
-        OnDeviceSummarizerButtons(
+
+        OnDeviceSummarizationButtons(
             onClickAllow = onClickAllow,
             onClickCancel = onClickCancel,
         )
@@ -70,29 +71,36 @@ private fun OnDeviceSummarizerConsent(
 }
 
 @Composable
-private fun OnDeviceSummarizerContent(
-    productName: String,
+private fun OnDeviceSummarizationDescription(
     modifier: Modifier = Modifier,
+    productName: String,
+    onClickLearnMore: () -> Unit,
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = stringResource(R.string.mozac_summarize_consent_title),
+            text = stringResource(R.string.mozac_summarize_shake_consent_on_device_title),
             style = AcornTheme.typography.headline6,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
+
         Spacer(modifier = Modifier.height(AcornTheme.layout.space.static100))
+
         Text(
-            text = stringResource(R.string.mozac_summarize_consent_message_on_device, productName),
+            text = stringResource(R.string.mozac_summarize_shake_consent_on_device_message, productName),
             style = AcornTheme.typography.body2,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+
+        Spacer(modifier = Modifier.height(AcornTheme.layout.space.static200))
+
+        LearnMoreLinkText(onClick = onClickLearnMore)
     }
 }
 
 @Composable
-private fun OnDeviceSummarizerButtons(
+private fun OnDeviceSummarizationButtons(
     modifier: Modifier = Modifier,
     onClickAllow: () -> Unit,
     onClickCancel: () -> Unit,
@@ -103,31 +111,23 @@ private fun OnDeviceSummarizerButtons(
         FilledButton(
             modifier = Modifier.fillMaxWidth(),
             onClick = onClickAllow,
-        ) {
-            Text(text = stringResource(R.string.mozac_summarize_consent_button_positive_on_device))
-        }
+            text = stringResource(R.string.mozac_summarize_shake_consent_on_device_button_positive),
+        )
+
         Spacer(Modifier.height(AcornTheme.layout.space.static200))
+
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
+            text = stringResource(R.string.mozac_summarize_shake_consent_on_device_negative_button),
             onClick = onClickCancel,
-        ) {
-            Text(text = stringResource(R.string.mozac_summarize_consent_button_negative_on_device))
-        }
+        )
     }
 }
 
 @PreviewLightDark
 @Composable
-private fun PreviewSummarizationConsent() = AcornTheme {
-    Scaffold { paddingValues ->
-        Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            SummarizationConsent(productName = "FenixPreview")
-        }
+private fun PreviewOnDeviceSummarizationContent() = AcornTheme {
+    Surface {
+        OnDeviceSummarizationConsent(productName = "Firefox")
     }
 }

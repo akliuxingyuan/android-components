@@ -27,7 +27,12 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.feature.summarize.ui.SummarizationConsent
+import mozilla.components.feature.summarize.ui.DownloadConsent
+import mozilla.components.feature.summarize.ui.DownloadError
+import mozilla.components.feature.summarize.ui.DownloadProgress
+import mozilla.components.feature.summarize.ui.InfoError
+import mozilla.components.feature.summarize.ui.OffDeviceSummarizationConsent
+import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
 
 /**
  * The corner ration of the handle shape
@@ -43,10 +48,10 @@ fun SummarizationUi(
 ) {
     SummarizationScreen(
         modifier = Modifier.fillMaxWidth(),
-        productName = productName,
         store = SummarizationStore(
             initialState = SummarizationState(
                 pageSummarizationState = PageSummarizationState.Inert,
+                productName = productName,
             ),
             reducer = ::summarizationReducer,
             middleware = listOf(SummarizationMiddleware()),
@@ -56,23 +61,47 @@ fun SummarizationUi(
 
 @Composable
 private fun SummarizationScreen(
-    productName: String,
     modifier: Modifier = Modifier,
     store: SummarizationStore,
 ) {
     val state by store.stateFlow.collectAsStateWithLifecycle()
 
     SummarizationScreenScaffold(modifier = modifier) {
-        when (state.pageSummarizationState) {
+        when (val pageState = state.pageSummarizationState) {
             is PageSummarizationState.Inert, // TODO remove once we wire middleware
-            is PageSummarizationState.WaitingForConsent,
-                -> {
-                SummarizationConsent(
-                    productName = productName,
+            is PageSummarizationState.ShakeConsentRequired,
+            -> {
+                OffDeviceSummarizationConsent(
                     dispatchAction = {
                         store.dispatch(it)
                     },
                 )
+            }
+            is PageSummarizationState.ShakeConsentWithDownloadRequired -> {
+                OnDeviceSummarizationConsent(
+                    productName = state.productName,
+                    dispatchAction = {
+                        store.dispatch(it)
+                    },
+                )
+            }
+            is PageSummarizationState.DownloadConsentRequired -> {
+                DownloadConsent(
+                    productName = state.productName,
+                    dispatchAction = {
+                        store.dispatch(it)
+                    },
+                )
+            }
+            is PageSummarizationState.Downloading -> DownloadProgress(
+                downloadState = pageState,
+            )
+            is PageSummarizationState.Error -> {
+                if (pageState.error is SummarizationError.DownloadFailed) {
+                    DownloadError()
+                } else {
+                    InfoError()
+                }
             }
 
             else -> Unit
@@ -134,7 +163,19 @@ private class SummarizationStatePreviewProvider : PreviewParameterProvider<Summa
             PageSummarizationState.Error(SummarizationError.ContentTooLong),
         ),
         SummarizationState(
-            PageSummarizationState.WaitingForConsent,
+            PageSummarizationState.ShakeConsentRequired,
+        ),
+        SummarizationState(
+            PageSummarizationState.ShakeConsentWithDownloadRequired,
+        ),
+        SummarizationState(
+            PageSummarizationState.DownloadConsentRequired,
+        ),
+        SummarizationState(
+            PageSummarizationState.Downloading(12.13f, 9.04f),
+        ),
+        SummarizationState(
+            PageSummarizationState.Error(SummarizationError.NetworkError),
         ),
     )
 }
@@ -145,9 +186,8 @@ private fun SummarizationScreenPreview(
     @PreviewParameter(SummarizationStatePreviewProvider::class) state: SummarizationState,
 ) {
     SummarizationScreen(
-        productName = "FenixPreview",
         store = SummarizationStore(
-            initialState = state,
+            initialState = state.copy(productName = "Firefox"),
             reducer = ::summarizationReducer,
             middleware = listOf(SummarizationMiddleware()),
         ),

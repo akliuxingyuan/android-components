@@ -12,6 +12,7 @@ import mozilla.components.lib.state.State
 internal data class SummarizationState(
     val pageSummarizationState: PageSummarizationState,
     val summarizedText: String = "",
+    val productName: String = "",
 ) : State
 
 /**
@@ -19,18 +20,26 @@ internal data class SummarizationState(
  */
 internal sealed class PageSummarizationState {
     data object Inert : PageSummarizationState()
-    data object WaitingForConsent : PageSummarizationState()
+    data object ShakeConsentRequired : PageSummarizationState()
+    data object ShakeConsentWithDownloadRequired : PageSummarizationState()
+    data object DownloadConsentRequired : PageSummarizationState()
+    data class Downloading(val bytesToDownload: Float, val bytesDownloaded: Float) : PageSummarizationState() {
+        val downloadProgress: Float get() = bytesToDownload / bytesToDownload
+    }
     data object Summarizing : PageSummarizationState()
     data class Summarized(val text: String) : PageSummarizationState()
     data class Error(val error: SummarizationError) : PageSummarizationState()
 }
 
 internal sealed class SummarizationError {
-    object ConsentDenied : SummarizationError()
-    object ContentUnavailable : SummarizationError()
-    object ContentTooShort : SummarizationError()
-    object ContentTooLong : SummarizationError()
-    object SummarizationFailed : SummarizationError()
-    object InvalidSummary : SummarizationError()
-    object NetworkError : SummarizationError()
+    data object ConsentDenied : SummarizationError()
+    data object ContentUnavailable : SummarizationError()
+    data object ContentTooShort : SummarizationError()
+    data object ContentTooLong : SummarizationError()
+    data object DownloadDenied : SummarizationError()
+    data object DownloadFailed : SummarizationError()
+    data object DownloadCancelled : SummarizationError()
+    data object SummarizationFailed : SummarizationError()
+    data object InvalidSummary : SummarizationError()
+    data object NetworkError : SummarizationError()
 }

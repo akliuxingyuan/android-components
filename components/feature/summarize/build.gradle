@@ -27,11 +27,13 @@ dependencies {
     implementation project(':components:concept-engine')
     implementation project(':components:lib-state')
     implementation project(':components:compose-base')
+    implementation project(':components:ui-icons')
 
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.ui.tooling.preview
     implementation libs.androidx.compose.ui
     implementation libs.androidx.compose.material3
+    implementation libs.androidx.material3
     debugImplementation libs.androidx.compose.ui.tooling
 
     testImplementation libs.androidx.test.junit

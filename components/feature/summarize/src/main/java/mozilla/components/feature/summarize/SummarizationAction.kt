@@ -12,18 +12,40 @@ import mozilla.components.lib.state.Action
 internal interface SummarizationAction : Action {
 
     /**
-     * Actions for the consent step of summarization user flow
+     * Actions for the consent step of the shake to summarize user flow when using a on-device model
      */
-    sealed interface ConsentAction : SummarizationAction {
+    sealed interface OnDeviceSummarizationShakeConsentAction : SummarizationAction {
+        data object LearnMoreClicked : OnDeviceSummarizationShakeConsentAction
+        data object AllowClicked : OnDeviceSummarizationShakeConsentAction
+        data object CancelClicked : OnDeviceSummarizationShakeConsentAction
+    }
 
-        /**
-         * Action to indicate the user has accepted the consent and allowed summarization
-         */
-        data object AllowClicked : ConsentAction
+    /**
+     * Actions for the consent step of the shake to summarize user flow when using a off-device model
+     */
+    sealed interface OffDeviceSummarizationShakeConsentAction : SummarizationAction {
+        data object LearnMoreClicked : OffDeviceSummarizationShakeConsentAction
+        data object AllowClicked : OffDeviceSummarizationShakeConsentAction
+        data object CancelClicked : OffDeviceSummarizationShakeConsentAction
+    }
 
-        /**
-         * Action to indicate the user has canceled the consent and disallowed summarization
-         */
-        data object CancelClicked : ConsentAction
+    sealed interface DownloadConsentAction : SummarizationAction {
+        data object LearnMoreClicked : DownloadConsentAction
+        data object AllowClicked : DownloadConsentAction
+        data object CancelClicked : DownloadConsentAction
+    }
+
+    sealed interface DownloadInProgressAction : SummarizationAction {
+        data object CancelClicked : DownloadInProgressAction
+    }
+
+    sealed interface DownloadErrorAction : SummarizationAction {
+        data object LearnMoreClicked : DownloadErrorAction
+        data object TryAgainClicked : DownloadErrorAction
+        data object CancelClicked : DownloadErrorAction
+    }
+
+    sealed interface ErrorAction : SummarizationAction {
+        data object LearnMoreClicked : ErrorAction
     }
 }
