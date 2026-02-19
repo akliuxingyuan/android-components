@@ -24,7 +24,7 @@ import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 
-internal const val FETCH_TIMEOUT_MS: Long = 300_000L
+internal const val FETCH_TIMEOUT_MS: Long = 10_000L
 
 /**
  * Feature for accessing Firefox Relay service.
