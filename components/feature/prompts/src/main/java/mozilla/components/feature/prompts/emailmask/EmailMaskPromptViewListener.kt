@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.prompt.PromptRequest
 import mozilla.components.concept.storage.Login
@@ -32,6 +33,7 @@ internal class EmailMaskPromptViewListener(
     private val emailMaskDelegate: EmailMaskDelegate,
     private var sessionId: String? = null,
 ) : EmailMaskPromptView.Listener {
+    private val logger = Logger("EmailMaskPromptViewListener")
 
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
     var onEmailMaskPromptClick: () -> Unit = { }
@@ -53,16 +55,22 @@ internal class EmailMaskPromptViewListener(
                 it.onDismiss()
             }
         } catch (e: RuntimeException) {
-            Logger.error("Can't dismiss this prompt", e)
+            logger.error("Can't dismiss this prompt", e)
         }
         emailMaskBar.hidePrompt()
     }
 
-    override fun onEmailMaskPromptClick(generatedFor: String) {
+    override fun onEmailMaskPromptClick() {
         scope.launch {
             // Explicitly switch to the IO thread here to avoid blocking the main thread and causing UI slowdowns.
             val emailMask = withContext(Dispatchers.IO) {
-                emailMaskDelegate.onEmailMaskClick(generatedFor)
+                val selectedTabUrl = browserStore.state.selectedTab?.content?.url
+                if (selectedTabUrl == null) {
+                    logger.error("Selected tab URL was null")
+                    null
+                } else {
+                    emailMaskDelegate.onEmailMaskClick(selectedTabUrl)
+                }
             } ?: return@launch
 
             val emailMaskTemplateLogin = logins?.firstOrNull { it.hint == LoginHint.EMAIL_MASK }
