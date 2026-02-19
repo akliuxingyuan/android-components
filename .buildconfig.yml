@@ -991,6 +991,7 @@ projects:
     - components:browser-thumbnails
     - components:browser-toolbar
     - components:compose-base
+    - components:compose-cfr
     - components:concept-awesomebar
     - components:concept-base
     - components:concept-engine
@@ -1073,6 +1074,7 @@ projects:
     - components:browser-thumbnails
     - components:browser-toolbar
     - components:compose-base
+    - components:compose-cfr
     - components:concept-awesomebar
     - components:concept-base
     - components:concept-engine
@@ -1874,6 +1876,7 @@ projects:
     - components:browser-toolbar
     - components:compose-awesomebar
     - components:compose-base
+    - components:compose-cfr
     - components:concept-awesomebar
     - components:concept-base
     - components:concept-engine
