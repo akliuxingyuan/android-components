@@ -24,6 +24,7 @@ android {
 dependencies {
     implementation project(":components:browser-state")
     implementation project(":components:concept-awesomebar")
+    implementation project(":components:compose-base")
     implementation project(":components:support-base")
     implementation project(":components:support-utils")
     implementation project(":components:ui-icons")
