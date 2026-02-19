@@ -58,6 +58,12 @@ internal class EmailMaskPromptViewListener(
         emailMaskBar.hidePrompt()
     }
 
+    override fun shouldShowEmailMaskCfr() = emailMaskDelegate.shouldShowEmailMaskCfr()
+
+    override fun onEmailMaskCfrDismissed() {
+        emailMaskDelegate.onEmailMaskCfrDismissed()
+    }
+
     override fun onEmailMaskPromptClick(generatedFor: String) {
         scope.launch {
             // Explicitly switch to the IO thread here to avoid blocking the main thread and causing UI slowdowns.

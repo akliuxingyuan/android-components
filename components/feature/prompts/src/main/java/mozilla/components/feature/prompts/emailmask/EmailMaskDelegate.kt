@@ -18,6 +18,16 @@ interface EmailMaskDelegate {
         get() = null
 
     /**
+     * Whether to show the email mask CFR.
+     */
+    fun shouldShowEmailMaskCfr(): Boolean
+
+    /**
+     * Called when the email mask CFR is dismissed.
+     */
+    fun onEmailMaskCfrDismissed()
+
+    /**
      * Invoked when user clicks on "Email masks".
      *
      * @param generatedFor The website for which the address is generated.
