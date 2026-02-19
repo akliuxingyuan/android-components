@@ -23,8 +23,8 @@ android {
 
 dependencies {
     api project(":components:concept-integrity")
-    implementation libs.integrity
     implementation libs.kotlinx.coroutines.play.services
+    implementation libs.play.integrity
 
 
     testImplementation project(':components:support-test')
