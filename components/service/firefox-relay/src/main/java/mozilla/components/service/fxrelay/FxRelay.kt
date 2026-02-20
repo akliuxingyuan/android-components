@@ -16,6 +16,7 @@ import mozilla.components.service.fxrelay.eligibility.RelayPlanTier
 import mozilla.components.service.fxrelay.ext.asEmailMask
 import mozilla.components.service.fxrelay.ext.freeLimitReached
 import mozilla.components.support.base.log.logger.Logger
+import mozilla.components.support.ktx.kotlin.extractHostUrl
 
 private const val RELAY_SCOPE_URL = "https://identity.mozilla.com/apps/relay"
 private const val RELAY_BASE_URL = "https://relay.firefox.com"
@@ -156,9 +157,11 @@ internal class FxRelayImpl(
             { null },
         ) {
             try {
+                val extractedGeneratedFor = generatedFor.extractHostUrl()
+                val extractedDescription = description.extractHostUrl()
                 val address = getOrCreateClient().createAddress(
-                    description = description,
-                    generatedFor = generatedFor,
+                    description = extractedDescription,
+                    generatedFor = extractedGeneratedFor,
                     usedOn = "", // always empty string for now until we can surface this property correctly.
                 )
 

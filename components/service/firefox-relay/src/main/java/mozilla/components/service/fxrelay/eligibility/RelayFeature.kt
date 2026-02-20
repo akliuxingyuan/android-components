@@ -121,8 +121,8 @@ class RelayFeature(
      *
      * @return an email masks or `null` if the operation fails.
      */
-    suspend fun getOrCreateNewMask(generatedFor: String): EmailMask? {
-        val mask = fxRelay?.createEmailMask(generatedFor)
+    suspend fun getOrCreateNewMask(generatedFor: String, description: String): EmailMask? {
+        val mask = fxRelay?.createEmailMask(generatedFor, description)
         store.dispatch(RelayEligibilityAction.UpdateLastUsed(mask))
         return mask
     }

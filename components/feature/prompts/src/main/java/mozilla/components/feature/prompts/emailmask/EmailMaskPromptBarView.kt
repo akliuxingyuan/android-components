@@ -57,9 +57,7 @@ class EmailMaskPromptBarView @JvmOverloads constructor(
                     emailMaskPromptListener?.onEmailMaskCfrDismissed()
                 },
                 onMaskEmailClicked = {
-                    // Note: We need to get the tab URL to determine the "generatedFor" value to be passed here.
-                    // https://bugzilla.mozilla.org/show_bug.cgi?id=2016773
-                    emailMaskPromptListener?.onEmailMaskPromptClick("")
+                    emailMaskPromptListener?.onEmailMaskPromptClick()
                 },
             )
         }
