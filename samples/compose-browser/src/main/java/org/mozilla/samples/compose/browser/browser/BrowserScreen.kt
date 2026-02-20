@@ -32,6 +32,7 @@ import mozilla.components.compose.browser.awesomebar.AwesomeBar
 import mozilla.components.compose.browser.toolbar.BrowserToolbar
 import mozilla.components.compose.browser.toolbar.store.BrowserEditToolbarAction
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarAction
+import mozilla.components.compose.browser.toolbar.store.BrowserToolbarState
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarStore
 import mozilla.components.compose.browser.toolbar.ui.BrowserToolbarQuery
 import mozilla.components.compose.engine.WebContent
@@ -44,8 +45,8 @@ import mozilla.components.feature.awesomebar.provider.SearchSuggestionProvider
 import mozilla.components.feature.awesomebar.provider.SessionSuggestionProvider
 import mozilla.components.feature.fxsuggest.FxSuggestSuggestionProvider
 import mozilla.components.lib.state.Store
-import mozilla.components.lib.state.ext.composableStore
 import mozilla.components.lib.state.ext.observeAsComposableState
+import mozilla.components.lib.state.helpers.StoreProvider.Companion.composableStore
 import org.mozilla.samples.compose.browser.browser.BrowserToolbarMiddleware.Companion.Dependencies
 import org.mozilla.samples.compose.browser.components
 import mozilla.components.feature.awesomebar.R as awesomebarR
@@ -59,11 +60,12 @@ import mozilla.components.feature.fxsuggest.R as fxsuggestR
 fun BrowserScreen(navController: NavController) {
     val context = LocalContext.current
 
-    val store = composableStore<BrowserScreenState, BrowserScreenAction> { restoredState ->
-        BrowserScreenStore(restoredState ?: BrowserScreenState())
+    val store by composableStore(BrowserScreenState()) { restoredState ->
+        BrowserScreenStore(restoredState)
     }
-    val toolbarStore = remember {
+    val toolbarStore by composableStore(BrowserToolbarState()) { restoredState ->
         BrowserToolbarStore(
+            initialState = restoredState,
             middleware = listOf(
                 BrowserToolbarMiddleware(
                     initialDependencies = Dependencies(
