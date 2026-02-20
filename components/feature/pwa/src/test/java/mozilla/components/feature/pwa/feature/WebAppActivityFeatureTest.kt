@@ -48,6 +48,8 @@ class WebAppActivityFeatureTest {
         openMocks(this)
 
         `when`(activity.window).thenReturn(window)
+        `when`(activity.applicationInfo).thenReturn(mock())
+        `when`(window.context).thenReturn(activity)
         `when`(window.decorView).thenReturn(decorView)
         `when`(window.attributes).thenReturn(layoutParams)
 

@@ -5,6 +5,7 @@
 package mozilla.components.support.ktx.android.view
 
 import android.app.Activity
+import android.graphics.Color
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES
 import android.view.View
@@ -12,6 +13,7 @@ import android.view.WindowManager
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.ViewCompat.onApplyWindowInsets
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import mozilla.components.support.base.log.logger.Logger
@@ -98,15 +100,27 @@ fun Activity.reportFullyDrawnSafe(errorLogger: Logger) {
 
 /**
  * For devices running Android 9 Pie, force the given activity to enter edge-to-edge mode.
+ *
+ * We're using a subset of what [WindowCompat.enableEdgeToEdge] does mixed with our historical
+ * display cutout handling.
+ *
+ * To use [WindowCompat.enableEdgeToEdge] directly, we have to manually update
+ * [tryDisableEdgeToEdge] to do the inverse of [WindowCompat.enableEdgeToEdge], because unfortunately
+ * there is no function to disable edge-to-edge in [WindowCompat].
  */
 fun Activity.tryEnableEnterEdgeToEdge() {
     if (SDK_INT >= VERSION_CODES.P) {
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-        )
+        // This triggers the initialization of the decor view here to prevent the attributes set by
+        // this method from getting overwritten by the initialization later.
+        window.decorView
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.setSystemBarsBackground(navigationBarColor = Color.TRANSPARENT)
         window.attributes.layoutInDisplayCutoutMode =
             WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+    }
+    if (SDK_INT >= VERSION_CODES.Q) {
+        window.setNavigationBarContrastEnforced(false)
     }
 }
 
@@ -115,7 +129,7 @@ fun Activity.tryEnableEnterEdgeToEdge() {
  */
 fun Activity.tryDisableEdgeToEdge() {
     if (SDK_INT >= VERSION_CODES.P) {
-        window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         window.attributes.layoutInDisplayCutoutMode =
             WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
     }
