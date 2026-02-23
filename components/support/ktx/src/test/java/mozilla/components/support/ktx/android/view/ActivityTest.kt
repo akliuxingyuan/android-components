@@ -51,8 +51,6 @@ class ActivityTest {
         layoutParams = WindowManager.LayoutParams()
 
         `when`(activity.window).thenReturn(window)
-        `when`(activity.applicationInfo).thenReturn(mock())
-        `when`(window.context).thenReturn(activity)
         `when`(window.decorView).thenReturn(decorView)
         `when`(window.decorView.viewTreeObserver).thenReturn(viewTreeObserver)
         `when`(window.decorView.onApplyWindowInsets(windowInsets)).thenReturn(windowInsets)
@@ -68,7 +66,7 @@ class ActivityTest {
         verify(insetsController).systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         verify(window.decorView).setOnApplyWindowInsetsListener(any())
 
-        verify(decorView).setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+        verify(window).setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         assertEquals(WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES, layoutParams.layoutInDisplayCutoutMode)
     }
 
@@ -106,7 +104,6 @@ class ActivityTest {
     fun `GIVEN enterImmersiveMode was called WHEN window insets are not changed THEN insetsController does nothing`() {
         val insetListenerCaptor = argumentCaptor<View.OnApplyWindowInsetsListener>()
         doReturn(0).`when`(windowInsets).systemWindowInsetTop
-        `when`(window.insetsController).thenReturn(mock())
 
         activity.enterImmersiveMode(insetsController)
 
@@ -133,6 +130,7 @@ class ActivityTest {
     fun `GIVEN Android version P WHEN exitImmersiveMode is called THEN notch flags are reset to defaults`() {
         activity.exitImmersiveMode()
 
+        verify(window).clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         assertEquals(WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT, layoutParams.layoutInDisplayCutoutMode)
     }
 
