@@ -30,7 +30,7 @@ dependencies {
     implementation project(':components:concept-llm')
     implementation project(':components:lib-state')
     implementation project(':components:ui-icons')
-    api project(':components:ui-richtext')
+    implementation project(':components:ui-richtext')
 
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.ui
