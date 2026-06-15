@@ -4,7 +4,11 @@ title: Changelog
 permalink: /changelog/
 ---
 
-# 153.0 (In Development)
+# 154.0 (In Development)
+* **browser-icons**
+    * ⚠️ **Breaking change**: Removed the `useMerinoManifest` parameter from `BrowserIcons`. The Merino manifest is now always used as the icon source. Removed `TippyTopIconPreparer` and the `IconRequest.Resource.Type.TIPPY_TOP` resource type. [Bug 2047476](https://bugzilla.mozilla.org/show_bug.cgi?id=2047476)
+
+# 153.0
 * **support-utils**
   * 🆕 Added `DiskLruCacheStore` to provide shared `DiskLruCache` read, write, remove, and clear helpers for disk-backed components.
   * 🆕 Added `CacheDirectoryMigration` to help migrating the cache directory used by `DiskLruCache`.
