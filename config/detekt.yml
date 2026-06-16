@@ -798,6 +798,9 @@ acorn-detekt-rules:
     active: true
   AcornThemeUsage:
     active: false
+  MaterialOutlinedButtonUsage:
+    active: true
+    excludes: ['**/compose/base/button/Button.kt']
   MaterialSwitchUsage:
     active: true
     excludes: ['**/compose/base/Switch.kt']
