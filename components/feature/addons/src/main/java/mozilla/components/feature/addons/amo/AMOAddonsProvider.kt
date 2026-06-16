@@ -10,10 +10,11 @@ import android.graphics.BitmapFactory
 import android.util.AtomicFile
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.fetch.Request
@@ -80,6 +81,8 @@ class AMOAddonsProvider(
     private val logger = Logger("AMOAddonsProvider")
 
     private val diskCacheLock = Any()
+
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     // Acts as an in-memory cache for the fetched addon's icons.
     @VisibleForTesting
@@ -226,12 +229,12 @@ class AMOAddonsProvider(
     }
 
     /**
-     * Loads the add-on icon for the given [iconUrl] and stores it in the cache.
+     * Asynchronously loads add-on icon for the given [iconUrl] and stores in the cache.
      */
     @VisibleForTesting
-    internal suspend fun loadIcon(addonId: String, iconUrl: String): Bitmap? {
+    internal fun loadIconAsync(addonId: String, iconUrl: String): Deferred<Bitmap?> = scope.async {
         val cachedIcon = iconsCache[addonId]
-        return if (cachedIcon != null) {
+        if (cachedIcon != null) {
             logger.info("Icon for $addonId was found in the cache")
             cachedIcon
         } else if (iconUrl.isBlank()) {
@@ -263,16 +266,14 @@ class AMOAddonsProvider(
     }
 
     @VisibleForTesting
-    internal suspend fun List<Addon>.loadIcons(): List<Addon> = coroutineScope {
-        this@loadIcons.map { addon ->
+    internal suspend fun List<Addon>.loadIcons(): List<Addon> {
+        this.map {
             // Instead of loading icons one by one, let's load them async
-            // so we can do multiple request at the time. These are launched as children
-            // of the calling coroutine so they are cancelled together with it, instead of
-            // being orphaned on a long-lived scope and leaking the caller.
-            async { loadIcon(addon.id, addon.iconUrl) }
+            // so we can do multiple request at the time.
+            loadIconAsync(it.id, it.iconUrl)
         }.awaitAll() // wait until all parallel icon requests finish.
 
-        this@loadIcons.map { addon ->
+        return this.map { addon ->
             addon.copy(icon = iconsCache[addon.id])
         }
     }
