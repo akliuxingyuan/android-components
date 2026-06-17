@@ -31,7 +31,6 @@ import mozilla.components.service.fxa.PeriodicSyncConfig
 import mozilla.components.service.fxa.SyncConfig
 import mozilla.components.service.fxa.SyncEngine
 import mozilla.components.service.fxa.manager.FxaAccountManager
-import mozilla.components.service.fxa.manager.SCOPE_SESSION
 import mozilla.components.service.fxa.manager.SCOPE_SYNC
 import mozilla.components.service.fxa.sync.GlobalSyncableStoreProvider
 import mozilla.components.service.fxa.sync.SyncReason
@@ -67,7 +66,6 @@ class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteListener,
             SyncConfig(setOf(SyncEngine.Passwords), PeriodicSyncConfig()),
             setOf(
                 SCOPE_SYNC,
-                SCOPE_SESSION,
             ),
         )
     }

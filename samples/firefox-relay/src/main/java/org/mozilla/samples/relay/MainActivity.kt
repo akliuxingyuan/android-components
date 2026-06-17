@@ -29,7 +29,6 @@ import mozilla.components.service.fxa.SyncConfig
 import mozilla.components.service.fxa.SyncEngine
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.service.fxa.manager.SCOPE_PROFILE
-import mozilla.components.service.fxa.manager.SCOPE_SESSION
 import mozilla.components.service.fxa.manager.SCOPE_SYNC
 import mozilla.components.service.fxa.sync.SyncReason
 import mozilla.components.service.fxa.toAuthType
@@ -62,7 +61,6 @@ open class MainActivity : AppCompatActivity(), LoginFragment.OnLoginCompleteList
             SyncConfig(setOf(SyncEngine.Passwords), PeriodicSyncConfig()),
             setOf(
                 SCOPE_SYNC,
-                SCOPE_SESSION,
                 SCOPE_RELAY,
                 SCOPE_PROFILE,
             ),
