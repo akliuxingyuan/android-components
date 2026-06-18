@@ -8,8 +8,12 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.browser.state.state.MediaSessionState
 import mozilla.components.concept.engine.mediasession.MediaSession
+import mozilla.components.feature.media.MediaNimbus
+import mozilla.components.feature.media.MediaNotificationImprovements
 import mozilla.components.support.test.mock
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -19,6 +23,18 @@ class MediaSessionStateKtTest {
     private val baseActions = PlaybackStateCompat.ACTION_PLAY_PAUSE or
         PlaybackStateCompat.ACTION_PLAY or
         PlaybackStateCompat.ACTION_PAUSE
+
+    @Before
+    fun setUp() {
+        MediaNimbus.features.mediaNotificationImprovements.withCachedValue(
+            MediaNotificationImprovements(enabled = true),
+        )
+    }
+
+    @After
+    fun tearDown() {
+        MediaNimbus.features.mediaNotificationImprovements.withCachedValue(null)
+    }
 
     @Test
     fun `WHEN no track features are set THEN toPlaybackState advertises only base actions`() {
