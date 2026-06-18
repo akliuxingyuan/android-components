@@ -24,26 +24,23 @@ sealed interface ImporterState : State {
      *
      * @property result The outcome of the import.
      */
-    data class Finished(val result: ImporterEvent) : ImporterState
+    data class Finished(val result: ImporterResult) : ImporterState
 }
 
 /**
- * Represents a discrete event emitted by the importer during the import lifecycle.
+ * Represents the outcome of a completed import operation.
  */
-sealed interface ImporterEvent {
-    /** The import process has started. */
-    data object Started : ImporterEvent
-
+sealed interface ImporterResult {
     /**
      * The import succeeded.
      *
      * @property importCount The number of items imported.
      */
-    data class Success(val importCount: Int) : ImporterEvent
+    data class Success(val importCount: Int) : ImporterResult
 
     /** The import failed due to an error. */
-    data object Failure : ImporterEvent
+    data object Failure : ImporterResult
 
     /** The user cancelled the import. */
-    data object Canceled : ImporterEvent
+    data object Canceled : ImporterResult
 }

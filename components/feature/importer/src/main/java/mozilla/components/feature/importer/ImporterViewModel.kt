@@ -18,7 +18,7 @@ internal class ImporterViewModel(
 ) : ViewModel() {
     val store = ImporterStore(
         initialState = ImporterState.Inert,
-        reducer = { _, action -> importerReducer(action) },
+        reducer = ::importerReducer,
         middleware = listOf(ImporterMiddleware(importer, viewModelScope)),
     )
 
