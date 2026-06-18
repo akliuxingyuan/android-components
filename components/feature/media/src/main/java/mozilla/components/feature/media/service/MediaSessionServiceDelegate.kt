@@ -136,6 +136,12 @@ internal class MediaSessionServiceDelegate(
                 controller?.pause()
                 emitNotificationPauseFact()
             }
+            AbstractMediaSessionService.ACTION_NEXT_TRACK -> {
+                controller?.nextTrack()
+            }
+            AbstractMediaSessionService.ACTION_PREV_TRACK -> {
+                controller?.previousTrack()
+            }
             else -> logger.debug("Can't process action: ${intent?.action}")
         }
     }
