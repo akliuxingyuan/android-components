@@ -11,6 +11,7 @@ import mozilla.components.tooling.fetch.tests.FetchTestCases
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 
 @RunWith(AndroidJUnit4::class)
 class OkHttpFetchTestCases : FetchTestCases() {
@@ -23,5 +24,13 @@ class OkHttpFetchTestCases : FetchTestCases() {
     fun `Client instance`() {
         // We need at least one test case defined here so that this is recognized as test class.
         assertIs<OkHttpClient>(createNewClient())
+    }
+
+    @Test
+    fun `getOrCreateCache reuses a single Cache instance`() {
+        assertSame(
+            OkHttpClient.getOrCreateCache(testContext),
+            OkHttpClient.getOrCreateCache(testContext),
+        )
     }
 }
