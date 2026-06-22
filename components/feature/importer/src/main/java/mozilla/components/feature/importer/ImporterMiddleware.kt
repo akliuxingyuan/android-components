@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mozilla.components.concept.bookmarks.file.BookmarksFileImporter
+import mozilla.components.concept.bookmarks.file.BookmarksImporterError
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import kotlin.time.Duration.Companion.seconds
@@ -44,7 +45,9 @@ class ImporterMiddleware(
                     delay(1.seconds)
                     importer.importBookmarksFromUri(action.uri)
                         .onFailure {
-                            store.dispatch(ImporterAction.ImportFailed)
+                            val error = (it as? BookmarksImporterError)
+                                ?: BookmarksImporterError.UnknownImporterError(it)
+                            store.dispatch(ImporterAction.ImportFailed(error))
                         }
                         .onSuccess {
                             store.dispatch(ImporterAction.ImportFinished(it.count))
@@ -72,7 +75,7 @@ class ImporterMiddleware(
             ImporterAction.ImportStarted,
             ImporterAction.ViewAppeared,
             is ImporterAction.ImportFinished,
-            ImporterAction.ImportFailed,
+            is ImporterAction.ImportFailed,
                 -> ActionResult.ContinueChain
         }
 

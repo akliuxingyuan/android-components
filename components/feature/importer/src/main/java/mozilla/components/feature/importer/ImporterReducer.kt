@@ -19,7 +19,7 @@ fun importerReducer(action: ImporterAction): ImporterState = when (action) {
     is ImporterAction.FileSelected -> Loading
     ImporterAction.ImportStarted -> Loading
     is ImporterAction.ImportFinished -> Finished(Success(action.bookmarksImported))
-    ImporterAction.ImportFailed -> Finished(Failure)
+    is ImporterAction.ImportFailed -> Finished(Failure(action.error))
     ImporterAction.FileSelectionCanceled,
     ImporterAction.ImportCancelled,
     -> Finished(Canceled)
