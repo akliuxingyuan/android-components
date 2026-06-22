@@ -41,6 +41,7 @@ import mozilla.components.concept.engine.prompt.PromptRequest.MultipleChoice
 import mozilla.components.concept.engine.prompt.PromptRequest.Popup
 import mozilla.components.concept.engine.prompt.PromptRequest.Redirect
 import mozilla.components.concept.engine.prompt.PromptRequest.Repost
+import mozilla.components.concept.engine.prompt.PromptRequest.SaveAddress
 import mozilla.components.concept.engine.prompt.PromptRequest.SaveCreditCard
 import mozilla.components.concept.engine.prompt.PromptRequest.SaveLoginPrompt
 import mozilla.components.concept.engine.prompt.PromptRequest.SelectAddress
@@ -971,6 +972,14 @@ class PromptFeature private constructor(
                 )
             }
 
+            is SaveAddress -> {
+                logger.debug(
+                    "Received SaveAddress in PromptFeature: ${promptRequest.address}",
+                )
+                dismissDialogRequest(promptRequest, session)
+                return
+            }
+
             is SaveCreditCard -> {
                 if (!isCreditCardAutofillEnabled.invoke() || creditCardValidationDelegate == null ||
                     !promptRequest.creditCard.isValid
@@ -1409,6 +1418,7 @@ class PromptFeature private constructor(
             is SelectCreditCard,
             is SaveCreditCard,
             is SelectAddress,
+            is SaveAddress,
             is Share,
             is PromptRequest.IdentityCredential.SelectProvider,
             is PromptRequest.IdentityCredential.SelectAccount,
