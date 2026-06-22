@@ -54,6 +54,7 @@ import mozilla.components.concept.engine.prompt.PromptRequest.TimeSelection
 import mozilla.components.concept.engine.prompt.PromptRequest.WebAuthnRelatedOriginPrompt
 import mozilla.components.concept.identitycredential.Account
 import mozilla.components.concept.identitycredential.Provider
+import mozilla.components.concept.storage.Address
 import mozilla.components.concept.storage.CreditCardEntry
 import mozilla.components.concept.storage.CreditCardValidationDelegate
 import mozilla.components.concept.storage.Login
@@ -62,6 +63,7 @@ import mozilla.components.concept.storage.LoginHint
 import mozilla.components.concept.storage.LoginValidationDelegate
 import mozilla.components.feature.prompts.address.AddressDelegate
 import mozilla.components.feature.prompts.address.AddressPicker
+import mozilla.components.feature.prompts.address.AddressSaveDialogFragment
 import mozilla.components.feature.prompts.address.DefaultAddressDelegate
 import mozilla.components.feature.prompts.certificate.CertificatePicker
 import mozilla.components.feature.prompts.creditcard.CreditCardDelegate
@@ -86,6 +88,7 @@ import mozilla.components.feature.prompts.dialog.emitGeneratedPasswordShownFact
 import mozilla.components.feature.prompts.emailmask.EmailMaskDelegate
 import mozilla.components.feature.prompts.emailmask.EmailMaskPromptViewListener
 import mozilla.components.feature.prompts.ext.executeIfWindowedPrompt
+import mozilla.components.feature.prompts.facts.emitAddressSaveShownFact
 import mozilla.components.feature.prompts.facts.emitCreditCardSaveShownFact
 import mozilla.components.feature.prompts.facts.emitPromptConfirmedFact
 import mozilla.components.feature.prompts.facts.emitPromptDismissedFact
@@ -855,6 +858,7 @@ class PromptFeature private constructor(
                 is Share -> it.onSuccess()
 
                 is SaveCreditCard -> it.onConfirm(value as CreditCardEntry)
+                is SaveAddress -> it.onConfirm(value as Address)
                 is SaveLoginPrompt -> it.onConfirm(value as LoginEntry)
 
                 is Confirm -> {
@@ -973,11 +977,19 @@ class PromptFeature private constructor(
             }
 
             is SaveAddress -> {
-                logger.debug(
-                    "Received SaveAddress in PromptFeature: ${promptRequest.address}",
+                if (!isAddressAutofillEnabled.invoke()) {
+                    dismissDialogRequest(promptRequest, session)
+                    return
+                }
+
+                emitAddressSaveShownFact()
+
+                AddressSaveDialogFragment.newInstance(
+                    sessionId = session.id,
+                    promptRequestUID = promptRequest.uid,
+                    shouldDismissOnLoad = false,
+                    address = promptRequest.address,
                 )
-                dismissDialogRequest(promptRequest, session)
-                return
             }
 
             is SaveCreditCard -> {

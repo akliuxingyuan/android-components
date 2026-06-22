@@ -51,6 +51,7 @@ dependencies {
     testImplementation project(':components:support-test')
     testImplementation project(':components:support-test-libstate')
 
+    testImplementation libs.androidx.fragment.testing
     testImplementation libs.androidx.test.core
     testImplementation libs.androidx.test.junit
     testImplementation libs.kotlin.test
