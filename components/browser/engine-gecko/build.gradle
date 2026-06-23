@@ -117,7 +117,7 @@ def getAppVersionWithoutMilestone() {
 def getVersionNumber() {
     def appVersion = getAppVersionWithoutMilestone()
     def parts = appVersion.split('\\.')
-    def version = parts[0] + "." + parts[1] + "." + getBuildId(gradle.mozconfig.topobjdir)
+    def version = parts[0] + "." + parts[1] + "." + getBuildId(gradle.mozconfig.topobjdir, providers.environmentVariable("MOZ_BUILD_DATE").getOrNull())
 
     if (!gradle.mozconfig.substs.MOZILLA_OFFICIAL && !gradle.mozconfig.substs.MOZ_ANDROID_FAT_AAR_ARCHITECTURES) {
         // Use -SNAPSHOT versions locally to enable the local GeckoView substitution flow.

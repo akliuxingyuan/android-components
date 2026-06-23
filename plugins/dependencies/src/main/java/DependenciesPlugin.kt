@@ -15,7 +15,6 @@ import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 import org.gradle.api.tasks.Input
 import org.gradle.build.event.BuildEventsListenerRegistry
-import org.gradle.internal.scopeids.id.BuildInvocationScopeId
 import org.gradle.kotlin.dsl.always
 import org.gradle.tooling.events.FinishEvent
 import org.gradle.tooling.events.OperationCompletionListener
@@ -172,8 +171,10 @@ abstract class DependenciesPlugin : Plugin<Settings> {
     @get:Inject
     protected abstract val buildEventsListenerRegistry: BuildEventsListenerRegistry
 
+    // No public Gradle API exposes a unique build-invocation id.
     @get:Inject
-    protected abstract val buildInvocationScopeId: BuildInvocationScopeId
+    @Suppress("InternalGradleApiUsage")
+    protected abstract val buildInvocationScopeId: org.gradle.internal.scopeids.id.BuildInvocationScopeId
 
     companion object {
         private val rootGradleBuild = AtomicReference<Gradle?>(null)
@@ -217,6 +218,7 @@ abstract class DependenciesPlugin : Plugin<Settings> {
         ) {
             val outputDir = rootGradle.startParameter.projectProperties["buildMetricsOutputDir"]
                 ?: throw IllegalStateException("buildMetricsOutputDir property is required when buildMetrics is enabled")
+            @Suppress("InternalGradleApiUsage")
             val fileSuffix = rootGradle.startParameter.projectProperties["buildMetricsFileSuffix"]
                 ?: buildInvocationScopeId.id.toString()
 
