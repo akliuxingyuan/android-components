@@ -11,6 +11,7 @@ import mozilla.components.concept.fetch.Headers.Names.CONTENT_DISPOSITION
 import mozilla.components.concept.fetch.Headers.Names.CONTENT_LENGTH
 import mozilla.components.concept.fetch.Headers.Names.CONTENT_TYPE
 import mozilla.components.concept.fetch.Headers.Names.E_TAG
+import mozilla.components.feature.downloads.parseContentRange
 import mozilla.components.support.ktx.kotlin.sanitizeFileName
 import mozilla.components.support.utils.DownloadFileUtils
 import mozilla.components.support.utils.ext.decodeIfNeeded
@@ -60,7 +61,9 @@ private fun DownloadState.resolveContentType(headers: Headers, stream: InputStre
         ?: headers[CONTENT_TYPE]
 
 private fun DownloadState.resolveContentLength(headers: Headers): Long? =
-    contentLength ?: headers[CONTENT_LENGTH]?.toLongOrNull()
+    contentLength
+        ?: parseContentRange(headers)?.totalLength
+        ?: headers[CONTENT_LENGTH]?.toLongOrNull()
 
 internal fun DownloadState.getRealFilenameOrGuessed(
     downloadFileUtils: DownloadFileUtils,

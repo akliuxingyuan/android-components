@@ -79,7 +79,7 @@ import kotlin.random.Random
  *
  * To use this service, you must create a subclass in your application and add it to the manifest.
  */
-@Suppress("TooManyFunctions")
+@Suppress("LargeClass", "TooManyFunctions")
 abstract class AbstractFetchDownloadService : Service() {
     private data class DownloadResponse(
         val response: Response,
@@ -88,6 +88,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
     private enum class ResumeResponseAction {
         CONTINUE,
+        RESTART_FROM_BEGINNING,
         FAIL,
     }
 
@@ -690,19 +691,29 @@ abstract class AbstractFetchDownloadService : Service() {
         val resumeResponseAction = determineResumeResponseAction(
             isResumingDownload = isResumingDownload,
             response = response,
+            expectedResumeStart = currentDownloadJobState.currentBytesCopied,
         )
 
-        if (resumeResponseAction == ResumeResponseAction.FAIL) {
-            failDownload(currentDownloadJobState, response)
-            return
+        when (resumeResponseAction) {
+            ResumeResponseAction.FAIL -> {
+                failDownload(currentDownloadJobState, response)
+            }
+            ResumeResponseAction.RESTART_FROM_BEGINNING -> {
+                restartDownloadFromBeginning(
+                    currentDownloadJobState = currentDownloadJobState,
+                    response = response,
+                    usesHttpClient = isUsingHttpClient,
+                )
+            }
+            ResumeResponseAction.CONTINUE -> {
+                writeResponseBody(
+                    currentDownloadJobState = currentDownloadJobState,
+                    response = response,
+                    append = isResumingDownload,
+                    usesHttpClient = isUsingHttpClient,
+                )
+            }
         }
-
-        writeResponseBody(
-            currentDownloadJobState = currentDownloadJobState,
-            response = response,
-            append = isResumingDownload,
-            usesHttpClient = isUsingHttpClient,
-        )
     }
 
     /**
@@ -830,6 +841,9 @@ abstract class AbstractFetchDownloadService : Service() {
         store.dispatch(DownloadAction.UpdateDownloadAction(updatedDownload))
     }
 
+    private fun Response.hasExpectedResumeRange(expectedStart: Long): Boolean =
+        parseContentRange(headers)?.start == expectedStart
+
     private fun buildDownloadRequestHeaders(
         currentDownloadJobState: DownloadJobState,
         download: DownloadState,
@@ -877,22 +891,75 @@ abstract class AbstractFetchDownloadService : Service() {
     private fun determineResumeResponseAction(
         isResumingDownload: Boolean,
         response: Response,
+        expectedResumeStart: Long,
     ): ResumeResponseAction {
         val isAcceptedStatus = response.status == PARTIAL_CONTENT_STATUS || response.status == OK_STATUS
-        if (!isAcceptedStatus || (isResumingDownload && !response.headers.contains(CONTENT_RANGE))) {
+        if (!isAcceptedStatus) {
             return ResumeResponseAction.FAIL
         }
 
-        return ResumeResponseAction.CONTINUE
+        if (!isResumingDownload) {
+            return ResumeResponseAction.CONTINUE
+        }
+
+        return when {
+            response.status == OK_STATUS -> ResumeResponseAction.RESTART_FROM_BEGINNING
+            CONTENT_RANGE !in response.headers -> ResumeResponseAction.FAIL
+            !response.hasExpectedResumeRange(expectedResumeStart) -> ResumeResponseAction.FAIL
+            else -> ResumeResponseAction.CONTINUE
+        }
     }
 
     private fun failDownload(currentDownloadJobState: DownloadJobState, response: Response) {
         response.close()
         // We experienced a problem trying to fetch the file, send a failure notification
         currentDownloadJobState.currentBytesCopied = 0
-        currentDownloadJobState.state = currentDownloadJobState.state.copy(currentBytesCopied = 0)
+        currentDownloadJobState.state = currentDownloadJobState.state.copy(
+            currentBytesCopied = 0,
+            response = null,
+        )
         setDownloadJobStatus(currentDownloadJobState, FAILED)
         logger.debug("Unable to fetch Download for ${currentDownloadJobState.state.id} status FAILED")
+    }
+
+    private fun restartDownloadFromBeginning(
+        currentDownloadJobState: DownloadJobState,
+        response: Response,
+        usesHttpClient: Boolean,
+    ) {
+        logger.debug("Resume response ignored Range; restarting download from beginning")
+        val partialFileExists = downloadFileUtils.fileExists(
+            directoryPath = currentDownloadJobState.state.directoryPath,
+            fileName = currentDownloadJobState.state.fileName,
+        )
+        if (partialFileExists) {
+            val deleted = downloadFileUtils.deleteMediaFile(
+                contentResolver = context.contentResolver,
+                fileName = currentDownloadJobState.state.fileName,
+                directoryPath = currentDownloadJobState.state.directoryPath,
+            )
+            if (!deleted) {
+                response.close()
+                currentDownloadJobState.state = currentDownloadJobState.state.copy(response = null)
+                setDownloadJobStatus(currentDownloadJobState, FAILED)
+                logger.debug("Failed to delete partial download for ${currentDownloadJobState.state.id} status FAILED")
+                return
+            }
+        }
+
+        currentDownloadJobState.currentBytesCopied = 0
+        currentDownloadJobState.state = currentDownloadJobState.state.copy(
+            currentBytesCopied = 0,
+            contentLength = null,
+            response = null,
+        )
+        updateDownloadState(currentDownloadJobState.state)
+        writeResponseBody(
+            currentDownloadJobState = currentDownloadJobState,
+            response = response,
+            append = false,
+            usesHttpClient = usesHttpClient,
+        )
     }
 
     private fun writeResponseBody(
