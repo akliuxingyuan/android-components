@@ -35,13 +35,7 @@ internal fun DownloadState.withResponse(
     stream: InputStream?,
 ): DownloadState {
     val contentDisposition = headers[CONTENT_DISPOSITION]
-    var contentType = this.contentType
-    if (contentType == null && stream != null) {
-        contentType = URLConnection.guessContentTypeFromStream(stream)
-    }
-    if (contentType == null) {
-        contentType = headers[CONTENT_TYPE]
-    }
+    val contentType = resolveContentType(headers, stream)
 
     val newFileName = if (fileName.isNullOrBlank()) {
         downloadFileUtils.guessFileName(
@@ -55,10 +49,18 @@ internal fun DownloadState.withResponse(
     return copy(
         fileName = newFileName?.decodeIfNeeded()?.sanitizeFileName(),
         contentType = contentType,
-        contentLength = contentLength ?: headers[CONTENT_LENGTH]?.toLongOrNull(),
+        contentLength = resolveContentLength(headers),
         etag = headers[E_TAG],
     )
 }
+
+private fun DownloadState.resolveContentType(headers: Headers, stream: InputStream?): String? =
+    contentType
+        ?: stream?.let { URLConnection.guessContentTypeFromStream(it) }
+        ?: headers[CONTENT_TYPE]
+
+private fun DownloadState.resolveContentLength(headers: Headers): Long? =
+    contentLength ?: headers[CONTENT_LENGTH]?.toLongOrNull()
 
 internal fun DownloadState.getRealFilenameOrGuessed(
     downloadFileUtils: DownloadFileUtils,

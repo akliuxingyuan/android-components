@@ -47,6 +47,7 @@ import mozilla.components.concept.fetch.Headers.Names.CONTENT_RANGE
 import mozilla.components.concept.fetch.Headers.Names.RANGE
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
+import mozilla.components.concept.fetch.Response
 import mozilla.components.feature.downloads.DownloadNotification.NOTIFICATION_DOWNLOAD_GROUP_ID
 import mozilla.components.feature.downloads.ext.addCompletedDownload
 import mozilla.components.feature.downloads.ext.isScheme
@@ -80,6 +81,16 @@ import kotlin.random.Random
  */
 @Suppress("TooManyFunctions")
 abstract class AbstractFetchDownloadService : Service() {
+    private data class DownloadResponse(
+        val response: Response,
+        val usesHttpClient: Boolean,
+    )
+
+    private enum class ResumeResponseAction {
+        CONTINUE,
+        FAIL,
+    }
+
     protected abstract val store: BrowserStore
 
     protected abstract val packageNameProvider: PackageNameProvider
@@ -663,85 +674,35 @@ abstract class AbstractFetchDownloadService : Service() {
         }
     }
 
-    @Suppress("ComplexCondition")
     internal fun performDownload(currentDownloadJobState: DownloadJobState, useHttpClient: Boolean = false) {
         val download = currentDownloadJobState.state
         val isResumingDownload = currentDownloadJobState.currentBytesCopied > 0L
-        val headers = MutableHeaders()
 
-        if (isResumingDownload) {
-            logger.debug("Resuming download")
-            if (currentDownloadJobState.currentBytesCopied == download.contentLength) {
-                logger.debug("Already at 100%, verifying download")
-                verifyDownload(currentDownloadJobState)
-                return
-            } else {
-                headers.append(RANGE, "bytes=${currentDownloadJobState.currentBytesCopied}-")
-            }
-        }
-
-        var isUsingHttpClient = false
-        val request = Request(
-            url = download.url.sanitizeURL(),
-            headers = headers,
-            private = download.private,
-            referrerUrl = download.referrerUrl,
-        )
-        // When resuming a download we need to use the httpClient as
-        // download.response doesn't support adding headers.
-        val response = if (isResumingDownload || useHttpClient || download.response == null) {
-            isUsingHttpClient = true
-            httpClient.fetch(request)
-        } else {
-            requireNotNull(download.response)
-        }
-        logger.debug("Fetching download for ${currentDownloadJobState.state.id} ")
-
-        // If we are resuming a download and the response does not contain a CONTENT_RANGE
-        // we cannot be sure that the request will properly be handled
-        if ((response.status != PARTIAL_CONTENT_STATUS && response.status != OK_STATUS) ||
-            (isResumingDownload && !response.headers.contains(CONTENT_RANGE))
-        ) {
-            response.close()
-            // We experienced a problem trying to fetch the file, send a failure notification
-            currentDownloadJobState.currentBytesCopied = 0
-            currentDownloadJobState.state = currentDownloadJobState.state.copy(currentBytesCopied = 0)
-            setDownloadJobStatus(currentDownloadJobState, FAILED)
-            logger.debug("Unable to fetching Download for ${currentDownloadJobState.state.id} status FAILED")
+        val headers = buildDownloadRequestHeaders(currentDownloadJobState, download, isResumingDownload)
+        if (headers == null) {
+            verifyDownload(currentDownloadJobState)
             return
         }
 
-        response.body.useStream { inStream ->
-            var copyInChuckStatus: CopyInChuckStatus? = null
-            val newDownloadState = download.withResponse(
-                headers = response.headers,
-                downloadFileUtils = downloadFileUtils,
-                stream = inStream,
-            )
-            currentDownloadJobState.state = newDownloadState
+        val (response, isUsingHttpClient) = fetchDownloadResponse(download, headers, isResumingDownload, useHttpClient)
+        logger.debug("Fetching download for ${currentDownloadJobState.state.id} ")
 
-            downloadFileWriter.useFileStream(
-                download = newDownloadState,
-                append = isResumingDownload,
-                shouldUseScopedStorage = shouldUseScopedStorage(),
-                onUpdateState = { updatedDownload ->
-                    updateDownloadState(updatedDownload)
-                },
-                block = { outStream ->
-                    copyInChuckStatus =
-                        copyInChunks(
-                            downloadJobState = currentDownloadJobState,
-                            inStream = inStream,
-                            outStream = outStream,
-                            downloadWithHttpClient = isUsingHttpClient,
-                        )
-                },
-            )
+        val resumeResponseAction = determineResumeResponseAction(
+            isResumingDownload = isResumingDownload,
+            response = response,
+        )
 
-            if (copyInChuckStatus != CopyInChuckStatus.ERROR_IN_STREAM_CLOSED) {
-                verifyDownload(currentDownloadJobState)
-            }
+        if (resumeResponseAction == ResumeResponseAction.FAIL) {
+            failDownload(currentDownloadJobState, response)
+            return
         }
+
+        writeResponseBody(
+            currentDownloadJobState = currentDownloadJobState,
+            response = response,
+            append = isResumingDownload,
+            usesHttpClient = isUsingHttpClient,
+        )
     }
 
     /**
@@ -867,6 +828,107 @@ abstract class AbstractFetchDownloadService : Service() {
     internal fun updateDownloadState(updatedDownload: DownloadState) {
         downloadJobs[updatedDownload.id]?.state = updatedDownload
         store.dispatch(DownloadAction.UpdateDownloadAction(updatedDownload))
+    }
+
+    private fun buildDownloadRequestHeaders(
+        currentDownloadJobState: DownloadJobState,
+        download: DownloadState,
+        isResumingDownload: Boolean,
+    ): MutableHeaders? {
+        if (!isResumingDownload) {
+            return MutableHeaders()
+        }
+
+        logger.debug("Resuming download")
+        if (currentDownloadJobState.currentBytesCopied == download.contentLength) {
+            logger.debug("Already at 100%, verifying download")
+            return null
+        }
+
+        return MutableHeaders(RANGE to "bytes=${currentDownloadJobState.currentBytesCopied}-")
+    }
+
+    private fun fetchDownloadResponse(
+        download: DownloadState,
+        headers: MutableHeaders,
+        isResumingDownload: Boolean,
+        useHttpClient: Boolean,
+    ): DownloadResponse {
+        val request = Request(
+            url = download.url.sanitizeURL(),
+            headers = headers,
+            private = download.private,
+            referrerUrl = download.referrerUrl,
+        )
+
+        if (isResumingDownload || useHttpClient || download.response == null) {
+            return DownloadResponse(
+                response = httpClient.fetch(request),
+                usesHttpClient = true,
+            )
+        }
+
+        return DownloadResponse(
+            response = requireNotNull(download.response),
+            usesHttpClient = false,
+        )
+    }
+
+    private fun determineResumeResponseAction(
+        isResumingDownload: Boolean,
+        response: Response,
+    ): ResumeResponseAction {
+        val isAcceptedStatus = response.status == PARTIAL_CONTENT_STATUS || response.status == OK_STATUS
+        if (!isAcceptedStatus || (isResumingDownload && !response.headers.contains(CONTENT_RANGE))) {
+            return ResumeResponseAction.FAIL
+        }
+
+        return ResumeResponseAction.CONTINUE
+    }
+
+    private fun failDownload(currentDownloadJobState: DownloadJobState, response: Response) {
+        response.close()
+        // We experienced a problem trying to fetch the file, send a failure notification
+        currentDownloadJobState.currentBytesCopied = 0
+        currentDownloadJobState.state = currentDownloadJobState.state.copy(currentBytesCopied = 0)
+        setDownloadJobStatus(currentDownloadJobState, FAILED)
+        logger.debug("Unable to fetch Download for ${currentDownloadJobState.state.id} status FAILED")
+    }
+
+    private fun writeResponseBody(
+        currentDownloadJobState: DownloadJobState,
+        response: Response,
+        append: Boolean,
+        usesHttpClient: Boolean,
+    ) {
+        response.body.useStream { inStream ->
+            var copyInChunkStatus: CopyInChuckStatus? = null
+            val newDownloadState = currentDownloadJobState.state.withResponse(
+                headers = response.headers,
+                downloadFileUtils = downloadFileUtils,
+                stream = inStream,
+            )
+            currentDownloadJobState.state = newDownloadState
+
+            downloadFileWriter.useFileStream(
+                download = newDownloadState,
+                append = append,
+                shouldUseScopedStorage = shouldUseScopedStorage(),
+                onUpdateState = ::updateDownloadState,
+                block = { outStream ->
+                    copyInChunkStatus = copyInChunks(
+                        downloadJobState = currentDownloadJobState,
+                        inStream = inStream,
+                        outStream = outStream,
+                        downloadWithHttpClient = usesHttpClient,
+                    )
+                },
+            )
+
+            if (copyInChunkStatus != CopyInChuckStatus.ERROR_IN_STREAM_CLOSED) {
+                verifyDownload(currentDownloadJobState)
+            }
+        }
     }
 
     companion object {
