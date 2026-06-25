@@ -16,6 +16,8 @@ permalink: /changelog/
 * **support-utils**
   * 🆕 Added `DiskLruCacheStore` to provide shared `DiskLruCache` read, write, remove, and clear helpers for disk-backed components.
   * 🆕 Added `CacheDirectoryMigration` to help migrating the cache directory used by `DiskLruCache`.
+* **concept-sync**, **service-firefox-accounts**
+    * ⚠️ **Breaking change**: Removed `OAuthAccount.beginOAuthFlow`, `OAuthAccount.beginPairingFlow`, `OAuthAccount.completeOAuthFlow` and the `AuthFlowUrl` type. Sign-in is now driven entirely through the state machine via `FxaAccountManager.beginAuthentication` / `finishAuthentication`.
 
 # 152.0
 * **browser-engine-gecko**
