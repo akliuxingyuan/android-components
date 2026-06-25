@@ -28,14 +28,6 @@ class AssertIsDetectorTest : LintDetectorTest() {
         """,
     ).indented()
 
-    private val kotlinTestStub = TestFiles.kotlin(
-        """
-        package kotlin.test
-        fun assertTrue(actual: Boolean, message: String? = null) {}
-        inline fun <reified T> assertIs(value: Any?, message: String? = null): T = value as T
-        """,
-    ).indented()
-
     @Test
     fun `assertTrue with is check reports warning`() {
         lint()
@@ -103,15 +95,16 @@ class AssertIsDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun `kotlin test assertTrue with message second reports warning`() {
+    fun `assertTrue with message as second argument reports warning`() {
         lint()
             .allowMissingSdk()
             .files(
-                kotlinTestStub,
+                // lint won't resolve source stubs declared in kotlin.* packages, so the
+                // kotlin.test-style assertTrue(value, message) is stubbed in the test package.
                 TestFiles.kotlin(
                     """
                     package com.example.test
-                    import kotlin.test.assertTrue
+                    fun assertTrue(actual: Boolean, message: String? = null) {}
 
                     class MyTest {
                         fun test() {
