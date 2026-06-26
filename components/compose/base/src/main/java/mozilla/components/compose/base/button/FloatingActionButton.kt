@@ -36,6 +36,7 @@ import mozilla.components.ui.icons.R as iconsR
  *
  * @param icon [Painter] icon to be displayed inside the action button.
  * @param modifier [Modifier] to be applied to the action button.
+ * @param iconModifier [Modifier] to be applied to the icon inside the action button.
  * @param contentDescription The content description to describe the icon.
  * @param label Text to be displayed next to the icon.
  * @param colors The [FloatingActionButtonColors] used to color this FAB.
@@ -47,6 +48,7 @@ import mozilla.components.ui.icons.R as iconsR
 fun FloatingActionButton(
     icon: Painter,
     modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier,
     contentDescription: String? = null,
     label: String? = null,
     colors: FloatingActionButtonColors = FloatingActionButtonDefaults.colorsPrimary(),
@@ -70,6 +72,7 @@ fun FloatingActionButton(
             Icon(
                 painter = icon,
                 contentDescription = contentDescription,
+                modifier = iconModifier,
             )
 
             if (!label.isNullOrBlank()) {

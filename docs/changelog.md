@@ -11,6 +11,8 @@ permalink: /changelog/
     * 🆕 Added `Action.NEXT` and `Action.PREVIOUS` to the `Fact`.
 * **feature-media**
     * 🆕 The media notification now emits `Action.NEXT` and `Action.PREVIOUS` facts when the next/previous track buttons are tapped.
+* **compose-base**
+    * 🆕 Added `iconModifier` parameter to `FloatingActionButton` to allow applying modifiers only to the icon content. [Bug 2039022](https://bugzilla.mozilla.org/show_bug.cgi?id=2039022)
 
 # 153.0
 * **support-utils**
