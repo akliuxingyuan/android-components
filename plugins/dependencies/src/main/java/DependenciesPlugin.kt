@@ -26,6 +26,7 @@ import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
@@ -69,7 +70,7 @@ abstract class BuildMetricsService @Inject constructor(
                 "path" to event.descriptor.taskPath,
                 "start" to dateFormatter.format(Instant.ofEpochMilli(startMs).atZone(ZoneId.systemDefault())),
                 "stop" to dateFormatter.format(Instant.ofEpochMilli(stopMs).atZone(ZoneId.systemDefault())),
-                "duration" to String.format("%.3f", (stopMs - startMs) / 1_000.0),
+                "duration" to String.format(Locale.ROOT, "%.3f", (stopMs - startMs) / 1_000.0),
                 "status" to status
             )
         }
@@ -77,13 +78,13 @@ abstract class BuildMetricsService @Inject constructor(
 
     override fun close() {
         val invocationEnd = System.currentTimeMillis()
-        val invocationDuration = String.format("%.3f", (invocationEnd - invocationStart) / 1_000.0)
+        val invocationDuration = String.format(Locale.ROOT, "%.3f", (invocationEnd - invocationStart) / 1_000.0)
 
         val configStartFormatted = dateFormatter.format(
             Instant.ofEpochMilli(configStart).atZone(ZoneId.systemDefault())
         )
         val configEndFormatted = dateFormatter.format(Instant.ofEpochMilli(configEnd).atZone(ZoneId.systemDefault()))
-        val configDuration = String.format("%.3f", (configEnd - configStart) / 1_000.0)
+        val configDuration = String.format(Locale.ROOT, "%.3f", (configEnd - configStart) / 1_000.0)
 
         val content = mapOf(
             "invocation" to mapOf(
