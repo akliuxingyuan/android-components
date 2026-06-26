@@ -372,6 +372,23 @@ open class FxaAccountManager(
     }
 
     /**
+     * Handles the `fxaccounts:change_password` WebChannel payload after the user
+     * changes their password from the manage-account flow.
+     */
+    suspend fun handleWebChannelPasswordChange(jsonPayload: String) = withContext(coroutineContext) {
+        val wasInAuthIssues = state == FxaState.AuthIssues
+        processQueue(Event.Account.WebChannelPasswordChange(jsonPayload))
+        if (state == FxaState.Connected) {
+            SyncAuthInfoCache(context).clear()
+            authenticationSideEffects("WebChannelPasswordChange")
+            if (wasInAuthIssues) {
+                notifyObservers { onAuthenticated(account, AuthType.Recovered) }
+            }
+            refreshProfile(ignoreCache = true)
+        }
+    }
+
+    /**
      * Finalize authentication that was started via [beginAuthentication].
      *
      * If authentication wasn't started via this manager we won't accept this authentication attempt,
@@ -495,6 +512,8 @@ open class FxaAccountManager(
         is Event.Account.AuthenticationError -> FxaEvent.CheckAuthorizationStatus
         Event.Account.AccessTokenKeyError -> FxaEvent.CheckAuthorizationStatus
         Event.Account.Logout -> FxaEvent.Disconnect
+        is Event.Account.WebChannelPasswordChange ->
+            FxaEvent.WebChannelPasswordChange(jsonPayload = event.jsonPayload)
         // This is the one ProgressEvent that's considered a "public event" in app-services
         is Event.Progress.AuthData -> FxaEvent.CompleteOAuthFlow(event.authData.code, event.authData.state)
         else -> null

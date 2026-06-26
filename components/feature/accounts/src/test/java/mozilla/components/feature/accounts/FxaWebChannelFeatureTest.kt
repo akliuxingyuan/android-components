@@ -732,6 +732,55 @@ class FxaWebChannelFeatureTest {
     }
 
     @Test
+    fun `COMMAND_CHANGE_PASSWORD forwards the payload to handleWebChannelPasswordChange`() = runTest {
+        val accountManager: FxaAccountManager = mock()
+        val engineSession: EngineSession = mock()
+        val ext: WebExtension = mock()
+        val port: Port = mock()
+        val messageHandler = argumentCaptor<MessageHandler>()
+
+        BuiltInWebExtensionController.installedBuiltInExtensions[FxaWebChannelFeature.WEB_CHANNEL_EXTENSION_ID] = ext
+
+        val webchannelFeature = prepareFeatureForTest(ext, port, engineSession, null, emptySet(), accountManager)
+        webchannelFeature.start()
+        shadowOf(getMainLooper()).idle()
+
+        verify(ext).registerContentMessageHandler(
+            eq(engineSession),
+            eq(FxaWebChannelFeature.WEB_CHANNEL_MESSAGING_ID),
+            messageHandler.capture(),
+        )
+        messageHandler.value.onPortConnected(port)
+
+        val newSessionToken = "newsessiontoken456"
+        val jsonToWebChannel = JSONObject(
+            """{
+             "message":{
+                "command": "fxaccounts:change_password",
+                "messageId":456,
+                "data":{
+                    "email":"foo@bar.com",
+                    "sessionToken":"$newSessionToken",
+                    "uid":"uid123",
+                    "verified":true
+                }
+             }
+            }
+            """.trimIndent(),
+        )
+        whenever(port.senderUrl()).thenReturn("https://foo.bar/email")
+        messageHandler.value.onPortMessage(jsonToWebChannel, port)
+        shadowOf(getMainLooper()).idle()
+
+        val dataCaptor = argumentCaptor<String>()
+        verify(accountManager).handleWebChannelPasswordChange(dataCaptor.capture())
+        assertEquals(
+            jsonToWebChannel.getJSONObject("message").getJSONObject("data").toString(),
+            dataCaptor.value,
+        )
+    }
+
+    @Test
     fun `COMMAND_SYNC_PREFERENCES is processed if there is an account`() = runTest {
         val engineSession: EngineSession = mock()
         val ext: WebExtension = mock()
