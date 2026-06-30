@@ -29,7 +29,7 @@ dependencies {
     implementation libs.androidx.cardview
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.coordinatorlayout
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
     implementation libs.androidx.recyclerview
 
     testImplementation project(':components:support-test')

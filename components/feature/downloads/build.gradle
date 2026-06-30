@@ -42,7 +42,7 @@ dependencies {
     implementation project(':components:ui-widgets')
 
     implementation libs.androidx.constraintlayout
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
     implementation libs.androidx.lifecycle.livedata
     implementation libs.androidx.paging
     implementation libs.androidx.recyclerview

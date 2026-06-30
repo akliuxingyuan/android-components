@@ -28,7 +28,7 @@ dependencies {
     implementation project(':components:support-utils')
     implementation project(':components:ui-icons')
 
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
 
     testImplementation project(':components:lib-fetch-httpurlconnection')
     testImplementation project(':components:support-test')

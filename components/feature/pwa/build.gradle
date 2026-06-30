@@ -45,7 +45,7 @@ dependencies {
     implementation project(':components:support-utils')
 
     implementation libs.androidx.browser
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
     implementation libs.androidx.lifecycle.runtime
     implementation libs.androidx.room.runtime
     ksp libs.androidx.room.compiler

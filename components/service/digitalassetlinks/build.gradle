@@ -17,7 +17,7 @@ dependencies {
     implementation project(':components:support-ktx')
     implementation project(':components:support-utils')
 
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
 
     testImplementation project(':components:support-test')
 

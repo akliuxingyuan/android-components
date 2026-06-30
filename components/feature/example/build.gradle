@@ -14,7 +14,7 @@ dependencies {
     implementation platform(libs.androidx.compose.bom)
 
     implementation project(":components:support-base")
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
     implementation libs.androidx.lifecycle.runtime
     implementation libs.kotlinx.coroutines
     implementation libs.androidx.test.junit

@@ -53,7 +53,7 @@ dependencies {
     debugImplementation libs.androidx.compose.ui.tooling
 
     implementation libs.androidx.constraintlayout
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
     implementation libs.androidx.lifecycle.livedata
     implementation libs.androidx.paging
     implementation libs.androidx.room.runtime

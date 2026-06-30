@@ -34,7 +34,7 @@ dependencies {
     implementation project(':components:support-base')
     implementation project(':components:support-ktx')
 
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
     implementation libs.androidx.room.runtime
     ksp libs.androidx.room.compiler
     implementation libs.androidx.work.runtime

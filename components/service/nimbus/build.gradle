@@ -53,7 +53,7 @@ dependencies {
     implementation ComponentsDependencies.mozilla_appservices_nimbus
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.coordinatorlayout
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
     implementation libs.androidx.recyclerview
     implementation libs.androidx.work.runtime
     implementation libs.kotlinx.coroutines

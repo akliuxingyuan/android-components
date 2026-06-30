@@ -15,7 +15,7 @@ dependencies {
     implementation project(':components:support-base')
 
     implementation libs.androidx.biometric
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
 
     testImplementation project(':components:support-test')
 

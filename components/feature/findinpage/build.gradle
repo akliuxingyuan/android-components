@@ -18,7 +18,7 @@ dependencies {
     implementation project(':components:ui-icons')
 
     implementation libs.androidx.constraintlayout
-    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core
 
     testImplementation project(':components:support-test')
 
