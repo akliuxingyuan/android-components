@@ -2908,6 +2908,12 @@ projects:
     path: components/tooling/lint
     publish: false
     upstream_dependencies: []
+  components:ui-animation:
+    description: A library for providing animations.
+    path: components/ui/animation
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:ui-autocomplete:
     description: A set of components to provide autocomplete functionality.
     path: components/ui/autocomplete
