@@ -5,9 +5,8 @@
 plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.ksp)
 }
-
-apply plugin: 'com.google.devtools.ksp'
 
 android {
     namespace = 'mozilla.components.feature.screendetection'

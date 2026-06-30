@@ -8,9 +8,8 @@ plugins {
     id 'com.android.application'
     alias(libs.plugins.dependency.analysis)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.parcelize)
 }
-
-apply plugin: 'kotlin-parcelize'
 
 android {
     compileSdk { version = release(config.compileSdkMajorVersion) { minorApiLevel = config.compileSdkMinorVersion } }

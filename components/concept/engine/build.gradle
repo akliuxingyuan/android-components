@@ -5,9 +5,8 @@
 plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.kotlin.parcelize)
 }
-
-apply plugin: 'kotlin-parcelize'
 
 android {
     namespace = 'mozilla.components.concept.engine'

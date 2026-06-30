@@ -8,7 +8,6 @@ buildscript {
     }
 
     dependencies {
-        classpath libs.kotlin.serialization
         classpath libs.mozilla.glean.gradle.plugin
     }
 }
@@ -16,12 +15,10 @@ buildscript {
 plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.python.envs.plugin)
 }
-
-apply plugin: 'kotlinx-serialization'
-
-apply plugin: 'com.google.devtools.ksp'
 
 android {
     defaultConfig {

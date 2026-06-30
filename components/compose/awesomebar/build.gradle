@@ -6,11 +6,10 @@ plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.parcelize)
 }
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-apply plugin: 'kotlin-parcelize'
 
 android {
     buildFeatures {

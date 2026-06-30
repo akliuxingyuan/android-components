@@ -7,9 +7,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.ksp)
 }
-
-apply plugin: 'com.google.devtools.ksp'
 
 android {
     defaultConfig {

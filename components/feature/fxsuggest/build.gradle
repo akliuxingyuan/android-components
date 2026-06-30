@@ -4,23 +4,13 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-buildscript {
-    repositories {
-        gradle.configureMavenRepositories(delegate)
-    }
-    dependencies {
-        classpath libs.kotlin.serialization
-    }
-}
-
 plugins {
     id 'com.android.library'
-    alias(libs.plugins.dependency.analysis)
-    alias(libs.plugins.python.envs.plugin)
     id 'org.mozilla.nimbus-gradle-plugin'
+    alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.python.envs.plugin)
 }
-
-apply plugin: 'kotlinx-serialization'
 
 android {
     namespace = 'mozilla.components.feature.fxsuggest'
