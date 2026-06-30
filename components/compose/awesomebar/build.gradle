@@ -9,8 +9,6 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
 }
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 android {
     buildFeatures {
         compose = true

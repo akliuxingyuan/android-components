@@ -4,8 +4,6 @@
 
 import static org.mozilla.conventions.BuildConfigKt.updateExtensionVersion
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
