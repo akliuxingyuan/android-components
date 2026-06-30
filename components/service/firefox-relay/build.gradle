@@ -13,13 +13,11 @@ buildscript {
 }
 
 plugins {
+    id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
 apply plugin: 'kotlinx-serialization'
 
 android {

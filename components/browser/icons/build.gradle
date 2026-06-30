@@ -5,12 +5,10 @@
 import static org.mozilla.conventions.BuildConfigKt.updateExtensionVersion
 
 plugins {
+    id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
-
-apply plugin: 'com.android.library'
 
 android {
     sourceSets {

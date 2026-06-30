@@ -13,13 +13,13 @@ buildscript {
 }
 
 plugins {
+    id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
 }
 
-apply plugin: 'com.android.library'
-apply plugin: 'com.google.devtools.ksp'
-apply plugin: 'kotlin-android'
 apply plugin: 'kotlinx-serialization'
+
+apply plugin: 'com.google.devtools.ksp'
 
 android {
     defaultConfig {
