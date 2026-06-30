@@ -12,7 +12,7 @@ permalink: /changelog/
 * **feature-media**
     * 🆕 The media notification now emits `Action.NEXT` and `Action.PREVIOUS` facts when the next/previous track buttons are tapped.
 * **compose-base**
-    * 🆕 Added `iconModifier` parameter to `FloatingActionButton` to allow applying modifiers only to the icon content. [Bug 2039022](https://bugzilla.mozilla.org/show_bug.cgi?id=2039022)
+    * 🆕 Added a version of `FloatingActionButton` that accepts a custom icon composable. [Bug 2050581](https://bugzilla.mozilla.org/show_bug.cgi?id=2050581)
 
 # 153.0
 * **support-utils**
