@@ -94,10 +94,11 @@ import mozilla.components.compose.base.theme.autofillText
 import mozilla.components.compose.base.theme.selectedText
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.ADDRESSBAR_SEARCH_BOX
 import mozilla.components.concept.toolbar.AutocompleteResult
+import mozilla.components.support.base.utils.MAX_URI_LENGTH
+import mozilla.components.support.ktx.kotlin.trimmed
 import mozilla.components.support.utils.SafeUrl
 
 private const val TEXT_SIZE = 15f
-private const val MAX_TEXT_LENGTH_TO_PASTE = 2_000
 
 /**
  * A text field composable that displays a suggestion inline with the user's input,
@@ -127,6 +128,8 @@ internal fun InlineAutocompleteTextField(
     onUrlEdit: (BrowserToolbarQuery) -> Unit = {},
     onUrlCommitted: (String) -> Unit = {},
 ) {
+    // Bound the editable text to a safe maximum to avoid any UX instability.
+    val query = query.trimmed()
     val textFieldState = rememberTextFieldState(
         initialText = query,
         initialSelection = when {
@@ -907,7 +910,7 @@ private class PasteSanitizerTextToolbar(
             sb.append(safeTextToBePasted)
         }
 
-        return sb.toString().take(MAX_TEXT_LENGTH_TO_PASTE)
+        return sb.toString().take(MAX_URI_LENGTH)
     }
 }
 
