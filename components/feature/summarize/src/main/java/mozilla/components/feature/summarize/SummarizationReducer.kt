@@ -19,6 +19,7 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     OffDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.LearnMoreAboutShakeConsent
     OnDeviceSummarizationShakeConsentAction.LearnMoreClicked -> SummarizationState.LearnMoreAboutShakeConsent
     ErrorAction.ErrorDismissed -> SummarizationState.Finished.ErrorDismissed
+    PageLoadStarted -> SummarizationState.PageLoading
     is SummarizationRequested -> SummarizationState.Loading(action.info)
     is SummarizationCompleted -> state.complete()
     is SummarizationFailed -> SummarizationState.Error(SummarizationError.SummarizationFailed(action.exception))
@@ -46,6 +47,7 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     OffDeviceSummarizationShakeConsentAction.AllowClicked,
     OnDeviceSummarizationShakeConsentAction.AllowClicked,
     OnDeviceSummarizationShakeConsentAction.CancelClicked,
+    PageLoadCompleted,
     ViewAppeared,
     is ViewDismissed,
     -> state

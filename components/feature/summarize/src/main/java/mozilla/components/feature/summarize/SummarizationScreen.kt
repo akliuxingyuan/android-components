@@ -119,8 +119,18 @@ private fun SummarizationScreen(
     ApplyHaptics(state)
 
     val loadingAlpha by animateFloatAsState(
-        targetValue = if (state.isLoading && useGradient) 1f else 0f,
-        animationSpec = if (state.isLoading) state.tween else snap(),
+        targetValue = if (
+            (state.isLoading || state.isPageLoading) && useGradient
+        ) {
+            1f
+        } else {
+            0f
+        },
+        animationSpec = if (state.isLoading || state.isPageLoading) {
+            state.tween
+        } else {
+            snap()
+        },
         label = "gradientAlpha",
     )
 
@@ -177,7 +187,9 @@ private fun SummarizationScreenContent(
             )
         }
 
-        is SummarizationState.Loading -> {
+        is SummarizationState.Loading,
+        SummarizationState.PageLoading,
+        -> {
             SummarizingContent(
                 modifier = Modifier.height(252.dp),
                 useGradientColors = useGradient,
@@ -246,10 +258,10 @@ private fun ApplyHaptics(state: SummarizationState) {
 
             SummarizationState.DownloadConsentRequired,
             is SummarizationState.Downloading,
-            SummarizationState.Finished.Cancelled,
-            SummarizationState.Finished.ErrorDismissed,
+            is SummarizationState.Finished,
             SummarizationState.LearnMoreAboutShakeConsent,
             is SummarizationState.Loading,
+            SummarizationState.PageLoading,
             is SummarizationState.Settings,
             SummarizationState.ShakeConsentRequired,
             SummarizationState.ShakeConsentWithDownloadRequired,

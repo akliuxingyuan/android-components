@@ -21,6 +21,12 @@ data object ViewAppeared : SummarizationAction
 /** The Summarization Screen View was Dismissed */
 data class ViewDismissed(val isEngineAvailable: Boolean) : SummarizationAction
 
+/** The browser page has just started to load and summarization is not available yet. */
+data object PageLoadStarted : SummarizationAction
+
+/** The browser page has just finished loading. */
+data object PageLoadCompleted : SummarizationAction
+
 /** The user tapped the settings cog. */
 data object SettingsClicked : SummarizationAction
 
