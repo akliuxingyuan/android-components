@@ -9,10 +9,15 @@ package mozilla.components.feature.ipprotection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
+import mozilla.components.feature.ipprotection.store.state.AccountState
+import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.ipprotection.store.state.ProxyStatus
+import mozilla.components.feature.ipprotection.store.state.Uninitialized
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 
 internal class FakeEligibilityStorage : IPProtectionEligibilityStorage {
@@ -35,9 +40,21 @@ internal class FakeEligibilityStorage : IPProtectionEligibilityStorage {
 internal typealias IPProtectionTestMiddleware = CaptureActionsMiddleware<IPProtectionState, IPProtectionAction>
 
 internal fun buildStore(
-    initialState: IPProtectionState = IPProtectionState(),
+    initialState: IPProtectionState = buildIPProtectionState(),
 ): Pair<IPProtectionStore, IPProtectionTestMiddleware> {
     val middleware = IPProtectionTestMiddleware()
     val store = IPProtectionStore(initialState = initialState, middleware = listOf(middleware))
     return store to middleware
+}
+
+internal fun buildIPProtectionState(
+    accountStatus: AccountStatus = AccountStatus.Authenticated,
+    serviceStatus: ServiceState = ServiceState.Uninitialized,
+    proxyStatus: ProxyStatus = Uninitialized,
+): IPProtectionState {
+    return IPProtectionState(
+        accountState = AccountState(accountStatus),
+        serviceStatus = serviceStatus,
+        proxyStatus = proxyStatus,
+    )
 }
