@@ -23,15 +23,4 @@
             column="6"/>
     </issue>
 
-    <issue
-        id="JUnitAssertNotNull"
-        message="Use kotlin.test.assertNotNull instead of JUnit assertNotNull"
-        errorLine1="        assertNotNull(GleanTestMetrics.counter.testGetValue())"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/androidTest/java/org/mozilla/samples/glean/MainActivityTest.kt"
-            line="36"
-            column="9"/>
-    </issue>
-
 </issues>
