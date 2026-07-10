@@ -26,8 +26,6 @@ import mozilla.components.ui.colors.PhotonColors
 @Stable
 class AcornColors(
     formDefault: Color,
-    textOnColorPrimary: Color,
-    iconOnColor: Color,
     information: Color,
     onInformation: Color,
     informationContainer: Color,
@@ -45,18 +43,6 @@ class AcornColors(
 ) {
     // Checkbox default, Radio button default
     var formDefault by mutableStateOf(formDefault)
-        private set
-
-    // Text
-
-    // Text Inverted/On Color
-    var textOnColorPrimary by mutableStateOf(textOnColorPrimary)
-        private set
-
-    // Icon
-
-    // Icon inverted (on color)
-    var iconOnColor by mutableStateOf(iconOnColor)
         private set
 
     /*
@@ -155,8 +141,6 @@ class AcornColors(
      */
     fun update(other: AcornColors) {
         formDefault = other.formDefault
-        textOnColorPrimary = other.textOnColorPrimary
-        iconOnColor = other.iconOnColor
         information = other.information
         onInformation = other.onInformation
         informationContainer = other.informationContainer
@@ -178,8 +162,6 @@ class AcornColors(
      */
     fun copy(
         formDefault: Color = this.formDefault,
-        textOnColorPrimary: Color = this.textOnColorPrimary,
-        iconOnColor: Color = this.iconOnColor,
         information: Color = this.information,
         onInformation: Color = this.onInformation,
         informationContainer: Color = this.informationContainer,
@@ -196,8 +178,6 @@ class AcornColors(
         iconPrivate: Color = this.iconPrivate,
     ): AcornColors = AcornColors(
         formDefault = formDefault,
-        textOnColorPrimary = textOnColorPrimary,
-        iconOnColor = iconOnColor,
         information = information,
         onInformation = onInformation,
         informationContainer = informationContainer,
@@ -217,8 +197,6 @@ class AcornColors(
 
 val darkColorPalette = AcornColors(
     formDefault = PhotonColors.LightGrey05,
-    textOnColorPrimary = PhotonColors.LightGrey05,
-    iconOnColor = PhotonColors.LightGrey05,
     information = NovaColors.Blue30,
     onInformation = NovaColors.Gray80,
     informationContainer = NovaColors.Blue70,
@@ -237,8 +215,6 @@ val darkColorPalette = AcornColors(
 
 val lightColorPalette = AcornColors(
     formDefault = PhotonColors.DarkGrey90,
-    textOnColorPrimary = PhotonColors.LightGrey05,
-    iconOnColor = PhotonColors.LightGrey05,
     information = NovaColors.Blue50,
     onInformation = NovaColors.White,
     informationContainer = NovaColors.Blue10,
