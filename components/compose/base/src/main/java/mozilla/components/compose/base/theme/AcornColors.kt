@@ -25,8 +25,6 @@ import mozilla.components.ui.colors.PhotonColors
 @Suppress("LongParameterList")
 @Stable
 class AcornColors(
-    layerGradientStart: Color,
-    layerGradientEnd: Color,
     formDefault: Color,
     textOnColorPrimary: Color,
     iconOnColor: Color,
@@ -45,14 +43,6 @@ class AcornColors(
     selectedText: Color,
     iconPrivate: Color,
 ) {
-    // Tooltip
-    var layerGradientStart by mutableStateOf(layerGradientStart)
-        private set
-
-    // Tooltip
-    var layerGradientEnd by mutableStateOf(layerGradientEnd)
-        private set
-
     // Checkbox default, Radio button default
     var formDefault by mutableStateOf(formDefault)
         private set
@@ -164,8 +154,6 @@ class AcornColors(
      * Updates the existing colors with the provided [AcornColors].
      */
     fun update(other: AcornColors) {
-        layerGradientStart = other.layerGradientStart
-        layerGradientEnd = other.layerGradientEnd
         formDefault = other.formDefault
         textOnColorPrimary = other.textOnColorPrimary
         iconOnColor = other.iconOnColor
@@ -189,8 +177,6 @@ class AcornColors(
      * Return a copy of this [AcornColors] and optionally overriding any of the provided values.
      */
     fun copy(
-        layerGradientStart: Color = this.layerGradientStart,
-        layerGradientEnd: Color = this.layerGradientEnd,
         formDefault: Color = this.formDefault,
         textOnColorPrimary: Color = this.textOnColorPrimary,
         iconOnColor: Color = this.iconOnColor,
@@ -209,8 +195,6 @@ class AcornColors(
         selectedText: Color = this.selectedText,
         iconPrivate: Color = this.iconPrivate,
     ): AcornColors = AcornColors(
-        layerGradientStart = layerGradientStart,
-        layerGradientEnd = layerGradientEnd,
         formDefault = formDefault,
         textOnColorPrimary = textOnColorPrimary,
         iconOnColor = iconOnColor,
@@ -232,8 +216,6 @@ class AcornColors(
 }
 
 val darkColorPalette = AcornColors(
-    layerGradientStart = PhotonColors.Violet70,
-    layerGradientEnd = PhotonColors.Violet60,
     formDefault = PhotonColors.LightGrey05,
     textOnColorPrimary = PhotonColors.LightGrey05,
     iconOnColor = PhotonColors.LightGrey05,
@@ -254,8 +236,6 @@ val darkColorPalette = AcornColors(
 )
 
 val lightColorPalette = AcornColors(
-    layerGradientStart = PhotonColors.Violet70,
-    layerGradientEnd = PhotonColors.Violet60,
     formDefault = PhotonColors.DarkGrey90,
     textOnColorPrimary = PhotonColors.LightGrey05,
     iconOnColor = PhotonColors.LightGrey05,
