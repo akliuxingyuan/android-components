@@ -28,8 +28,6 @@ import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.InternalAction
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
-import mozilla.components.lib.integrity.googleplay.GooglePlayIntegrityClient
-import mozilla.components.lib.integrity.googleplay.IntegrityConsumer
 import mozilla.components.lib.state.ext.flow
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.service.fxa.manager.FxaAccountManager
@@ -50,15 +48,12 @@ import mozilla.components.support.base.log.logger.Logger
  * @param store [IPProtectionStore] that holds the feature state.
  * @param engine [Engine] used to register the IP protection delegate and obtain the handler.
  * @param accountManager [FxaAccountManager] used to supply FxA tokens to the proxy service.
- * @param integrityClient [GooglePlayIntegrityClient] used to supply Google Play Integrity tokens
- * to the proxy service.
  * @param mainDispatcher [CoroutineDispatcher] on which state observations and engine calls run.
  */
 class IPProtectionFeature(
     private val store: IPProtectionStore,
     private val engine: Engine,
     private val accountManager: FxaAccountManager,
-    private val integrityClient: GooglePlayIntegrityClient,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) {
     private val logger = Logger("IPP:Feature")
@@ -189,25 +184,6 @@ class IPProtectionFeature(
                                 store.dispatch(IPProtectionAction.AccountStateChanged(AccountStatus.NeedsAuthorization))
                                 onComplete(null)
                             }
-                        }
-                    }
-                },
-            )
-            val ipProtectionIntegrityClient = integrityClient.forConsumer(IntegrityConsumer.IpProtection)
-            setGpiProvider(
-                object : IPProtectionHandler.GpiProvider {
-                    override fun warmUp(onComplete: (Boolean) -> Unit) {
-                        mainScope.launch {
-                            onComplete(integrityClient.warmUp())
-                        }
-                    }
-
-                    override fun getToken(onComplete: (String?) -> Unit) {
-                        mainScope.launch {
-                            val token = ipProtectionIntegrityClient.request()
-                                .onFailure { logger.error("GPI token request failed", it) }
-                                .getOrNull()?.value
-                            onComplete(token)
                         }
                     }
                 },

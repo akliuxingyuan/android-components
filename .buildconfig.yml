@@ -1104,7 +1104,6 @@ projects:
     - components:concept-base
     - components:concept-engine
     - components:concept-fetch
-    - components:concept-integrity
     - components:concept-menu
     - components:concept-storage
     - components:concept-storage-bookmarks
@@ -1114,7 +1113,6 @@ projects:
     - components:feature-session
     - components:feature-tabs
     - components:lib-dataprotect
-    - components:lib-integrity-googleplay
     - components:lib-publicsuffixlist
     - components:lib-state
     - components:service-firefox-accounts
