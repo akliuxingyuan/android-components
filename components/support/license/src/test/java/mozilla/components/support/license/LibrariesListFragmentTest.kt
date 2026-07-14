@@ -87,4 +87,55 @@ class LibrariesListFragmentTest {
         assertEquals(1, libraries.size)
         assertEquals(licenseText, libraries[0].license)
     }
+
+    @Test
+    fun `parseLibraries skips malformed lines and keeps the valid ones`() {
+        val licensesData = "AB".toByteArray(Charsets.UTF_8)
+        val metadata = listOf(
+            "",
+            "0:1 valid1",
+            "noSpaceHere",
+            "0-1 badSection",
+            "x:1 nonNumericOffset",
+            "0:y nonNumericLength",
+            "1:1 valid2",
+        )
+
+        val libraries = parseLibraries(licensesData, metadata)
+
+        assertEquals(listOf("valid1", "valid2"), libraries.map { it.name })
+        assertEquals("A", libraries[0].license)
+        assertEquals("B", libraries[1].license)
+    }
+
+    @Test
+    fun `parseLibraries skips lines with a blank library name`() {
+        val licensesData = "AB".toByteArray(Charsets.UTF_8)
+        val metadata = listOf(
+            "0:1 ",
+            "1:1 valid",
+        )
+
+        val libraries = parseLibraries(licensesData, metadata)
+
+        assertEquals(listOf("valid"), libraries.map { it.name })
+        assertEquals("B", libraries[0].license)
+    }
+
+    @Test
+    fun `parseLibraries skips lines whose slice is out of bounds`() {
+        val licensesData = "AB".toByteArray(Charsets.UTF_8)
+        val metadata = listOf(
+            "0:1 valid",
+            "1:5 tooLong",
+            "5:1 startPastEnd",
+            "-1:1 negativeStart",
+            "1:2147483647 overflowLength",
+        )
+
+        val libraries = parseLibraries(licensesData, metadata)
+
+        assertEquals(listOf("valid"), libraries.map { it.name })
+        assertEquals("A", libraries[0].license)
+    }
 }
