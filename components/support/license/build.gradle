@@ -22,6 +22,9 @@ dependencies {
     implementation libs.kotlinx.coroutines
     implementation libs.google.material
     implementation project(':components:ui-widgets')
+
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.kotlin.test
 }
 
 apply from: '../../../common-config.gradle'
