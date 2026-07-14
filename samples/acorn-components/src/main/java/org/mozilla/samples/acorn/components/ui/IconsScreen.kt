@@ -450,9 +450,6 @@ private val iconsLock24 = listOf(
     iconsR.drawable.mozac_ic_lock_24,
     iconsR.drawable.mozac_ic_lock_slash_24,
     iconsR.drawable.mozac_ic_lock_warning_24,
-    iconsR.drawable.mozac_ic_lock_fill_24,
-    iconsR.drawable.mozac_ic_lock_slash_fill_24,
-    iconsR.drawable.mozac_ic_lock_warning_fill_24,
 )
 
 private val iconsLogos24 = listOf(
@@ -635,11 +632,6 @@ private val iconsWhatsNew24 = listOf(
     iconsR.drawable.mozac_ic_whats_new_24,
 )
 
-private val iconsZoom24 = listOf(
-    iconsR.drawable.mozac_ic_page_zoom_24,
-    iconsR.drawable.mozac_ic_page_zoom_fill_24,
-)
-
 // 48dp icons
 
 private val iconsPrivateMode48 = listOf(
@@ -752,7 +744,6 @@ private val iconSizeSections = listOf(
             IconCategory("Translate", iconsTranslate24),
             IconCategory("Wallpaper", iconsWallpaper24),
             IconCategory("What's New", iconsWhatsNew24),
-            IconCategory("Zoom", iconsZoom24),
         ),
     ),
     IconSizeSection(
