@@ -5,7 +5,6 @@
 package mozilla.components.feature.summarize
 
 import mozilla.components.concept.llm.LlmProvider
-import mozilla.components.feature.summarize.SummarizationState.Finished
 import mozilla.components.lib.state.State
 import mozilla.components.ui.richtext.ir.RichDocument
 
