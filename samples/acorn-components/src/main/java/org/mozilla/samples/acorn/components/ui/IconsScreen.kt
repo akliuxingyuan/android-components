@@ -616,7 +616,6 @@ private val iconsTrackers24 = listOf(
     iconsR.drawable.mozac_ic_fingerprinter_24,
     iconsR.drawable.mozac_ic_cookies_24,
     iconsR.drawable.mozac_ic_cookies_slash_24,
-    iconsR.drawable.mozac_ic_social_tracker_24,
 )
 
 private val iconsTranslate24 = listOf(
