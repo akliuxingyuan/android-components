@@ -135,7 +135,7 @@ private fun ActionButtonRes.iconDrawable(): Drawable? {
     val context = LocalContext.current
     val tint = MaterialTheme.colorScheme.onSurface
 
-    return remember(this, context) {
+    return remember(this, context, tint) {
         AppCompatResources.getDrawable(context, drawableResId)
             ?.apply { mutate().setTint(tint.toArgb()) }
     }
@@ -160,8 +160,7 @@ private fun AnimatedPillActionRes.overlayDrawable(): Drawable? {
 @Composable
 private fun ActionButton.iconDrawable(): Drawable? {
     val tint = MaterialTheme.colorScheme.onSurface
-
-    return remember(this) {
+    return remember(this, tint) {
         when (shouldTint) {
             true -> drawable?.mutate()?.apply { setTint(tint.toArgb()) }
             false -> drawable
@@ -181,7 +180,7 @@ private fun SearchSelectorAction.iconDrawable(): Drawable? {
     val context = LocalContext.current
     val tint = MaterialTheme.colorScheme.onSurface
 
-    val drawable = remember(this, context) {
+    val drawable = remember(this, context, tint) {
         when (icon) {
             is DrawableIcon -> icon.drawable
             is DrawableResIcon -> AppCompatResources.getDrawable(context, icon.resourceId)
