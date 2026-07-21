@@ -89,7 +89,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
         emitLinearAccelerationSensorEvent(floatArrayOf(1f, 2f, 3f))
         emitLinearAccelerationSensorEvent(floatArrayOf(4f, 5f, 6f))
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         assertEquals("Two sensor events are observed", 2, samples.size)
         assertEquals(1f, samples[0].xAccel, 0.001f)
@@ -126,7 +126,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
             ),
         )
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
 
@@ -138,7 +138,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
             ),
         )
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         samplesJob.cancel()
         assertEquals("Expected that only the two prior sensor events were emitted", 2, samples.size)
@@ -157,7 +157,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
 
         emitLinearAccelerationSensorEvent(floatArrayOf(2.0f, -1.5f, 0.25f))
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         assertEquals(1, samples.size)
         assertEquals(2.0f, samples[0].xAccel, 0.001f)
@@ -180,7 +180,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
         emitLinearAccelerationSensorEvent(floatArrayOf(0.5f, 1.0f, 0.0f))
         emitLinearAccelerationSensorEvent(floatArrayOf(1.5f, -0.5f, 2.0f))
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         assertEquals(2, samples.size)
         assertEquals(0.5f, samples[0].xAccel, 0.001f)
@@ -206,7 +206,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
 
         emitLinearAccelerationSensorEvent(floatArrayOf(0.0f, 0.0f, 0.0f))
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         assertEquals(1, samples.size)
         assertEquals(0.0f, samples[0].xAccel, 0.001f)
@@ -228,7 +228,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
 
         emitLinearAccelerationSensorEvent(floatArrayOf(-1f, -2.0f, -0.5f))
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         assertEquals(1, samples.size)
         assertEquals(-1.0f, samples[0].xAccel, 0.001f)
@@ -250,7 +250,7 @@ class LifecycleAwareSensorManagerAccelerometerTest {
 
         emitAccelerometerSensorEvent(floatArrayOf(-1f, -2.0f, -0.5f))
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        testDispatcher.scheduler.runCurrent()
 
         assertEquals(1, samples.size)
 
