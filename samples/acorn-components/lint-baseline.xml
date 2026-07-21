@@ -45,15 +45,4 @@
             column="31"/>
     </issue>
 
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.mozac_ui_icons_fill` appears to be unused"
-        errorLine1="    &lt;color name=&quot;mozac_ui_icons_fill&quot;>#1C1B22&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="6"
-            column="12"/>
-    </issue>
-
 </issues>
