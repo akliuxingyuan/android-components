@@ -9,7 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
 import kotlinx.coroutines.test.runTest
-import mozilla.components.service.mars.contile.ContileTopSitesProvider
+import mozilla.components.feature.top.sites.TopSitesProvider
 import mozilla.components.service.mars.contile.ContileTopSitesUpdaterWorker
 import mozilla.components.service.mars.contile.ContileTopSitesUseCases
 import mozilla.components.support.test.mock
@@ -33,7 +33,7 @@ class ContileTopSitesUpdaterWorkerTest {
 
     @Test
     fun `WHEN worker does successful work THEN return a success result`() = runTest {
-        val provider: ContileTopSitesProvider = mock()
+        val provider: TopSitesProvider = mock()
         val worker = spy(
             TestListenableWorkerBuilder<ContileTopSitesUpdaterWorker>(testContext)
                 .build(),
@@ -50,7 +50,7 @@ class ContileTopSitesUpdaterWorkerTest {
 
     @Test
     fun `WHEN worker does unsuccessful work THEN return a failure result`() = runTest {
-        val provider: ContileTopSitesProvider = mock()
+        val provider: TopSitesProvider = mock()
         val worker = spy(
             TestListenableWorkerBuilder<ContileTopSitesUpdaterWorker>(testContext)
                 .build(),

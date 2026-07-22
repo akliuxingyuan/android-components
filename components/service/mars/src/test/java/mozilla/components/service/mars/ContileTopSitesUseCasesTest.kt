@@ -5,7 +5,7 @@
 package mozilla.components.service.mars
 
 import kotlinx.coroutines.test.runTest
-import mozilla.components.service.mars.contile.ContileTopSitesProvider
+import mozilla.components.feature.top.sites.TopSitesProvider
 import mozilla.components.service.mars.contile.ContileTopSitesUseCases
 import mozilla.components.support.test.eq
 import mozilla.components.support.test.mock
@@ -19,7 +19,7 @@ class ContileTopSitesUseCasesTest {
 
     @Test
     fun `WHEN refresh contile top site use case is called THEN call the provider to fetch top sites bypassing the cache`() = runTest {
-        val provider: ContileTopSitesProvider = mock()
+        val provider: TopSitesProvider = mock()
 
         ContileTopSitesUseCases.initialize(provider)
 
@@ -32,7 +32,7 @@ class ContileTopSitesUseCasesTest {
 
     @Test(expected = IOException::class)
     fun `GIVEN the provider fails to fetch contile top sites WHEN refresh contile top site use case is called THEN an exception is thrown`() = runTest {
-        val provider: ContileTopSitesProvider = mock()
+        val provider: TopSitesProvider = mock()
         val throwable = IOException("test")
 
         ContileTopSitesUseCases.initialize(provider)
