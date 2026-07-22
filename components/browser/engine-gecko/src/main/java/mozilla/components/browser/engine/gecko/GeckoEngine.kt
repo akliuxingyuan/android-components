@@ -1451,8 +1451,8 @@ class GeckoEngine(
         countryCode: String,
         onSuccess: (AddressStructure) -> Unit,
         onError: (Throwable) -> Unit,
-    ) {
-        addressStructureAccessor.getAddressStructure(countryCode, onSuccess, onError)
+    ): CancellableOperation {
+        return addressStructureAccessor.getAddressStructure(countryCode, onSuccess, onError)
     }
 
     /**

@@ -11,6 +11,7 @@ import android.os.Looper.getMainLooper
 import androidx.annotation.OptIn
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.browser.engine.gecko.autofill.RuntimeAddressStructureAccessor
 import mozilla.components.browser.engine.gecko.ext.getAntiTrackingPolicy
 import mozilla.components.browser.engine.gecko.mediaquery.toGeckoValue
 import mozilla.components.browser.engine.gecko.preferences.GeckoPreferenceAccessor
@@ -5170,12 +5171,14 @@ class GeckoEngineTest {
 
     @Test
     fun `WHEN getAddressStructure is called THEN addressStructureAccessor should be called`() {
-        var getAddressStructureCalled = false
-        val engine = GeckoEngine(testContext, runtime = runtime, addressStructureAccessor = { region, success, error ->
-            getAddressStructureCalled = true
-        })
+        val addressStructureAccessor = mock<RuntimeAddressStructureAccessor>()
+        val engine = GeckoEngine(
+            testContext,
+            runtime = runtime,
+            addressStructureAccessor = addressStructureAccessor,
+        )
         engine.getAddressStructure("JP", { _ -> }, { _ -> })
-        assertTrue("AddressStructureAccessor should be called,", getAddressStructureCalled)
+        verify(addressStructureAccessor).getAddressStructure(eq("JP"), any(), any())
     }
 
     @Test
