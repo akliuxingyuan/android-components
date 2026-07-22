@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.service.mars.contile
+package mozilla.components.service.mars
 
 import android.content.Context
 import androidx.work.CoroutineWorker
@@ -12,22 +12,22 @@ import kotlinx.coroutines.withContext
 import mozilla.components.support.base.log.logger.Logger
 
 /**
- * An implementation of [CoroutineWorker] to perform Contile top site updates.
+ * An implementation of [CoroutineWorker] to perform MAC top site updates.
  */
-internal class ContileTopSitesUpdaterWorker(
+internal class MacTopSitesUpdaterWorker(
     context: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
 
-    private val logger = Logger("ContileTopSitesUpdaterWorker")
+    private val logger = Logger("MacTopSitesUpdaterWorker")
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            ContileTopSitesUseCases().refreshContileTopSites.invoke()
+            MacTopSitesUseCases().refreshMacTopSites.invoke()
             Result.success()
         } catch (e: Exception) {
-            logger.error("Failed to refresh Contile top sites", e)
+            logger.error("Failed to refresh MAC top sites", e)
             Result.failure()
         }
     }

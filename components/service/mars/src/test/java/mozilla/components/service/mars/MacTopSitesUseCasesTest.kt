@@ -6,7 +6,6 @@ package mozilla.components.service.mars
 
 import kotlinx.coroutines.test.runTest
 import mozilla.components.feature.top.sites.TopSitesProvider
-import mozilla.components.service.mars.contile.ContileTopSitesUseCases
 import mozilla.components.support.test.eq
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
@@ -15,32 +14,32 @@ import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.Mockito.verify
 import java.io.IOException
 
-class ContileTopSitesUseCasesTest {
+class MacTopSitesUseCasesTest {
 
     @Test
-    fun `WHEN refresh contile top site use case is called THEN call the provider to fetch top sites bypassing the cache`() = runTest {
+    fun `WHEN refresh MAC top sites use case is called THEN call the provider to fetch top sites bypassing the cache`() = runTest {
         val provider: TopSitesProvider = mock()
 
-        ContileTopSitesUseCases.initialize(provider)
+        MacTopSitesUseCases.initialize(provider)
 
         whenever(provider.getTopSites(anyBoolean())).thenReturn(emptyList())
 
-        ContileTopSitesUseCases().refreshContileTopSites.invoke()
+        MacTopSitesUseCases().refreshMacTopSites.invoke()
 
         verify(provider).getTopSites(eq(false))
     }
 
     @Test(expected = IOException::class)
-    fun `GIVEN the provider fails to fetch contile top sites WHEN refresh contile top site use case is called THEN an exception is thrown`() = runTest {
+    fun `GIVEN the provider fails to fetch MAC top sites WHEN refresh top sites use case is called THEN an exception is thrown`() = runTest {
         val provider: TopSitesProvider = mock()
         val throwable = IOException("test")
 
-        ContileTopSitesUseCases.initialize(provider)
+        MacTopSitesUseCases.initialize(provider)
 
         whenever(provider.getTopSites(anyBoolean())).then {
             throw throwable
         }
 
-        ContileTopSitesUseCases().refreshContileTopSites.invoke()
+        MacTopSitesUseCases().refreshMacTopSites.invoke()
     }
 }

@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.service.mars.contile
+package mozilla.components.service.mars
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
@@ -17,7 +17,7 @@ import mozilla.components.support.base.worker.Frequency
 import java.util.concurrent.TimeUnit
 
 /**
- * Provides functionality to schedule updates of Contile top sites.
+ * Provides functionality to schedule updates of Mozilla Ads Client (MAC) top sites.
  *
  * @property context A reference to the application context.
  * @property provider An instance of [TopSitesProvider] which will fetch the top sites tile from
@@ -25,20 +25,19 @@ import java.util.concurrent.TimeUnit
  * @property frequency Optional [Frequency] that specifies how often the top site updates should
  * happen.
  */
-class ContileTopSitesUpdater(
+class MacTopSitesUpdater(
     private val context: Context,
     private val provider: TopSitesProvider,
     private val frequency: Frequency = Frequency(1, TimeUnit.DAYS),
 ) {
 
-    private val logger = Logger("ContileTopSitesUpdater")
+    private val logger = Logger("MacTopSitesUpdater")
 
     /**
-     * Starts a work request in the background to periodically update the list of
-     * Contile top sites.
+     * Starts a work request in the background to periodically update the list of MAC top sites.
      */
     fun startPeriodicWork() {
-        ContileTopSitesUseCases.initialize(provider)
+        MacTopSitesUseCases.initialize(provider)
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_WORK_TAG,
@@ -46,23 +45,23 @@ class ContileTopSitesUpdater(
             createPeriodicWorkRequest(),
         )
 
-        logger.info("Started periodic work to update Contile top sites")
+        logger.info("Started periodic work to update MAC top sites")
     }
 
     /**
-     * Stops the work request to periodically update the list of Contile top sites.
+     * Stops the work request to periodically update the list of MAC top sites.
      */
     fun stopPeriodicWork() {
-        ContileTopSitesUseCases.destroy()
+        MacTopSitesUseCases.destroy()
 
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK_TAG)
 
-        logger.info("Stopped periodic work to update Contile top sites")
+        logger.info("Stopped periodic work to update MAC top sites")
     }
 
     @VisibleForTesting
     internal fun createPeriodicWorkRequest() =
-        PeriodicWorkRequestBuilder<ContileTopSitesUpdaterWorker>(
+        PeriodicWorkRequestBuilder<MacTopSitesUpdaterWorker>(
             repeatInterval = frequency.repeatInterval,
             repeatIntervalTimeUnit = frequency.repeatIntervalTimeUnit,
         ).apply {
@@ -77,6 +76,6 @@ class ContileTopSitesUpdater(
         .build()
 
     companion object {
-        internal const val PERIODIC_WORK_TAG = "mozilla.components.service.contile.periodicWork"
+        internal const val PERIODIC_WORK_TAG = "mozilla.components.service.mars.periodicWork"
     }
 }

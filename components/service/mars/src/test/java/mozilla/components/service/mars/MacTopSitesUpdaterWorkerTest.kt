@@ -10,8 +10,6 @@ import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
 import kotlinx.coroutines.test.runTest
 import mozilla.components.feature.top.sites.TopSitesProvider
-import mozilla.components.service.mars.contile.ContileTopSitesUpdaterWorker
-import mozilla.components.service.mars.contile.ContileTopSitesUseCases
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.whenever
@@ -24,22 +22,22 @@ import org.mockito.Mockito.spy
 import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
-class ContileTopSitesUpdaterWorkerTest {
+class MacTopSitesUpdaterWorkerTest {
 
     @After
     fun cleanup() {
-        ContileTopSitesUseCases.destroy()
+        MacTopSitesUseCases.destroy()
     }
 
     @Test
     fun `WHEN worker does successful work THEN return a success result`() = runTest {
         val provider: TopSitesProvider = mock()
         val worker = spy(
-            TestListenableWorkerBuilder<ContileTopSitesUpdaterWorker>(testContext)
+            TestListenableWorkerBuilder<MacTopSitesUpdaterWorker>(testContext)
                 .build(),
         )
 
-        ContileTopSitesUseCases.initialize(provider)
+        MacTopSitesUseCases.initialize(provider)
 
         whenever(provider.getTopSites(anyBoolean())).thenReturn(emptyList())
 
@@ -52,12 +50,12 @@ class ContileTopSitesUpdaterWorkerTest {
     fun `WHEN worker does unsuccessful work THEN return a failure result`() = runTest {
         val provider: TopSitesProvider = mock()
         val worker = spy(
-            TestListenableWorkerBuilder<ContileTopSitesUpdaterWorker>(testContext)
+            TestListenableWorkerBuilder<MacTopSitesUpdaterWorker>(testContext)
                 .build(),
         )
         val throwable = IOException("test")
 
-        ContileTopSitesUseCases.initialize(provider)
+        MacTopSitesUseCases.initialize(provider)
 
         whenever(provider.getTopSites(anyBoolean())).then {
             throw throwable

@@ -2,25 +2,25 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.service.mars.contile
+package mozilla.components.service.mars
 
 import androidx.annotation.VisibleForTesting
 import mozilla.components.feature.top.sites.TopSitesProvider
 
 /**
- * Contains use cases related to the Contlie top sites feature.
+ * Contains use cases related to the MAC top sites feature.
  */
-internal class ContileTopSitesUseCases {
+internal class MacTopSitesUseCases {
 
     /**
-     * Refresh Contile top sites use case.
+     * Refresh MAC top sites use case.
      */
-    class RefreshContileTopSitesUseCase internal constructor() {
+    class RefreshMacTopSitesUseCase internal constructor() {
         /**
-         * Refreshes the Contile top sites.
+         * Refreshes the MAC top sites.
          */
         suspend operator fun invoke() {
-            requireContileTopSitesProvider().getTopSites(allowCache = false)
+            requireMacTopSitesProvider().getTopSites(allowCache = false)
         }
     }
 
@@ -46,14 +46,14 @@ internal class ContileTopSitesUseCases {
          * Returns the [TopSitesProvider], otherwise throw an exception if the [provider]
          * has not been initialized.
          */
-        internal fun requireContileTopSitesProvider(): TopSitesProvider {
+        internal fun requireMacTopSitesProvider(): TopSitesProvider {
             return requireNotNull(provider) {
                 "initialize must be called before trying to access the TopSitesProvider"
             }
         }
     }
 
-    val refreshContileTopSites: RefreshContileTopSitesUseCase by lazy {
-        RefreshContileTopSitesUseCase()
+    val refreshMacTopSites: RefreshMacTopSitesUseCase by lazy {
+        RefreshMacTopSitesUseCase()
     }
 }

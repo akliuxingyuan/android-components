@@ -11,9 +11,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import kotlinx.coroutines.test.runTest
-import mozilla.components.service.mars.contile.ContileTopSitesUpdater
-import mozilla.components.service.mars.contile.ContileTopSitesUpdater.Companion.PERIODIC_WORK_TAG
-import mozilla.components.service.mars.contile.ContileTopSitesUseCases
+import mozilla.components.service.mars.MacTopSitesUpdater.Companion.PERIODIC_WORK_TAG
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.After
@@ -26,7 +24,7 @@ import org.junit.runner.RunWith
 import kotlin.test.assertNotNull
 
 @RunWith(AndroidJUnit4::class)
-class ContileTopSitesUpdaterTest {
+class MacTopSitesUpdaterTest {
 
     @Before
     fun setUp() {
@@ -43,17 +41,17 @@ class ContileTopSitesUpdaterTest {
 
     @Test
     fun `WHEN periodic work is started THEN work is queued`() = runTest {
-        val updater = ContileTopSitesUpdater(testContext, provider = mock())
+        val updater = MacTopSitesUpdater(testContext, provider = mock())
         val workManager = WorkManager.getInstance(testContext)
         var workInfo = workManager.getWorkInfosForUniqueWork(PERIODIC_WORK_TAG).await()
 
         assertTrue(workInfo.isEmpty())
-        assertNull(ContileTopSitesUseCases.provider)
+        assertNull(MacTopSitesUseCases.provider)
 
         updater.startPeriodicWork()
 
-        assertNotNull(ContileTopSitesUseCases.provider)
-        assertNotNull(ContileTopSitesUseCases.requireContileTopSitesProvider())
+        assertNotNull(MacTopSitesUseCases.provider)
+        assertNotNull(MacTopSitesUseCases.requireMacTopSitesProvider())
 
         workInfo = workManager.getWorkInfosForUniqueWork(PERIODIC_WORK_TAG).await()
         val work = workInfo.first()
@@ -65,7 +63,7 @@ class ContileTopSitesUpdaterTest {
 
     @Test
     fun `GIVEN periodic work is started WHEN period work is stopped THEN no work is queued`() = runTest {
-        val updater = ContileTopSitesUpdater(testContext, provider = mock())
+        val updater = MacTopSitesUpdater(testContext, provider = mock())
         val workManager = WorkManager.getInstance(testContext)
         var workInfo = workManager.getWorkInfosForUniqueWork(PERIODIC_WORK_TAG).await()
 
@@ -82,13 +80,13 @@ class ContileTopSitesUpdaterTest {
         workInfo = workManager.getWorkInfosForUniqueWork(PERIODIC_WORK_TAG).await()
         val work = workInfo.first()
 
-        assertNull(ContileTopSitesUseCases.provider)
+        assertNull(MacTopSitesUseCases.provider)
         assertEquals(WorkInfo.State.CANCELLED, work.state)
     }
 
     @Test
     fun `WHEN period work request is created THEN it contains the correct constraints`() {
-        val updater = ContileTopSitesUpdater(testContext, provider = mock())
+        val updater = MacTopSitesUpdater(testContext, provider = mock())
         val workRequest = updater.createPeriodicWorkRequest()
 
         assertTrue(workRequest.tags.contains(PERIODIC_WORK_TAG))
