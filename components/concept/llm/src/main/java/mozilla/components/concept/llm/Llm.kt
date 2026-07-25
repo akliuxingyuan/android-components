@@ -29,6 +29,9 @@ interface CloudFailure
 /** The request body or content exceeded what the service accepts. */
 interface RequestTooLarge : CloudFailure
 
+/** Sign in fallback failed */
+interface AttestationFailure : CloudFailure
+
 /**
  * Rate or token limit hit.
  *

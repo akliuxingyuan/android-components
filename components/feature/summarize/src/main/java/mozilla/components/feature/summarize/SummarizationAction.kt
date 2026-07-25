@@ -99,6 +99,18 @@ sealed interface OffDeviceSummarizationShakeConsentAction : SummarizationAction 
     data object CancelClicked : OffDeviceSummarizationShakeConsentAction
 }
 
+/** Actions for the sign-in content shown when an integrity failure blocks summarization. */
+sealed interface SignInSummarizationContentAction : SummarizationAction {
+    /** Dispatched when the user taps the "Learn more" link. */
+    data object LearnMoreClicked : SignInSummarizationContentAction
+
+    /** Dispatched when the user taps the sign-in button. */
+    data object SignInClicked : SignInSummarizationContentAction
+
+    /** Dispatched when the user dismisses the sign-in prompt. */
+    data object DismissClicked : SignInSummarizationContentAction
+}
+
 /**
  * Actions for the consent step of the model download user flow.
  */

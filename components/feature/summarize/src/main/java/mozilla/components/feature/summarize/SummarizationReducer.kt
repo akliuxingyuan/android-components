@@ -48,6 +48,9 @@ fun summarizationReducer(state: SummarizationState, action: SummarizationAction)
     OnDeviceSummarizationShakeConsentAction.AllowClicked,
     OnDeviceSummarizationShakeConsentAction.CancelClicked,
     PageLoadCompleted,
+    SignInSummarizationContentAction.DismissClicked,
+    SignInSummarizationContentAction.LearnMoreClicked,
+    SignInSummarizationContentAction.SignInClicked,
     ViewAppeared,
     is ViewDismissed,
     -> state

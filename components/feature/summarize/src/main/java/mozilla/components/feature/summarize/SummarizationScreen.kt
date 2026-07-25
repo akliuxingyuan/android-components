@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.concept.llm.AttestationFailure
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.concept.llm.RequestTooLarge
 import mozilla.components.feature.summarize.settings.SettingsAppBar
@@ -60,6 +61,7 @@ import mozilla.components.feature.summarize.settings.SummarizeSettingsStore
 import mozilla.components.feature.summarize.settings.summarizeSettingsReducer
 import mozilla.components.feature.summarize.ui.ContentTooLongError
 import mozilla.components.feature.summarize.ui.DownloadError
+import mozilla.components.feature.summarize.ui.FxaSignInContent
 import mozilla.components.feature.summarize.ui.InfoError
 import mozilla.components.feature.summarize.ui.OffDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
@@ -223,6 +225,11 @@ private fun SummarizationScreenContent(
                     is RequestTooLarge -> ContentTooLongError(
                         onDismiss = { store.dispatch(ErrorAction.ErrorDismissed) },
                     )
+                    is AttestationFailure -> {
+                        FxaSignInContent(
+                            dispatchAction = { store.dispatch(it) },
+                        )
+                    }
                     else -> InfoError(
                         errorCode = errorCodeFor(error.exception),
                         onDismiss = { store.dispatch(ErrorAction.ErrorDismissed) },
