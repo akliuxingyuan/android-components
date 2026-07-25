@@ -218,31 +218,50 @@ private fun SummarizationScreenContent(
             }
         }
 
-        is SummarizationState.Error -> {
-            when (val error = state.error) {
-                is SummarizationError.DownloadFailed -> DownloadError()
-                is SummarizationError.SummarizationFailed -> when (error.exception) {
-                    is RequestTooLarge -> ContentTooLongError(
-                        onDismiss = { store.dispatch(ErrorAction.ErrorDismissed) },
-                    )
-                    is AttestationFailure -> {
-                        FxaSignInContent(
-                            dispatchAction = { store.dispatch(it) },
-                        )
-                    }
-                    else -> InfoError(
-                        errorCode = errorCodeFor(error.exception),
-                        onDismiss = { store.dispatch(ErrorAction.ErrorDismissed) },
-                    )
-                }
-            }
+        is SummarizationState.SignInRequired -> {
+            FxaSignInContent(
+                dispatchAction = { store.dispatch(it) },
+            )
         }
+
+        is SummarizationState.Error -> SummarizationErrorContent(
+            error = state.error,
+            errorCodeFor = errorCodeFor,
+            dispatch = { store.dispatch(it) },
+        )
 
         SummarizationState.DownloadConsentRequired,
         is SummarizationState.Downloading,
         SummarizationState.Finished.Cancelled,
         SummarizationState.Finished.ErrorDismissed,
+        SummarizationState.Finished.NavigatedToSignIn,
+        SummarizationState.LearnMoreAboutCloudSupportedFeatures,
         -> Unit
+    }
+}
+
+@Composable
+private fun SummarizationErrorContent(
+    error: SummarizationError,
+    errorCodeFor: (Throwable) -> Int,
+    dispatch: (SummarizationAction) -> Unit,
+) {
+    when (error) {
+        is SummarizationError.DownloadFailed -> DownloadError()
+        is SummarizationError.SummarizationFailed -> when (error.exception) {
+            is RequestTooLarge -> ContentTooLongError(
+                onDismiss = { dispatch(ErrorAction.ErrorDismissed) },
+            )
+            is AttestationFailure -> {
+                FxaSignInContent(
+                    dispatchAction = { dispatch(it) },
+                )
+            }
+            else -> InfoError(
+                errorCode = errorCodeFor(error.exception),
+                onDismiss = { dispatch(ErrorAction.ErrorDismissed) },
+            )
+        }
     }
 }
 
@@ -273,6 +292,8 @@ private fun ApplyHaptics(state: SummarizationState) {
             SummarizationState.ShakeConsentRequired,
             SummarizationState.ShakeConsentWithDownloadRequired,
             is SummarizationState.Summarizing,
+            SummarizationState.LearnMoreAboutCloudSupportedFeatures,
+            SummarizationState.SignInRequired,
             -> {}
         }
     }

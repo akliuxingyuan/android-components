@@ -36,11 +36,16 @@ data object SettingsBackClicked : SummarizationAction
 /** Shake Consent has been requested */
 data object ShakeConsentRequested : SummarizationAction
 
-/**  */
+/** Actions related to preparing and initializing the LLM provider. */
 sealed interface LlmProviderAction : SummarizationAction {
 
-    /** The LLM provider has been made available */
-    data object ProviderAvailable : LlmProviderAction
+    /**
+     * Preparing the provider failed because the user must sign in. Drives the sign-in UI.
+     *
+     * @property reason The provider-unavailable exception that blocked preparation, carried
+     * through for telemetry.
+     */
+    data class SignInRequired(val reason: Throwable) : LlmProviderAction
 
     /** The LLM provider finished initializing with the given [llm]. */
     data class ProviderInitialized(val llm: Llm) : LlmProviderAction

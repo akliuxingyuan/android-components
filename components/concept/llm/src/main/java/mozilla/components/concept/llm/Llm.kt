@@ -45,6 +45,13 @@ interface RateLimited : CloudFailure {
 /** Authentication or authorization failure. */
 interface AuthFailure : CloudFailure
 
+/**
+ * No usable credentials are available and the user must authenticate (e.g. sign in) before the
+ * request can proceed. Distinct from [AuthFailure], which indicates an already-authenticated
+ * session whose authorization failed.
+ */
+interface AuthenticationRequired : CloudFailure
+
 /** A network-level failure reaching the service. */
 interface NetworkError : CloudFailure
 
