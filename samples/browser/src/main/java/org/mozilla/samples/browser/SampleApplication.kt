@@ -49,6 +49,8 @@ class SampleApplication : Application() {
 
     val components by lazy { Components(this) }
 
+    // Sample-only code with no injectable clock seam and no time-dependent behavior to test.
+    @Suppress("NoSystemCurrentTimeMillis")
     @OptIn(DelicateCoroutinesApi::class) // Usage of GlobalScope
     override fun onCreate() {
         super.onCreate()
