@@ -122,7 +122,6 @@ class SitePermissionsFeature(
     private val shouldShowDoNotAskAgainCheckBox: Boolean = true,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val currentTimeMillis: () -> Long = { System.currentTimeMillis() },
     private val shouldHide: () -> Boolean = { false },
 ) : LifecycleAwareFeature, PermissionsFeature {
     @VisibleForTesting
@@ -753,11 +752,8 @@ class SitePermissionsFeature(
         origin: String,
     ): SitePermissions {
         val rules = sitePermissionsRules
-        return rules?.toSitePermissions(
-            origin,
-            savedAt = currentTimeMillis(),
-        )
-            ?: SitePermissions(origin, savedAt = currentTimeMillis())
+        return rules?.toSitePermissions(origin)
+            ?: SitePermissions(origin)
     }
 
     private fun PermissionRequest.isForAutoplay() =

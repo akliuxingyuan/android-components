@@ -29,7 +29,7 @@ data class SitePermissions(
     val crossOriginStorageAccess: Status = NO_DECISION,
     val localDeviceAccess: Status = NO_DECISION,
     val localNetworkAccess: Status = NO_DECISION,
-    val savedAt: Long,
+    val savedAt: Long = System.currentTimeMillis(),
 ) : Parcelable {
     enum class Status(
         val id: Int,
