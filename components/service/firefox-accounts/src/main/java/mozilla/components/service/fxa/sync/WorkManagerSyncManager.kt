@@ -308,13 +308,7 @@ internal class WorkManagerSyncWorker(
             return false
         }
 
-        return engineSyncTimestamp[engine]?.let {
-            (System.currentTimeMillis() - it) < SYNC_STAGGER_BUFFER_MS
-        } ?: false
-    }
-
-    private fun updateEngineSyncedTime(engine: String) {
-        engineSyncTimestamp[engine] = System.currentTimeMillis()
+        return engineSyncTimestamp[engine]?.let { isWithinStaggerBuffer(it) } ?: false
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -335,7 +329,7 @@ internal class WorkManagerSyncWorker(
                 else -> throw IllegalStateException("Invalid syncable store: $it")
             }
 
-            updateEngineSyncedTime(engine.nativeName)
+            recordEngineSyncedTime(engine.nativeName)
             engine to checkNotNull(GlobalSyncableStoreProvider.getLazyStoreWithKey(engine)) {
                 "SyncableStore missing from GlobalSyncableStoreProvider: ${engine.nativeName}"
             }
@@ -494,7 +488,7 @@ internal class WorkManagerSyncWorker(
                 // in Fennec, but for very specific reasons that aren't relevant here. We could have
                 // a timestamp per store, or whatever we want here really.
                 // For now, we just update it every time we succeed to sync.
-                setLastSynced(context, System.currentTimeMillis())
+                setLastSynced(context)
                 Result.success()
             }
 
@@ -548,6 +542,14 @@ private const val SYNC_STATE_KEY = "persistedState"
 
 private const val SYNC_STARTUP_DELAY_MS = 5 * 1000L // 5 seconds.
 
+@VisibleForTesting
+internal fun isWithinStaggerBuffer(lastSyncedMs: Long, now: Long = System.currentTimeMillis()): Boolean =
+    (now - lastSyncedMs) < WorkManagerSyncWorker.SYNC_STAGGER_BUFFER_MS
+
+private fun recordEngineSyncedTime(engine: String, now: Long = System.currentTimeMillis()) {
+    WorkManagerSyncWorker.engineSyncTimestamp[engine] = now
+}
+
 fun getLastSynced(context: Context): Long {
     return context
         .getSharedPreferences(SYNC_STATE_PREFS_KEY, Context.MODE_PRIVATE)
@@ -568,12 +570,14 @@ internal fun getSyncState(context: Context): String? {
  * Saves the lastSyncedTime to the shared preferences
  *
  * @param context the context
- * @param lastSyncedTime - the last synced time in milliseconds
+ * @param lastSyncedTime - the last synced time in milliseconds. Defaults to the current time.
+ * @return the time that was stored.
  */
-fun setLastSynced(context: Context, lastSyncedTime: Long) {
+fun setLastSynced(context: Context, lastSyncedTime: Long = System.currentTimeMillis()): Long {
     context.getSharedPreferences(SYNC_STATE_PREFS_KEY, Context.MODE_PRIVATE).edit {
         putLong(SYNC_LAST_SYNCED_KEY, lastSyncedTime)
     }
+    return lastSyncedTime
 }
 
 internal fun setSyncState(context: Context, state: String) {
