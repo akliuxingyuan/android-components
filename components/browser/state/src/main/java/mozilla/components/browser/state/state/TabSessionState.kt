@@ -160,8 +160,7 @@ fun createTab(
 /**
  * Indicates if the specified tab should be considered "inactive"
  */
-fun TabSessionState.isActive(maxActiveTime: Long): Boolean {
+fun TabSessionState.isActive(maxActiveTime: Long, now: Long = System.currentTimeMillis()): Boolean {
     val lastActiveTime = maxOf(lastAccess, createdAt)
-    val now = System.currentTimeMillis()
     return (now - lastActiveTime <= maxActiveTime)
 }

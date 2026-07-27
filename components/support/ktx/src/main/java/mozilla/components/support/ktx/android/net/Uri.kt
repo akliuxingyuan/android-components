@@ -187,9 +187,11 @@ internal fun Uri.getFileNameForContentUris(contentResolver: ContentResolver): St
  * Generate a file name using a randomUUID + the current timestamp.
  */
 @VisibleForTesting
-internal fun generateFileName(fileExtension: String = ""): String {
+internal fun generateFileName(
+    fileExtension: String = "",
+    timeStamp: Long = System.currentTimeMillis(),
+): String {
     val randomId = UUID.randomUUID().toString().removePrefix("-").trim()
-    val timeStamp = System.currentTimeMillis()
     return if (fileExtension.isNotEmpty()) {
         "$randomId$timeStamp.$fileExtension"
     } else {

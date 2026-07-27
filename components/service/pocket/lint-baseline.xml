@@ -4,28 +4,6 @@
     <issue
         id="NoSystemCurrentTimeMillis"
         message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
-        errorLine1="    val now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())"
-        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/mozilla/components/service/pocket/ext/PocketStory.kt"
-            line="16"
-            column="47"/>
-    </issue>
-
-    <issue
-        id="NoSystemCurrentTimeMillis"
-        message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
-        errorLine1="            currentImpressions = caps.currentImpressions + TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()),"
-        errorLine2="                                                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/mozilla/components/service/pocket/ext/PocketStory.kt"
-            line="37"
-            column="92"/>
-    </issue>
-
-    <issue
-        id="NoSystemCurrentTimeMillis"
-        message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
         errorLine1="    var impressionDateInSeconds: Long = System.currentTimeMillis() / 1000"
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
