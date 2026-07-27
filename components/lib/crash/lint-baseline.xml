@@ -34,26 +34,4 @@
             column="29"/>
     </issue>
 
-    <issue
-        id="NoSystemCurrentTimeMillis"
-        message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
-        errorLine1="                    timestamp = System.currentTimeMillis(),"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/mozilla/components/lib/crash/handler/ExceptionHandler.kt"
-            line="47"
-            column="33"/>
-    </issue>
-
-    <issue
-        id="NoSystemCurrentTimeMillis"
-        message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
-        errorLine1="    private val startTime = System.currentTimeMillis()"
-        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/mozilla/components/lib/crash/service/MozillaSocorroService.kt"
-            line="99"
-            column="29"/>
-    </issue>
-
 </issues>

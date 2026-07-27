@@ -29,17 +29,6 @@
         errorLine1="    var impressionDateInSeconds: Long = System.currentTimeMillis() / 1000"
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/mozilla/components/service/pocket/spocs/db/SpocImpressionEntity.kt"
-            line="44"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="NoSystemCurrentTimeMillis"
-        message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
-        errorLine1="    var impressionDateInSeconds: Long = System.currentTimeMillis() / 1000"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
             file="src/main/java/mozilla/components/service/pocket/mars/db/SponsoredContentImpressionEntity.kt"
             line="41"
             column="41"/>

@@ -24,7 +24,10 @@ private const val KEY_TOKEN_SERVER_URL = "tokenServerUrl"
  *
  * This class exists to provide background sync workers with access to [SyncAuthInfo].
  */
-class SyncAuthInfoCache(context: Context) : SharedPreferencesCache<SyncAuthInfo>(context) {
+class SyncAuthInfoCache(
+    context: Context,
+    private val currentTimeMillis: () -> Long = { System.currentTimeMillis() },
+) : SharedPreferencesCache<SyncAuthInfo>(context) {
     override val logger = Logger("SyncAuthInfoCache")
     override val cacheKey = CACHE_KEY
     override val cacheName = CACHE_NAME
@@ -51,7 +54,7 @@ class SyncAuthInfoCache(context: Context) : SharedPreferencesCache<SyncAuthInfo>
 
     fun expired(): Boolean {
         val expiresAt = getCached()?.fxaAccessTokenExpiresAt ?: return true
-        val now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+        val now = TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis())
 
         return expiresAt <= now
     }

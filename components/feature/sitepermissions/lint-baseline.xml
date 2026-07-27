@@ -4,28 +4,6 @@
     <issue
         id="NoSystemCurrentTimeMillis"
         message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
-        errorLine1="            savedAt = System.currentTimeMillis(),"
-        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/mozilla/components/feature/sitepermissions/SitePermissionsFeature.kt"
-            line="757"
-            column="23"/>
-    </issue>
-
-    <issue
-        id="NoSystemCurrentTimeMillis"
-        message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
-        errorLine1="            ?: SitePermissions(origin, savedAt = System.currentTimeMillis())"
-        errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/mozilla/components/feature/sitepermissions/SitePermissionsFeature.kt"
-            line="759"
-            column="50"/>
-    </issue>
-
-    <issue
-        id="NoSystemCurrentTimeMillis"
-        message="`System.currentTimeMillis()` must be injectable. Only permitted as a default value of a parameter on a top-level function or on a class."
         errorLine1="    fun toSitePermissions(origin: String, savedAt: Long = System.currentTimeMillis()): SitePermissions {"
         errorLine2="                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
