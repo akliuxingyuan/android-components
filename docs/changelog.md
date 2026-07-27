@@ -4,7 +4,9 @@ title: Changelog
 permalink: /changelog/
 ---
 
-# 154.0 (In Development)
+# 155.0 (In Development)
+
+# 154.0
 * **browser-icons**
     * ⚠️ **Breaking change**: Removed the `useMerinoManifest` parameter from `BrowserIcons`. The Merino manifest is now always used as the icon source. Removed `TippyTopIconPreparer` and the `IconRequest.Resource.Type.TIPPY_TOP` resource type. [Bug 2047476](https://bugzilla.mozilla.org/show_bug.cgi?id=2047476)
 * **support-base**
