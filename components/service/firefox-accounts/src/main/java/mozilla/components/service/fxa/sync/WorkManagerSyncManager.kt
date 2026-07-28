@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.appservices.sync15.SyncTelemetryPing
 import mozilla.appservices.syncmanager.ServiceStatus
+import mozilla.appservices.syncmanager.SyncAuthInfo
 import mozilla.appservices.syncmanager.SyncEngineSelection
 import mozilla.appservices.syncmanager.SyncParams
 import mozilla.appservices.syncmanager.SyncTelemetry
@@ -33,8 +34,9 @@ import mozilla.components.concept.storage.KeyProvider
 import mozilla.components.concept.sync.SyncConfig
 import mozilla.components.concept.sync.SyncEngine
 import mozilla.components.service.fxa.FxaDeviceSettingsCache
-import mozilla.components.service.fxa.SyncAuthInfoCache
+import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.service.fxa.manager.GlobalAccountManager
+import mozilla.components.service.fxa.manager.SCOPE_SYNC
 import mozilla.components.service.fxa.manager.SyncEnginesStorage
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.base.observer.Observable
@@ -278,8 +280,7 @@ internal class WorkManagerSyncDispatcher(
             .build()
     }
 
-    @VisibleForTesting
-    internal fun getWorkerData(
+    private fun getWorkerData(
         reason: SyncReason,
         customEngineSubset: List<SyncEngine> = listOf(),
     ): Data {
@@ -296,6 +297,9 @@ internal class WorkManagerSyncWorker(
     private val params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
     private val logger = Logger("SyncWorker")
+
+    private val accountManager: FxaAccountManager
+        get() = GlobalAccountManager.requireAccountManager()
 
     @VisibleForTesting
     internal fun isDebounced(): Boolean {
@@ -385,8 +389,9 @@ internal class WorkManagerSyncWorker(
         // We need to know the reason we're syncing.
         val reason = params.inputData.getString(KEY_REASON)!!.toSyncReason()
 
-        // We need a cached "sync auth info" object.
-        val syncAuthInfo = SyncAuthInfoCache(context).getCached() ?: return Result.failure()
+        // We need a "sync auth info" object.
+        val syncAuthInfo =
+            getSyncAuthInfo() ?: return Result.failure()
 
         // We need any persisted state that we received from RustSyncManager in the past.
         // We should be able to pass a `null` value, but currently the library will crash.
@@ -439,7 +444,7 @@ internal class WorkManagerSyncWorker(
         val syncParams = SyncParams(
             reason = reason.toRustSyncReason(),
             engines = enginesToSync,
-            authInfo = syncAuthInfo.toNative(),
+            authInfo = syncAuthInfo,
             enabledChanges = enabledChanges,
             persistedState = currentSyncState,
             deviceSettings = deviceSettings,
@@ -524,6 +529,31 @@ internal class WorkManagerSyncWorker(
                 logger.error("'Other' error :(")
                 Result.failure()
             }
+        }
+    }
+
+    /**
+     * Get sync auth info and notify the sync observers of any error
+     */
+    private suspend fun getSyncAuthInfo(): SyncAuthInfo? {
+        return try {
+            val account = accountManager.connectedAccount() ?: error("No connected account")
+            val token = account.getAccessToken(SCOPE_SYNC)
+                ?: error("Unable to retrieve the sync access token")
+            val tokenServerUrl = account.getTokenServerEndpointURL()
+                ?: error("Unable to retrieve the token server url")
+
+            val authKey = token.key ?: error("Access token unexpectedly without key")
+
+            SyncAuthInfo(
+                kid = authKey.kid,
+                fxaAccessToken = token.token,
+                syncKey = authKey.k,
+                tokenserverUrl = tokenServerUrl,
+            )
+        } catch (exception: IllegalStateException) {
+            logger.error("Error getting sync auth info", exception)
+            null
         }
     }
 
