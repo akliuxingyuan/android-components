@@ -44,6 +44,11 @@ interface IPProtectionHandler {
     fun getState(onResult: (ServiceState) -> Unit)
 
     /**
+     * Requests an update for the list of countries available in the proxy server-list.
+     */
+    fun updateCountryList()
+
+    /**
      * Initializes the proxy state machine.
      */
     fun init()
@@ -157,6 +162,17 @@ interface IPProtectionHandler {
                 " lastError=$lastError)"
         }
     }
+
+    /**
+     * Represents a country from the IP protection proxy server list.
+     *
+     * @property code ISO 3166-1 alpha-2 country code.
+     * @property available Whether the country could be selected as the active proxy.
+     */
+    data class Country(
+        val code: String,
+        val available: Boolean,
+    )
 }
 
 /** The possible states of the IP protection service. */

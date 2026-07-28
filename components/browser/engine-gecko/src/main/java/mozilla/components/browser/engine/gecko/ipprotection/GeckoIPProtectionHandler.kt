@@ -99,6 +99,10 @@ internal class GeckoIPProtectionHandler(
         )
     }
 
+    override fun updateCountryList() {
+        runtime.ipProtectionController.getCountryList()
+    }
+
     override fun setAuthProvider(
         provider: IPProtectionHandler.AuthProvider?,
     ) {

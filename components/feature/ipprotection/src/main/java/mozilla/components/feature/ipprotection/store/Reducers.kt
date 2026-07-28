@@ -85,6 +85,10 @@ internal fun iPProtectionReducer(
         )
     }
 
+    is IPProtectionAction.CountryListChanged -> {
+        state.copy(countries = action.countries)
+    }
+
    is IPProtectionAction.AccountStateChanged -> {
         state.copy(accountState = state.accountState.copy(status = action.state))
     }

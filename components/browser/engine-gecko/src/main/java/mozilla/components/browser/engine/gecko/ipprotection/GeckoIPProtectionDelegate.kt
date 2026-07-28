@@ -48,6 +48,12 @@ internal class GeckoIPProtectionDelegate(
         )
         delegate.onStateChanged(stateInfo)
     }
+
+    override fun onCountryListChanged(countries: List<GeckoViewIPProtectionController.Country>) {
+        delegate.onCountryListChanged(
+            countries.map { IPProtectionHandler.Country(code = it.code, available = it.available) },
+        )
+    }
 }
 
 @OptIn(ExperimentalGeckoViewApi::class)

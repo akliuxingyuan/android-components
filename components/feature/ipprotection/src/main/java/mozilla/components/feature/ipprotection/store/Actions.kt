@@ -28,6 +28,11 @@ sealed class IPProtectionAction : Action {
     data class EngineStateChanged(val info: IPProtectionHandler.StateInfo) : IPProtectionAction()
 
     /**
+     * Reports a fresh list of available proxy countries from the GeckoView IP protection toolkit.
+     */
+    data class CountryListChanged(val countries: List<IPProtectionHandler.Country>) : IPProtectionAction()
+
+    /**
      * Reports a change in whether the user is signed in to a Firefox Account.
      */
     data class AccountStateChanged(val state: AccountStatus) : IPProtectionAction()

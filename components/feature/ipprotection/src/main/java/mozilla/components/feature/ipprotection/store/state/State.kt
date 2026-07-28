@@ -26,6 +26,7 @@ const val BYTES_PER_GB = 1024 * 1024 * 1024f
  * @property lastError The last error received from the IPProtection service.
  * @property proxyActiveShown Whether the proxy-active status has been shown to the user.
  * @property activate To turn protection on or off.
+ * @property countries The list of countries available in the proxy server-list.
  */
 data class IPProtectionState(
     val eligibilityStatus: EligibilityStatus = EligibilityStatus.Unknown,
@@ -38,6 +39,7 @@ data class IPProtectionState(
     val lastError: String? = null,
     val proxyActiveShown: Boolean = false,
     val activate: Boolean? = null,
+    val countries: List<IPProtectionHandler.Country> = emptyList(),
 ) : State
 
 /**

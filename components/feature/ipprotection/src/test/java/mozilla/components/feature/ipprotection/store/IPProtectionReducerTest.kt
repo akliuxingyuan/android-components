@@ -5,6 +5,7 @@
 package mozilla.components.feature.ipprotection.store
 
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler.StateInfo
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler.StateInfo.Companion.PROXY_STATE_ACTIVATING
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler.StateInfo.Companion.PROXY_STATE_ACTIVE
@@ -604,5 +605,25 @@ class IPProtectionReducerTest {
         val resultState = iPProtectionReducer(initialState, InternalAction.FinishingAuthFlow)
 
         assertEquals(AccountStatus.NeedsAuthentication, resultState.accountState.status)
+    }
+
+    @Test
+    fun `WHEN CountryListChanged is dispatched THEN country list is updated`() {
+        val initialState = buildIPProtectionState()
+        val countries = listOf(
+            IPProtectionHandler.Country(code = "dk", available = true),
+            IPProtectionHandler.Country(code = "fr", available = true),
+            IPProtectionHandler.Country(code = "gb", available = false),
+            IPProtectionHandler.Country(code = "us", available = true),
+        )
+
+        assertEquals(emptyList<IPProtectionHandler.Country>(), initialState.countries)
+
+        val resultState = iPProtectionReducer(
+            state = initialState,
+            action = IPProtectionAction.CountryListChanged(countries),
+        )
+
+        assertEquals(countries, resultState.countries)
     }
 }
