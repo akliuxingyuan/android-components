@@ -1016,6 +1016,17 @@ open class DummyEngineSession : EngineSession() {
         onException: (Throwable) -> Unit,
     ) {}
 
+    override fun sendGleanBrokenSiteReport(
+        details: JSONObject?,
+        description: String?,
+        reason: String,
+        url: String,
+        sendTabSpecificInfo: Boolean,
+        sendBlockedUrls: Boolean,
+        onResult: () -> Unit,
+        onException: (Throwable) -> Unit,
+    ) {}
+
     override fun getBrokenSiteReport(
         onResult: (JSONObject) -> Unit,
         onException: (Throwable) -> Unit,

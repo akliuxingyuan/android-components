@@ -1027,6 +1027,30 @@ abstract class EngineSession(
     abstract fun checkForPdfViewer(onResult: (Boolean) -> Unit, onException: (Throwable) -> Unit)
 
     /**
+     * Send the broken site report using Glean.
+     *
+     * @param details The {@link JSONObject} returned by getBrokenSiteReport.
+     * @param description the description of the issue which the user has input.
+     * @param reason the reason for breakage that the user has input.
+     * @param url the final URL the user has input.
+     * @param sendTabSpecificInfo whether to send tab-specific info in the report.
+     * @param sendBlockedUrls whether the user opted into sending ETP-blocked URLs in the report.
+     * @param onResult callback invoked if the engine API returned a valid response.
+     * @param onException callback invoked if there was an error getting the response.
+     */
+    @Suppress("LongParameterList")
+    abstract fun sendGleanBrokenSiteReport(
+      details: JSONObject?,
+      description: String?,
+      reason: String,
+      url: String,
+      sendTabSpecificInfo: Boolean,
+      sendBlockedUrls: Boolean,
+      onResult: () -> Unit,
+      onException: (Throwable) -> Unit,
+    )
+
+    /**
      * Gets the broken site report.
      *
      * @param onResult callback invoked if the engine API returned a valid response.
