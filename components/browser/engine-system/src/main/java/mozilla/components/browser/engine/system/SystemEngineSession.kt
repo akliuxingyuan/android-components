@@ -430,6 +430,22 @@ class SystemEngineSession(
     }
 
     /**
+     * See [EngineSession.sendGleanBrokenSiteReport]
+     */
+    override fun sendGleanBrokenSiteReport(
+        details: JSONObject?,
+        description: String?,
+        reason: String,
+        url: String,
+        sendTabSpecificInfo: Boolean,
+        sendBlockedUrls: Boolean,
+        onResult: () -> Unit,
+        onException: (Throwable) -> Unit,
+    ) {
+        throw UnsupportedOperationException("Sending broken site report via Glean is not available in this engine")
+    }
+
+    /**
      * See [EngineSession.getBrokenSiteReport]
      */
     override fun getBrokenSiteReport(
