@@ -115,6 +115,8 @@ interface WebExtensionDelegate {
      * @param extension The [WebExtension] that wants to display the popup.
      * @param engineSession The [EngineSession] to use for displaying the popup.
      * @param action the [Action] that defines the popup.
+     * @param isPrivate whether private browsing mode is enabled for the popup.
+     * Must match the engineSession.privateMode flag.
      * @return the [EngineSession] used to display the popup, or null if no popup
      * was displayed.
      */
@@ -122,6 +124,7 @@ interface WebExtensionDelegate {
         extension: WebExtension,
         engineSession: EngineSession,
         action: Action,
+        isPrivate: Boolean,
     ): EngineSession? = null
 
     /**

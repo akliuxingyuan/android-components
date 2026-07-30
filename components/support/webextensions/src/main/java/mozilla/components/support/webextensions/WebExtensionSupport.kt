@@ -252,6 +252,7 @@ object WebExtensionSupport {
                     extension: WebExtension,
                     engineSession: EngineSession,
                     action: Action,
+                    isPrivate: Boolean,
                 ): EngineSession? {
                     return if (!openPopupInTab) {
                         store.dispatch(WebExtensionAction.UpdatePopupSessionAction(extension.id, null, engineSession))
@@ -273,6 +274,7 @@ object WebExtensionSupport {
                                 onSelectTabOverride,
                                 extension,
                                 engineSession,
+                                isPrivate = isPrivate,
                             )
                             store.dispatch(WebExtensionAction.UpdatePopupSessionAction(extension.id, sessionId))
                             engineSession

@@ -870,7 +870,7 @@ class WebExtensionSupportTest {
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
         // Toggling should open tab
-        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction)
+        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction, false)
 
         captureMiddleware.assertFirstAction(TabListAction.AddTabAction::class) { action ->
             assertEquals("", action.tab.content.url)
@@ -882,6 +882,38 @@ class WebExtensionSupportTest {
 
         captureMiddleware.assertFirstAction(WebExtensionAction.UpdatePopupSessionAction::class) { action ->
             assertNotNull(action.popupSessionId)
+        }
+    }
+
+    @Test
+    fun `reacts to action popup being toggled in private browsing mode by opening popup in a private tab`() {
+        val engine: Engine = mock()
+
+        val ext: WebExtension = mock()
+        whenever(ext.id).thenReturn("test")
+
+        val engineSession: EngineSession = mock()
+        val browserAction: Action = mock()
+        val store = BrowserStore(
+            BrowserState(
+                extensions = mapOf(ext.id to WebExtensionState(ext.id)),
+            ),
+            middleware = listOf(captureMiddleware),
+        )
+
+        val delegateCaptor = argumentCaptor<WebExtensionDelegate>()
+        WebExtensionSupport.initialize(engine, store, openPopupInTab = true)
+        verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
+
+        // WebExtensionDelegate.onToggleActionPopup with isPrivate=true should
+        // open a private tab. Note that this happens despite the extension
+        // not having been initialized with metaData.allowedInPrivateBrowsing
+        // set to true, because the enforcement of private browsing access
+        // happens at the caller in GeckoEngine.onToggleActionPopup.
+        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction, true)
+
+        captureMiddleware.assertFirstAction(TabListAction.AddTabAction::class) { action ->
+            assertTrue(action.tab.content.private)
         }
     }
 
@@ -912,7 +944,7 @@ class WebExtensionSupportTest {
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
         // Toggling again should select popup tab
-        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction)
+        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction, false)
 
         captureMiddleware.assertFirstAction(TabListAction.SelectTabAction::class) { action ->
             assertEquals("popupTab", action.tabId)
@@ -947,7 +979,7 @@ class WebExtensionSupportTest {
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
         // Toggling again should close tab
-        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction)
+        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction, false)
 
         captureMiddleware.assertFirstAction(TabListAction.RemoveTabAction::class) { action ->
             assertEquals("popupTab", action.tabId)
@@ -976,7 +1008,7 @@ class WebExtensionSupportTest {
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
         // Toggling should allow state to have popup EngineSession instance
-        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction)
+        delegateCaptor.value.onToggleActionPopup(ext, engineSession, browserAction, false)
 
         captureMiddleware.assertFirstAction(WebExtensionAction.UpdatePopupSessionAction::class) { action ->
             assertNotNull(action.popupSession)

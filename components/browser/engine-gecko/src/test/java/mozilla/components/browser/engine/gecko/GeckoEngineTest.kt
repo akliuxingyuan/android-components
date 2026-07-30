@@ -1909,6 +1909,119 @@ class GeckoEngineTest {
     }
 
     @Test
+    fun `WHEN an action popup is toggled in private browsing mode THEN the popup session is private`() {
+        val runtime = mock<GeckoRuntime>()
+        whenever(runtime.settings).thenReturn(mock())
+        val extId = "test-webext"
+        val extUrl = "resource://android/assets/extensions/test"
+
+        val extensionController: WebExtensionController = mock()
+        whenever(runtime.webExtensionController).thenReturn(extensionController)
+
+        val engine = GeckoEngine(context, runtime = runtime)
+        val webExtensionsDelegate: WebExtensionDelegate = mock()
+        whenever(webExtensionsDelegate.isInPrivateBrowsing()).thenReturn(true)
+        engine.registerWebExtensionDelegate(webExtensionsDelegate)
+
+        val result = GeckoResult<GeckoWebExtension>()
+        whenever(extensionController.ensureBuiltIn(extUrl, extId)).thenReturn(result)
+        engine.installBuiltInWebExtension(extId, extUrl)
+        val extension = mockNativeWebExtension(
+            extId,
+            extUrl,
+            metaData = mockNativeWebExtensionMetaData(allowedInPrivateBrowsing = true),
+        )
+        result.complete(extension)
+
+        shadowOf(getMainLooper()).idle()
+
+        val actionDelegateCaptor = argumentCaptor<org.mozilla.geckoview.WebExtension.ActionDelegate>()
+        verify(extension).setActionDelegate(actionDelegateCaptor.capture())
+
+        val browserAction: org.mozilla.geckoview.WebExtension.Action = mock()
+        actionDelegateCaptor.value.onTogglePopup(extension, browserAction)
+
+        // The popup's engine session must be private, matching the current browsing mode.
+        val engineSessionCaptor = argumentCaptor<EngineSession>()
+        verify(webExtensionsDelegate).onToggleActionPopup(any(), engineSessionCaptor.capture(), any(), eq(true))
+        assertTrue((engineSessionCaptor.value as GeckoEngineSession).geckoSession.settings.usePrivateMode)
+    }
+
+    @Test
+    fun `WHEN a popup is toggled in private browsing mode for an extension without private access THEN no popup session is opened`() {
+        val runtime = mock<GeckoRuntime>()
+        whenever(runtime.settings).thenReturn(mock())
+        val extId = "test-webext"
+        val extUrl = "resource://android/assets/extensions/test"
+
+        val extensionController: WebExtensionController = mock()
+        whenever(runtime.webExtensionController).thenReturn(extensionController)
+
+        val engine = GeckoEngine(context, runtime = runtime)
+        val webExtensionsDelegate: WebExtensionDelegate = mock()
+        whenever(webExtensionsDelegate.isInPrivateBrowsing()).thenReturn(true)
+        engine.registerWebExtensionDelegate(webExtensionsDelegate)
+
+        val result = GeckoResult<GeckoWebExtension>()
+        whenever(extensionController.ensureBuiltIn(extUrl, extId)).thenReturn(result)
+        engine.installBuiltInWebExtension(extId, extUrl)
+        val extension = mockNativeWebExtension(
+            extId,
+            extUrl,
+            metaData = mockNativeWebExtensionMetaData(allowedInPrivateBrowsing = false),
+        )
+        result.complete(extension)
+
+        shadowOf(getMainLooper()).idle()
+
+        val actionDelegateCaptor = argumentCaptor<org.mozilla.geckoview.WebExtension.ActionDelegate>()
+        verify(extension).setActionDelegate(actionDelegateCaptor.capture())
+
+        val browserAction: org.mozilla.geckoview.WebExtension.Action = mock()
+        actionDelegateCaptor.value.onTogglePopup(extension, browserAction)
+
+        verify(webExtensionsDelegate, never()).onToggleActionPopup(any(), any(), any(), anyBoolean())
+    }
+
+    @Test
+    fun `WHEN a popup is toggled outside private browsing mode for an extension without private access THEN a non-private popup session is opened`() {
+        val runtime = mock<GeckoRuntime>()
+        whenever(runtime.settings).thenReturn(mock())
+        val extId = "test-webext"
+        val extUrl = "resource://android/assets/extensions/test"
+
+        val extensionController: WebExtensionController = mock()
+        whenever(runtime.webExtensionController).thenReturn(extensionController)
+
+        val engine = GeckoEngine(context, runtime = runtime)
+        val webExtensionsDelegate: WebExtensionDelegate = mock()
+        whenever(webExtensionsDelegate.isInPrivateBrowsing()).thenReturn(false)
+        engine.registerWebExtensionDelegate(webExtensionsDelegate)
+
+        val result = GeckoResult<GeckoWebExtension>()
+        whenever(extensionController.ensureBuiltIn(extUrl, extId)).thenReturn(result)
+        engine.installBuiltInWebExtension(extId, extUrl)
+        val extension = mockNativeWebExtension(
+            extId,
+            extUrl,
+            metaData = mockNativeWebExtensionMetaData(allowedInPrivateBrowsing = false),
+        )
+        result.complete(extension)
+
+        shadowOf(getMainLooper()).idle()
+
+        val actionDelegateCaptor = argumentCaptor<org.mozilla.geckoview.WebExtension.ActionDelegate>()
+        verify(extension).setActionDelegate(actionDelegateCaptor.capture())
+
+        val browserAction: org.mozilla.geckoview.WebExtension.Action = mock()
+        actionDelegateCaptor.value.onTogglePopup(extension, browserAction)
+
+        val engineSessionCaptor = argumentCaptor<EngineSession>()
+        verify(webExtensionsDelegate).onToggleActionPopup(any(), engineSessionCaptor.capture(), any(), eq(false))
+        assertFalse((engineSessionCaptor.value as GeckoEngineSession).geckoSession.settings.usePrivateMode)
+    }
+
+    @Test
     fun `web extension delegate notified of page actions from built-in extensions`() {
         val runtime = mock<GeckoRuntime>()
         val extId = "test-webext"

@@ -141,13 +141,19 @@ class GeckoEngine(
         }
 
         override fun onToggleActionPopup(extension: WebExtension, action: Action): EngineSession? {
+            val isPrivate = webExtensionDelegate?.isInPrivateBrowsing() ?: false
+            if (isPrivate && !extension.isAllowedInPrivateBrowsing()) {
+                return null
+            }
             return webExtensionDelegate?.onToggleActionPopup(
                 extension,
                 GeckoEngineSession(
                     runtime = runtime,
+                    privateMode = isPrivate,
                     defaultSettings = defaultSettings,
                 ),
                 action,
+                isPrivate,
             )
         }
     }
