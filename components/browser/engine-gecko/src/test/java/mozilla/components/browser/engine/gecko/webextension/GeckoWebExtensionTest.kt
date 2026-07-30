@@ -640,11 +640,24 @@ class GeckoWebExtensionTest {
             location = "uri",
             isBuiltIn = true,
             metaData = mockNativeWebExtensionMetaData(
-                allowedInPrivateBrowsing = false,
+                // Gecko defaults to allowedInPrivateBrowsing=true for builtin.
+                allowedInPrivateBrowsing = true,
             ),
         )
         val builtInExtension = GeckoWebExtension(nativeBuiltInExtension, runtime)
         assertTrue(builtInExtension.isAllowedInPrivateBrowsing())
+
+        val nativeBuiltInWithoutPrivateBrowsing = mockNativeWebExtension(
+            id = "id",
+            location = "uri",
+            isBuiltIn = true,
+            metaData = mockNativeWebExtensionMetaData(
+                // Builtins can opt out with incognito:not_allowed.
+                allowedInPrivateBrowsing = false,
+            ),
+        )
+        val builtInWithoutPrivateBrowsing = GeckoWebExtension(nativeBuiltInWithoutPrivateBrowsing, runtime)
+        assertFalse(builtInWithoutPrivateBrowsing.isAllowedInPrivateBrowsing())
 
         val nativeWebExtensionWithPrivateBrowsing = mockNativeWebExtension(
             id = "id",

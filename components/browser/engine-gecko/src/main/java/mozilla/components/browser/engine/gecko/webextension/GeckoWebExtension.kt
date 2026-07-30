@@ -393,7 +393,7 @@ class GeckoWebExtension(
     }
 
     override fun isAllowedInPrivateBrowsing(): Boolean {
-        return isBuiltIn() || nativeExtension.metaData.allowedInPrivateBrowsing
+        return nativeExtension.metaData.allowedInPrivateBrowsing
     }
 
     override suspend fun loadIcon(size: Int): Bitmap? {
