@@ -262,6 +262,10 @@ class GeckoWebExtension(
             ): GeckoResult<GeckoSession>? {
                 // TODO bug 1372178: extensions cannot set (non-)privateness.
                 val isPrivate = tabHandler.isInPrivateBrowsing()
+                if (isPrivate && !this@GeckoWebExtension.isAllowedInPrivateBrowsing()) {
+                    return null
+                }
+
                 val geckoEngineSession = GeckoEngineSession(
                     runtime = runtime,
                     privateMode = isPrivate,
