@@ -381,6 +381,8 @@ private val iconsAlertsInfoHelp24 = listOf(
 
 private val iconsAudio24 = listOf(
     iconsR.drawable.mozac_ic_audio_wave_24,
+    iconsR.drawable.mozac_ic_audio_24,
+    iconsR.drawable.mozac_ic_audio_muted_24,
 )
 
 private val iconsAppMenuMore24 = listOf(
@@ -646,6 +648,10 @@ private val iconsReport24 = listOf(
     iconsR.drawable.mozac_ic_report_24,
 )
 
+private val iconsScreenshot24 = listOf(
+    iconsR.drawable.mozac_ic_screenshot_24,
+)
+
 private val iconsSearch24 = listOf(
     iconsR.drawable.mozac_ic_search_24,
     iconsR.drawable.mozac_ic_find_in_page_24,
@@ -868,6 +874,7 @@ private val iconSizeSections = listOf(
             IconCategory("QR Code", iconsQrCode24),
             IconCategory("Reader View", iconsReaderView24),
             IconCategory("Report", iconsReport24),
+            IconCategory("Screenshot", iconsScreenshot24),
             IconCategory("Search", iconsSearch24),
             IconCategory("Settings, Tools", iconsSettingsTools24),
             IconCategory("Share", iconsShare24),
