@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.concept.sync.AccountObserver
 import mozilla.components.concept.sync.AuthFlowError
+import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.feature.ipprotection.IPProtectionFxaAuthFlow.Companion.SCOPE_IPPROTECTION
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
@@ -94,6 +95,16 @@ internal class FxaAccountStoreSync(
                     ipProtectionStore.dispatch(InternalAction.AccountManagerStateChanged(mappedState))
                 }
         }
+    }
+
+    override fun onReady(authenticatedAccount: OAuthAccount?) {
+        super.onReady(authenticatedAccount)
+
+        ipProtectionStore.dispatch(
+            InternalAction.AccountManagerStateChanged(
+                if (authenticatedAccount == null) AccountStatus.NoAccount else AccountStatus.WarmingUp,
+            ),
+        )
     }
 
     // The SyncStore gives us flow observers so we can get the initial state even if we missed it. However, auth flow
