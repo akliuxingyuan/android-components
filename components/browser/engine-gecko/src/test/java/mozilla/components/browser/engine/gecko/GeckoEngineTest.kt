@@ -1972,7 +1972,7 @@ class GeckoEngineTest {
         tabDelegateCaptor.value.onNewTab(extension, createTabDetails)
 
         val extensionCaptor = argumentCaptor<WebExtension>()
-        verify(webExtensionsDelegate).onNewTab(extensionCaptor.capture(), any(), eq(false), eq(""))
+        verify(webExtensionsDelegate).onNewTab(extensionCaptor.capture(), any(), eq(false), eq(""), eq(false))
         assertEquals(extId, extensionCaptor.value.id)
     }
 
@@ -2076,7 +2076,7 @@ class GeckoEngineTest {
         tabDelegateCaptor.value.onNewTab(extension, createTabDetails)
 
         val extensionCaptor = argumentCaptor<WebExtension>()
-        verify(webExtensionsDelegate).onNewTab(extensionCaptor.capture(), any(), eq(false), eq(""))
+        verify(webExtensionsDelegate).onNewTab(extensionCaptor.capture(), any(), eq(false), eq(""), eq(false))
         assertEquals(extId, extensionCaptor.value.id)
     }
 

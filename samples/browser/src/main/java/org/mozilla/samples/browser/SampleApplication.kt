@@ -96,8 +96,14 @@ class SampleApplication : Application() {
             WebExtensionSupport.initialize(
                 components.engine,
                 components.store,
-                onNewTabOverride = { _, engineSession, url, selected ->
-                    components.tabsUseCases.addTab(url, selectTab = selected, engineSession = engineSession)
+                isInPrivateBrowsingMode = { false },
+                onNewTabOverride = { _, engineSession, url, selected, isPrivate ->
+                    components.tabsUseCases.addTab(
+                        url,
+                        selectTab = selected,
+                        engineSession = engineSession,
+                        private = isPrivate,
+                    )
                 },
                 onCloseTabOverride = { _, sessionId ->
                     components.tabsUseCases.removeTab(sessionId)

@@ -146,7 +146,7 @@ class WebExtensionSupportTest {
         WebExtensionSupport.initialize(engine, store)
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
-        delegateCaptor.value.onNewTab(ext, engineSession, true, "https://mozilla.org")
+        delegateCaptor.value.onNewTab(ext, engineSession, true, "https://mozilla.org", false)
 
         captureMiddleware.assertFirstAction(TabListAction.AddTabAction::class) { action ->
             assertEquals("https://mozilla.org", action.tab.content.url)
@@ -169,14 +169,14 @@ class WebExtensionSupportTest {
         WebExtensionSupport.initialize(
             engine,
             store,
-            onNewTabOverride = { _, _, _, _ ->
+            onNewTabOverride = { _, _, _, _, _ ->
                 onNewTabCalled = true
                 "123"
             },
         )
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
-        delegateCaptor.value.onNewTab(ext, engineSession, true, "https://mozilla.org")
+        delegateCaptor.value.onNewTab(ext, engineSession, true, "https://mozilla.org", false)
         assertTrue(onNewTabCalled)
     }
 
@@ -193,7 +193,7 @@ class WebExtensionSupportTest {
         WebExtensionSupport.initialize(
             engine,
             store,
-            onNewTabOverride = { _, _, _, selected ->
+            onNewTabOverride = { _, _, _, selected, _ ->
                 capturedSelected.add(selected)
                 "session-${capturedSelected.size}"
             },
@@ -203,8 +203,8 @@ class WebExtensionSupportTest {
         )
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
-        delegateCaptor.value.onNewTab(ext, engineSession, true, "https://mozilla.org")
-        delegateCaptor.value.onNewTab(ext, engineSession, false, "https://mozilla.org")
+        delegateCaptor.value.onNewTab(ext, engineSession, true, "https://mozilla.org", false)
+        delegateCaptor.value.onNewTab(ext, engineSession, false, "https://mozilla.org", false)
 
         assertEquals(listOf(true, false), capturedSelected)
         // onSelectTabOverride should only fire for the active=true case; the override
@@ -223,7 +223,7 @@ class WebExtensionSupportTest {
         WebExtensionSupport.initialize(engine, store)
         verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
 
-        delegateCaptor.value.onNewTab(ext, engineSession, false, "https://mozilla.org")
+        delegateCaptor.value.onNewTab(ext, engineSession, false, "https://mozilla.org", false)
 
         captureMiddleware.assertFirstAction(TabListAction.AddTabAction::class) { action ->
             assertEquals("https://mozilla.org", action.tab.content.url)

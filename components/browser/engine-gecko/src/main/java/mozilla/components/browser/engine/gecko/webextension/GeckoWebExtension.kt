@@ -260,8 +260,11 @@ class GeckoWebExtension(
                 ext: GeckoNativeWebExtension,
                 tabDetails: GeckoNativeWebExtension.CreateTabDetails,
             ): GeckoResult<GeckoSession>? {
+                // TODO bug 1372178: extensions cannot set (non-)privateness.
+                val isPrivate = tabHandler.isInPrivateBrowsing()
                 val geckoEngineSession = GeckoEngineSession(
                     runtime = runtime,
+                    privateMode = isPrivate,
                     defaultSettings = defaultSettings,
                     openGeckoSession = false,
                 )
@@ -271,6 +274,7 @@ class GeckoWebExtension(
                     geckoEngineSession,
                     tabDetails.active == true,
                     tabDetails.url ?: "",
+                    isPrivate,
                 )
                 return GeckoResult.fromValue(geckoEngineSession.geckoSession)
             }
