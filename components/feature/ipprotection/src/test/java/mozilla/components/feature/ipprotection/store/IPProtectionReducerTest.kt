@@ -525,7 +525,6 @@ class IPProtectionReducerTest {
         // These statuses reflect the account manager's authoritative view of the account.
         listOf(
             AccountStatus.WarmingUp,
-            AccountStatus.NoAccount,
             AccountStatus.NeedsAuthentication,
             AccountStatus.NeedsAuthorization,
             AccountStatus.Authenticated,
