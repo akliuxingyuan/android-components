@@ -1301,6 +1301,22 @@ class GeckoEngineSession(
         }
     }
 
+    private fun queryHasVisitedHostSince(
+        host: String,
+        afterEpochMillis: Long,
+        beforeEpochMillis: Long,
+    ): GeckoResult<Boolean>? {
+        if (privateMode) {
+            return null
+        }
+
+        val delegate = settings.historyTrackingDelegate ?: return null
+
+        return scope.launchGeckoResult {
+            delegate.hasVisitedSince(host, afterEpochMillis, beforeEpochMillis)
+        }
+    }
+
     internal fun createHistoryDelegate() = object : GeckoSession.HistoryDelegate {
         @SuppressWarnings("ReturnCount")
         override fun onVisited(
@@ -1385,6 +1401,15 @@ class GeckoEngineSession(
                 visits.toBooleanArray()
             }
         }
+
+        @OptIn(ExperimentalGeckoViewApi::class)
+        override fun hasVisitedHostSince(
+            session: GeckoSession,
+            host: String,
+            afterEpochMillis: Long,
+            beforeEpochMillis: Long,
+        ): GeckoResult<Boolean>? =
+            queryHasVisitedHostSince(host, afterEpochMillis, beforeEpochMillis)
 
         override fun onHistoryStateChange(
             session: GeckoSession,
