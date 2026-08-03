@@ -242,11 +242,6 @@ abstract class Settings {
     open var firefoxRelay: Engine.FirefoxRelayMode? by UnsupportedSetting()
 
     /**
-     * Setting to control the IP Protection auth provider ("fxa" or "gpi").
-     */
-    open var ipProtectionAuthProvider: String? by UnsupportedSetting()
-
-    /**
      * Setting to force the ability to scale the content
      */
     open var forceUserScalableContent: Boolean by UnsupportedSetting()
