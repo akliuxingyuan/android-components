@@ -28,6 +28,11 @@ typealias FxaPanicException = mozilla.appservices.fxaclient.FxaException.Panic
 typealias FxaUnauthorizedException = mozilla.appservices.fxaclient.FxaException.Authentication
 
 /**
+ * Thrown when the authorization is OK but the operation is forbidden for that account.
+ */
+typealias FxaForbiddenException = mozilla.appservices.fxaclient.FxaException.Forbidden
+
+/**
  * Thrown when we try opening paring link from a Firefox configured to use a different content server
  */
 typealias FxaOriginMismatchException = mozilla.appservices.fxaclient.FxaException.OriginMismatch
@@ -55,6 +60,7 @@ fun FxaException.shouldPropagate(): Boolean {
         // Don't throw for recoverable errors.
         is FxaNetworkException,
         is FxaUnauthorizedException,
+        is FxaForbiddenException,
         is FxaUnspecifiedException,
         is FxaOriginMismatchException,
         is FxaNoExistingAuthFlow,
