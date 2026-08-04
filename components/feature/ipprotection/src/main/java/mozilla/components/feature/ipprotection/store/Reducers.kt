@@ -232,6 +232,7 @@ internal fun internalReducer(
                 -> state
 
             AccountStatus.WarmingUp,
+            AccountStatus.NoAccount,
             AccountStatus.NeedsAuthentication,
             AccountStatus.NeedsAuthorization,
             AccountStatus.Authenticated,

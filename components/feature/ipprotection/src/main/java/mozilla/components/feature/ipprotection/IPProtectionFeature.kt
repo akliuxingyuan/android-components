@@ -147,6 +147,7 @@ class IPProtectionFeature(
                         }
 
                         AccountStatus.WarmingUp,
+                        AccountStatus.NoAccount,
                         AccountStatus.NeedsAuthentication,
                         AccountStatus.RequestingAuthentication,
                         AccountStatus.NeedsAuthorization,
