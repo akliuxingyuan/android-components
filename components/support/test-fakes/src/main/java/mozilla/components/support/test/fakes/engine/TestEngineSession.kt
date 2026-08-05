@@ -52,11 +52,6 @@ open class TestEngineSession(override val settings: Settings = DefaultSettings()
 
     override fun toggleDesktopMode(enable: Boolean, reload: Boolean) = Unit
 
-    override fun hasCookieBannerRuleForSession(
-        onResult: (Boolean) -> Unit,
-        onException: (Throwable) -> Unit,
-    ) = Unit
-
     override fun checkForPdfViewer(
         onResult: (Boolean) -> Unit,
         onException: (Throwable) -> Unit,

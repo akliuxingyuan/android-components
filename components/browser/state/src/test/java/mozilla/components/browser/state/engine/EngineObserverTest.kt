@@ -11,7 +11,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
-import mozilla.components.browser.state.action.CookieBannerAction
 import mozilla.components.browser.state.action.CrashAction
 import mozilla.components.browser.state.action.ReaderAction
 import mozilla.components.browser.state.action.TabListAction
@@ -26,7 +25,6 @@ import mozilla.components.browser.state.state.content.FindResultState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineSession
-import mozilla.components.concept.engine.EngineSession.CookieBannerHandlingStatus.HANDLED
 import mozilla.components.concept.engine.EngineSessionState
 import mozilla.components.concept.engine.HitResult
 import mozilla.components.concept.engine.Settings
@@ -74,10 +72,6 @@ class EngineObserverTest {
             override fun toggleDesktopMode(enable: Boolean, reload: Boolean) {
                 notifyObservers { onDesktopModeChange(enable) }
             }
-            override fun hasCookieBannerRuleForSession(
-                onResult: (Boolean) -> Unit,
-                onException: (Throwable) -> Unit,
-            ) {}
             override fun checkForPdfViewer(
                 onResult: (Boolean) -> Unit,
                 onException: (Throwable) -> Unit,
@@ -180,10 +174,6 @@ class EngineObserverTest {
             override fun flushSessionState() {}
             override fun updateTrackingProtection(policy: TrackingProtectionPolicy) {}
             override fun toggleDesktopMode(enable: Boolean, reload: Boolean) {}
-            override fun hasCookieBannerRuleForSession(
-                onResult: (Boolean) -> Unit,
-                onException: (Throwable) -> Unit,
-            ) {}
             override fun checkForPdfViewer(
                 onResult: (Boolean) -> Unit,
                 onException: (Throwable) -> Unit,
@@ -285,10 +275,6 @@ class EngineObserverTest {
             override fun flushSessionState() {}
             override fun updateTrackingProtection(policy: TrackingProtectionPolicy) {}
             override fun toggleDesktopMode(enable: Boolean, reload: Boolean) {}
-            override fun hasCookieBannerRuleForSession(
-                onResult: (Boolean) -> Unit,
-                onException: (Throwable) -> Unit,
-            ) {}
             override fun checkForPdfViewer(
                 onResult: (Boolean) -> Unit,
                 onException: (Throwable) -> Unit,
@@ -386,10 +372,6 @@ class EngineObserverTest {
             override fun flushSessionState() {}
             override fun updateTrackingProtection(policy: TrackingProtectionPolicy) {}
             override fun toggleDesktopMode(enable: Boolean, reload: Boolean) {}
-            override fun hasCookieBannerRuleForSession(
-                onResult: (Boolean) -> Unit,
-                onException: (Throwable) -> Unit,
-            ) {}
             override fun checkForPdfViewer(
                 onResult: (Boolean) -> Unit,
                 onException: (Throwable) -> Unit,
@@ -485,10 +467,6 @@ class EngineObserverTest {
             override fun flushSessionState() {}
             override fun updateTrackingProtection(policy: TrackingProtectionPolicy) {}
             override fun toggleDesktopMode(enable: Boolean, reload: Boolean) {}
-            override fun hasCookieBannerRuleForSession(
-                onResult: (Boolean) -> Unit,
-                onException: (Throwable) -> Unit,
-            ) {}
             override fun checkForPdfViewer(
                 onResult: (Boolean) -> Unit,
                 onException: (Throwable) -> Unit,
@@ -623,21 +601,6 @@ class EngineObserverTest {
         captureActionsMiddleware.assertFirstAction(TrackingProtectionAction.ToggleExclusionListAction::class) { action ->
             assertEquals("mozilla", action.tabId)
             assertTrue(action.excluded)
-        }
-    }
-
-    @Test
-    fun `WHEN onCookieBannerChange is called THEN dispatch an CookieBannerAction UpdateStatusAction`() = runTest {
-        val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
-        val store = BrowserStore(middleware = listOf(captureActionsMiddleware))
-        val observer = createEngineObserver(store = store, scope = this)
-
-        observer.onCookieBannerChange(HANDLED)
-        testScheduler.advanceUntilIdle()
-
-        captureActionsMiddleware.assertFirstAction(CookieBannerAction.UpdateStatusAction::class) { action ->
-            assertEquals("mozilla", action.tabId)
-            assertEquals(HANDLED, action.status)
         }
     }
 

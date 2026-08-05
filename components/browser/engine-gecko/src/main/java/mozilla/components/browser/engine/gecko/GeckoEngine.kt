@@ -48,7 +48,6 @@ import mozilla.components.concept.engine.CancellableOperation
 import mozilla.components.concept.engine.DownloadDelegate
 import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.EngineSession
-import mozilla.components.concept.engine.EngineSession.CookieBannerHandlingMode
 import mozilla.components.concept.engine.EngineSession.SafeBrowsingPolicy
 import mozilla.components.concept.engine.EngineSession.TrackingProtectionPolicy
 import mozilla.components.concept.engine.EngineSession.TrackingProtectionPolicy.TrackingCategory
@@ -1564,62 +1563,11 @@ class GeckoEngine(
                 }
             }
 
-        override var cookieBannerHandlingMode: CookieBannerHandlingMode = CookieBannerHandlingMode.DISABLED
-            set(value) {
-                with(runtime.settings.contentBlocking) {
-                    if (this.cookieBannerMode != value.mode) {
-                        this.cookieBannerMode = value.mode
-                    }
-                }
-                field = value
-            }
-
-        override var cookieBannerHandlingModePrivateBrowsing: CookieBannerHandlingMode =
-            CookieBannerHandlingMode.REJECT_ALL
-            set(value) {
-                with(runtime.settings.contentBlocking) {
-                    if (this.cookieBannerModePrivateBrowsing != value.mode) {
-                        this.cookieBannerModePrivateBrowsing = value.mode
-                    }
-                }
-                field = value
-            }
-
         override var emailTrackerBlockingPrivateBrowsing: Boolean = false
             set(value) {
                 with(runtime.settings.contentBlocking) {
                     if (this.emailTrackerBlockingPrivateBrowsingEnabled != value) {
                         this.setEmailTrackerBlockingPrivateBrowsing(value)
-                    }
-                }
-                field = value
-            }
-
-        override var cookieBannerHandlingDetectOnlyMode: Boolean = false
-            set(value) {
-                with(runtime.settings.contentBlocking) {
-                    if (this.cookieBannerDetectOnlyMode != value) {
-                        this.cookieBannerDetectOnlyMode = value
-                    }
-                }
-                field = value
-            }
-
-        override var cookieBannerHandlingGlobalRules: Boolean = false
-            set(value) {
-                with(runtime.settings.contentBlocking) {
-                    if (this.cookieBannerGlobalRulesEnabled != value) {
-                        this.cookieBannerGlobalRulesEnabled = value
-                    }
-                }
-                field = value
-            }
-
-        override var cookieBannerHandlingGlobalRulesSubFrames: Boolean = false
-            set(value) {
-                with(runtime.settings.contentBlocking) {
-                    if (this.cookieBannerGlobalRulesSubFramesEnabled != value) {
-                        this.cookieBannerGlobalRulesSubFramesEnabled = value
                     }
                 }
                 field = value
@@ -2059,11 +2007,6 @@ class GeckoEngine(
             this.dohProviderUrl = it.dohProviderUrl
             this.dohDefaultProviderUrl = it.dohDefaultProviderUrl
             this.dohExceptionsList = it.dohExceptionsList
-            this.cookieBannerHandlingMode = it.cookieBannerHandlingMode
-            this.cookieBannerHandlingModePrivateBrowsing = it.cookieBannerHandlingModePrivateBrowsing
-            this.cookieBannerHandlingDetectOnlyMode = it.cookieBannerHandlingDetectOnlyMode
-            this.cookieBannerHandlingGlobalRules = it.cookieBannerHandlingGlobalRules
-            this.cookieBannerHandlingGlobalRulesSubFrames = it.cookieBannerHandlingGlobalRulesSubFrames
             this.globalPrivacyControlEnabled = it.globalPrivacyControlEnabled
             this.fingerprintingProtection = it.fingerprintingProtection
             this.fingerprintingProtectionPrivateBrowsing = it.fingerprintingProtectionPrivateBrowsing

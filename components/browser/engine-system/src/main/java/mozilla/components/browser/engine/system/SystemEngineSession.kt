@@ -515,13 +515,6 @@ class SystemEngineSession(
         throw UnsupportedOperationException("Setting the site's translate setting is not available in this engine")
     }
 
-    override fun hasCookieBannerRuleForSession(
-        onResult: (Boolean) -> Unit,
-        onException: (Throwable) -> Unit,
-    ) {
-        throw UnsupportedOperationException("Cookie Banner handling is not available in this engine")
-    }
-
     /**
      * See [EngineSession.exitFullScreenMode]
      */

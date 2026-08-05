@@ -506,37 +506,6 @@ class GeckoEngineSession(
     }
 
     /**
-     * See [EngineSession.hasCookieBannerRuleForSession]
-     */
-    override fun hasCookieBannerRuleForSession(
-        onResult: (Boolean) -> Unit,
-        onException: (Throwable) -> Unit,
-    ) {
-        geckoSession.hasCookieBannerRuleForBrowsingContextTree().then(
-            { response ->
-                if (response == null) {
-                    logger.error(
-                        "Invalid value: unable to get response from hasCookieBannerRuleForBrowsingContextTree.",
-                    )
-                    onException(
-                        java.lang.IllegalStateException(
-                            "Invalid value: unable to get response from hasCookieBannerRuleForBrowsingContextTree.",
-                        ),
-                    )
-                    return@then GeckoResult()
-                }
-                onResult(response)
-                GeckoResult<Boolean>()
-            },
-            { throwable ->
-                logger.error("Checking for cookie banner rule failed.", throwable)
-                onException(throwable)
-                GeckoResult()
-            },
-        )
-    }
-
-    /**
      * Checks and returns a non-mobile version of the url.
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -1070,10 +1039,6 @@ class GeckoEngineSession(
             notifyObservers {
                 onExcludedOnTrackingProtectionChange(isIgnoredForTrackingProtection())
             }
-            // Re-set the status of cookie banner handling when the user navigates to another site.
-            notifyObservers {
-                onCookieBannerChange(CookieBannerHandlingStatus.NO_DETECTED)
-            }
             // Reset the status of the translation state for the page
             notifyObservers { onTranslatePageChange() }
             notifyObservers { onLocationChange(url, hasUserGesture) }
@@ -1430,14 +1395,6 @@ class GeckoEngineSession(
 
     @Suppress("NestedBlockDepth", "CognitiveComplexMethod")
     internal fun createContentDelegate() = object : GeckoSession.ContentDelegate {
-        override fun onCookieBannerDetected(session: GeckoSession) {
-            notifyObservers { onCookieBannerChange(CookieBannerHandlingStatus.DETECTED) }
-        }
-
-        override fun onCookieBannerHandled(session: GeckoSession) {
-            notifyObservers { onCookieBannerChange(CookieBannerHandlingStatus.HANDLED) }
-        }
-
         override fun onFirstComposite(session: GeckoSession) = Unit
 
         override fun onFirstContentfulPaint(session: GeckoSession) {
