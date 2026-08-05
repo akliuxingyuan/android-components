@@ -290,7 +290,7 @@ class IPProtectionReducerTest {
     }
 
     @Test
-    fun `WHEN AccountManagerStateChanged to Uninitialized is dispatched THEN data and proxy flags are reset to defaults`() {
+    fun `WHEN AccountManagerStateChanged to NoAccount is dispatched THEN data and proxy flags are reset to defaults`() {
         val dirtyState = buildIPProtectionState(
             accountStatus = AccountStatus.EnrolledAndEntitled,
             serviceStatus = ServiceState.Ready,
@@ -306,7 +306,7 @@ class IPProtectionReducerTest {
 
         val resultState = iPProtectionReducer(
             dirtyState,
-            InternalAction.AccountManagerStateChanged(AccountStatus.Uninitialized),
+            InternalAction.AccountManagerStateChanged(AccountStatus.NoAccount),
         )
 
         assertEquals(
@@ -316,7 +316,7 @@ class IPProtectionReducerTest {
                 resetDate = null,
                 proxyActiveShown = false,
                 activate = false,
-                accountState = AccountState(AccountStatus.Uninitialized),
+                accountState = AccountState(AccountStatus.NoAccount),
             ),
             resultState,
         )
@@ -377,6 +377,7 @@ class IPProtectionReducerTest {
             AccountStatus.NeedsAuthentication,
             AccountStatus.Uninitialized,
             AccountStatus.WarmingUp,
+            AccountStatus.NoAccount,
         ).forEach { accountStatus ->
             val state = buildIPProtectionState(
                 accountStatus = accountStatus,
@@ -474,6 +475,34 @@ class IPProtectionReducerTest {
         val resultState = iPProtectionReducer(state, IPProtectionAction.EngineStateChanged(info))
 
         assertEquals(AccountStatus.NeedsAuthentication, resultState.accountState.status)
+    }
+
+    @Test
+    fun `GIVEN the user is signed in WHEN the service reports Ready THEN entitlement is short-circuited`() {
+        val state = buildIPProtectionState(
+            accountStatus = AccountStatus.Authenticated,
+            serviceStatus = ServiceState.Unauthenticated,
+        )
+        val info = StateInfo(serviceState = ServiceState.Ready, proxyState = PROXY_STATE_READY)
+
+        val resultState = iPProtectionReducer(state, IPProtectionAction.EngineStateChanged(info))
+
+        assertEquals(AccountStatus.EnrolledAndEntitled, resultState.accountState.status)
+    }
+
+    @Test
+    fun `GIVEN the user is signed out WHEN the service reports Ready THEN entitlement is not short-circuited`() {
+        val state = buildIPProtectionState(
+            accountStatus = AccountStatus.NoAccount,
+            serviceStatus = ServiceState.Unauthenticated,
+        )
+        // A stale Ready update can intermittently arrive right after sign-out, before the engine
+        // reflects the new account status
+        val info = StateInfo(serviceState = ServiceState.Ready, proxyState = PROXY_STATE_READY)
+
+        val resultState = iPProtectionReducer(state, IPProtectionAction.EngineStateChanged(info))
+
+        assertEquals(AccountStatus.NoAccount, resultState.accountState.status)
     }
 
     @Test
