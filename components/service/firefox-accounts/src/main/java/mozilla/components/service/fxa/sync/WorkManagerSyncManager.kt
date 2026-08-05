@@ -248,7 +248,7 @@ internal class WorkManagerSyncDispatcher(
             .addTag(SyncWorkerTag.Common.name)
             .addTag(SyncWorkerTag.Debounce.name)
             .setBackoffCriteria(
-                BackoffPolicy.EXPONENTIAL,
+                BackoffPolicy.LINEAR,
                 SYNC_WORKER_BACKOFF_DELAY_MINUTES,
                 TimeUnit.MINUTES,
             )
@@ -273,7 +273,7 @@ internal class WorkManagerSyncDispatcher(
             .addTag(if (debounce) SyncWorkerTag.Debounce.name else SyncWorkerTag.Immediate.name)
             .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
             .setBackoffCriteria(
-                BackoffPolicy.EXPONENTIAL,
+                BackoffPolicy.LINEAR,
                 SYNC_WORKER_BACKOFF_DELAY_MINUTES,
                 TimeUnit.MINUTES,
             )
