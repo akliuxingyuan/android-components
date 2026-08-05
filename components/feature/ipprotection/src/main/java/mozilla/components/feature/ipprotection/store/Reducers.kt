@@ -218,6 +218,7 @@ internal fun iPProtectionReducer(
     }
 
     is IPProtectionAction.LocationChanged -> state.copy(
+        activate = if (state.proxyStatus == Authorized.Active) true else null,
         locationState = LocationState(
             selectedLocation = action.location,
             locations = state.locationState.locations,

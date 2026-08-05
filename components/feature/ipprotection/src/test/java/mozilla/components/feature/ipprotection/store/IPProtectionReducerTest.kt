@@ -679,4 +679,36 @@ class IPProtectionReducerTest {
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
     }
+
+    @Test
+    fun `GIVEN an active proxy connection WHEN when user changes the location THEN the feature activates the selected location`() {
+        val updatedLocation = Country("JP", available = true)
+        val initialState = buildIPProtectionState(serviceStatus = ServiceState.Ready, proxyStatus = Authorized.Active)
+
+        assertEquals(Recommended(), initialState.locationState.selectedLocation)
+
+        val resultState = iPProtectionReducer(
+            state = initialState,
+            action = IPProtectionAction.LocationChanged(updatedLocation),
+        )
+
+        assertEquals(updatedLocation, resultState.locationState.selectedLocation)
+        assertEquals(true, resultState.activate)
+    }
+
+    @Test
+    fun `GIVEN no active proxy connection WHEN when user changes the location THEN the feature does not activate the selected location`() {
+        val updatedLocation = Country("JP", available = true)
+        val initialState = buildIPProtectionState(serviceStatus = ServiceState.Ready, proxyStatus = Authorized.Idle)
+
+        assertEquals(Recommended(), initialState.locationState.selectedLocation)
+
+        val resultState = iPProtectionReducer(
+            state = initialState,
+            action = IPProtectionAction.LocationChanged(updatedLocation),
+        )
+
+        assertEquals(updatedLocation, resultState.locationState.selectedLocation)
+        assertEquals(null, resultState.activate)
+    }
 }
