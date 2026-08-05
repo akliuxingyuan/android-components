@@ -68,6 +68,7 @@ import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyList
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.atLeastOnce
+import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.never
 import org.mockito.Mockito.reset
 import org.mockito.Mockito.spy
@@ -2250,6 +2251,132 @@ class GeckoEngineSessionTest {
     }
 
     @Test
+    fun maybeRequestLocalNetworkPermissionAndRetryRequestsPermissionWhenSupported() {
+        val engineSession = spy(
+            GeckoEngineSession(
+                mock(),
+                geckoSessionProvider = geckoSessionProvider,
+            ),
+        )
+        doReturn(true).`when`(engineSession).isAtLeastCinnamonBun()
+
+        val observedPermissionRequests = mutableListOf<PermissionRequest>()
+        engineSession.register(object : EngineSession.Observer {
+            override fun onAppPermissionRequest(permissionRequest: PermissionRequest) {
+                observedPermissionRequests.add(permissionRequest)
+            }
+        })
+        engineSession.maybeRequestLocalNetworkPermissionAndRetry(
+            "https://local.device/",
+            WebRequestError.ERROR_LOCAL_NETWORK_ACCESS_DENIED,
+        )
+
+        assertEquals(1, observedPermissionRequests.size)
+        assertEquals(1, observedPermissionRequests[0].permissions.size)
+    }
+
+    @Test
+    fun maybeRequestLocalNetworkPermissionAndRetryGrantRetriesToLoad() {
+        val engineSession = spy(
+            GeckoEngineSession(
+                mock(),
+                geckoSessionProvider = geckoSessionProvider,
+            ),
+        )
+        doReturn(true).`when`(engineSession).isAtLeastCinnamonBun()
+
+        val observedPermissionRequests = mutableListOf<PermissionRequest>()
+        engineSession.register(object : EngineSession.Observer {
+            override fun onAppPermissionRequest(permissionRequest: PermissionRequest) {
+                observedPermissionRequests.add(permissionRequest)
+            }
+        })
+
+        val uri = "https://local.device/"
+        engineSession.maybeRequestLocalNetworkPermissionAndRetry(
+            uri,
+            WebRequestError.ERROR_LOCAL_NETWORK_ACCESS_DENIED,
+        )
+
+        observedPermissionRequests[0].grant()
+
+        verify(geckoSession).loadUri(uri)
+    }
+
+    @Test
+    fun maybeRequestLocalNetworkPermissionAndRetryDoesNotRequestPermissionWithNullUri() {
+        val engineSession = spy(
+            GeckoEngineSession(
+                mock(),
+                geckoSessionProvider = geckoSessionProvider,
+            ),
+        )
+        doReturn(true).`when`(engineSession).isAtLeastCinnamonBun()
+
+        val observedPermissionRequests = mutableListOf<PermissionRequest>()
+        engineSession.register(object : EngineSession.Observer {
+            override fun onAppPermissionRequest(permissionRequest: PermissionRequest) {
+                observedPermissionRequests.add(permissionRequest)
+            }
+        })
+        engineSession.maybeRequestLocalNetworkPermissionAndRetry(
+            null,
+            WebRequestError.ERROR_LOCAL_NETWORK_ACCESS_DENIED,
+        )
+
+        assertTrue(observedPermissionRequests.isEmpty())
+    }
+
+    @Test
+    fun maybeRequestLocalNetworkPermissionAndRetryDoesNotRequestPermissionWhenUnsupported() {
+        val engineSession = spy(
+            GeckoEngineSession(
+                mock(),
+                geckoSessionProvider = geckoSessionProvider,
+            ),
+        )
+        doReturn(false).`when`(engineSession).isAtLeastCinnamonBun()
+
+        val observedPermissionRequests = mutableListOf<PermissionRequest>()
+        engineSession.register(object : EngineSession.Observer {
+            override fun onAppPermissionRequest(permissionRequest: PermissionRequest) {
+                observedPermissionRequests.add(permissionRequest)
+            }
+        })
+        engineSession.maybeRequestLocalNetworkPermissionAndRetry(
+            "https://local.device/",
+            WebRequestError.ERROR_LOCAL_NETWORK_ACCESS_DENIED,
+        )
+
+        assertTrue(observedPermissionRequests.isEmpty())
+    }
+
+    @Test
+    fun maybeRequestLocalNetworkPermissionAndRetryDoesNotRequestPermissionForOtherErrors() {
+        val engineSession = spy(
+            GeckoEngineSession(
+                mock(),
+                geckoSessionProvider = geckoSessionProvider,
+            ),
+        )
+        doReturn(true).`when`(engineSession).isAtLeastCinnamonBun()
+
+        val observedPermissionRequests = mutableListOf<PermissionRequest>()
+        engineSession.register(object : EngineSession.Observer {
+            override fun onAppPermissionRequest(permissionRequest: PermissionRequest) {
+                observedPermissionRequests.add(permissionRequest)
+            }
+        })
+
+        engineSession.maybeRequestLocalNetworkPermissionAndRetry(
+            "https://example.com/",
+            ERROR_UNKNOWN,
+        )
+
+        assertTrue(observedPermissionRequests.isEmpty())
+    }
+
+    @Test
     fun geckoErrorMappingToErrorType() {
         assertEquals(
             ErrorType.ERROR_SECURITY_SSL,
@@ -2274,6 +2401,12 @@ class GeckoEngineSessionTest {
         assertEquals(
             ErrorType.ERROR_CONNECTION_REFUSED,
             GeckoEngineSession.geckoErrorToErrorType(WebRequestError.ERROR_CONNECTION_REFUSED),
+        )
+        assertEquals(
+            ErrorType.ERROR_LOCAL_NETWORK_ACCESS_DENIED,
+            GeckoEngineSession.geckoErrorToErrorType(
+                WebRequestError.ERROR_LOCAL_NETWORK_ACCESS_DENIED,
+            ),
         )
         assertEquals(
             ErrorType.ERROR_UNKNOWN_SOCKET_TYPE,
