@@ -17,9 +17,13 @@ import mozilla.components.feature.ipprotection.buildIPProtectionState
 import mozilla.components.feature.ipprotection.store.state.AccountState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.Authorized
+import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
+import mozilla.components.feature.ipprotection.store.state.LocationState
+import mozilla.components.feature.ipprotection.store.state.Recommended
 import mozilla.components.feature.ipprotection.store.state.Uninitialized
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -638,22 +642,41 @@ class IPProtectionReducerTest {
     }
 
     @Test
-    fun `WHEN CountryListChanged is dispatched THEN country list is updated`() {
+    fun `WHEN CountryListChanged is dispatched THEN countries are added to location list and recommended option is preserved`() {
         val initialState = buildIPProtectionState()
         val countries = listOf(
-            IPProtectionHandler.Country(code = "dk", available = true),
-            IPProtectionHandler.Country(code = "fr", available = true),
-            IPProtectionHandler.Country(code = "gb", available = false),
-            IPProtectionHandler.Country(code = "us", available = true),
+            IPProtectionHandler.Country(code = "DK", available = true),
+            IPProtectionHandler.Country(code = "FR", available = true),
+            IPProtectionHandler.Country(code = "GB", available = false),
+            IPProtectionHandler.Country(code = "US", available = true),
         )
 
-        assertEquals(emptyList<IPProtectionHandler.Country>(), initialState.countries)
+        assertEquals(LocationState(), initialState.locationState)
 
         val resultState = iPProtectionReducer(
             state = initialState,
             action = IPProtectionAction.CountryListChanged(countries),
         )
 
-        assertEquals(countries, resultState.countries)
+        countries.forEach { country ->
+            assertNotNull(resultState.locationState.locations.find { it.countryCode == country.code })
+        }
+
+        assert(resultState.locationState.locations.contains(Recommended()))
+    }
+
+    @Test
+    fun `WHEN CountrySelected is dispatched THEN user selected country is updated`() {
+        val updatedLocation = Country("JP", available = true)
+        val initialState = buildIPProtectionState()
+
+        assertEquals(Recommended(), initialState.locationState.selectedLocation)
+
+        val resultState = iPProtectionReducer(
+            state = initialState,
+            action = IPProtectionAction.LocationChanged(updatedLocation),
+        )
+
+        assertEquals(updatedLocation, resultState.locationState.selectedLocation)
     }
 }

@@ -224,7 +224,10 @@ class IPProtectionFeature(
                     }
                 }
                 if (activate) {
-                    handler?.activate(onResult)
+                    handler?.activate(
+                        countryCode = store.state.locationState.selectedLocation.countryCode,
+                        onResult = onResult,
+                    )
                 } else {
                     handler?.deactivate(onResult)
                 }

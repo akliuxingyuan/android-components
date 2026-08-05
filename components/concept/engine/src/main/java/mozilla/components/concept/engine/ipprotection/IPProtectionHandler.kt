@@ -16,10 +16,11 @@ interface IPProtectionHandler {
     /**
      * Activates the IP protection.
      *
+     * @param countryCode ISO 3166-1 alpha-2 country code.
      * @param onResult Invoked once the activation request resolves. Receives `null` on success or
      *  the [Throwable] that caused the failure.
      */
-    fun activate(onResult: (Throwable?) -> Unit = {})
+    fun activate(countryCode: String?, onResult: (Throwable?) -> Unit = {})
 
     /**
      * Deactivates the IP protection proxy.

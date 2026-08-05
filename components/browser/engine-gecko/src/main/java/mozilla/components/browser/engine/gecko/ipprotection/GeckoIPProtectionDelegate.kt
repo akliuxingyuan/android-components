@@ -51,7 +51,9 @@ internal class GeckoIPProtectionDelegate(
 
     override fun onCountryListChanged(countries: List<GeckoViewIPProtectionController.Country>) {
         delegate.onCountryListChanged(
-            countries.map { IPProtectionHandler.Country(code = it.code, available = it.available) },
+            countries.map {
+                IPProtectionHandler.Country(code = it.code, available = it.available)
+            },
         )
     }
 }

@@ -11,6 +11,7 @@ import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
+import mozilla.components.feature.ipprotection.store.state.Location
 import mozilla.components.lib.state.Action
 
 /**
@@ -31,6 +32,13 @@ sealed class IPProtectionAction : Action {
      * Reports a fresh list of available proxy countries from the GeckoView IP protection toolkit.
      */
     data class CountryListChanged(val countries: List<IPProtectionHandler.Country>) : IPProtectionAction()
+
+    /**
+     * Reports a newly selected location by the user from the location list.
+     *
+     * @param location The selected location.
+     */
+    data class LocationChanged(val location: Location) : IPProtectionAction()
 
     /**
      * Reports a change in whether the user is signed in to a Firefox Account.
