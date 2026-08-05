@@ -740,15 +740,6 @@ internal fun HitResult.getLink(): String = when (this) {
     else -> "about:blank"
 }
 
-internal fun HitResult.getUrl(): String = when (this) {
-    is HitResult.UNKNOWN -> src
-    is HitResult.IMAGE_SRC -> uri
-    is HitResult.IMAGE -> src
-    is HitResult.VIDEO -> src
-    is HitResult.AUDIO -> src
-    else -> "about:blank"
-}
-
 @VisibleForTesting
 internal fun SessionState.isUrlSchemeAllowed(url: String): Boolean {
     return when (val engineSession = engineState.engineSession) {
