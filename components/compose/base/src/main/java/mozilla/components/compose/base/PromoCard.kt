@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -122,7 +124,10 @@ fun PromoCard(
     onDismiss: (() -> Unit)? = null,
 ) {
     InfoCardContainer(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxWidth()
+            .wrapContentWidth(Alignment.CenterHorizontally)
+            .widthIn(max = AcornTheme.layout.size.containerMaxWidth),
         backgroundColor = colors.backgroundColor,
         elevation = 0.dp,
         contentPadding = PaddingValues(0.dp),
