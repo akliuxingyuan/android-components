@@ -220,7 +220,7 @@ class IPProtectionFeature(
             .collect { activate ->
                 val onResult: (Throwable?) -> Unit = { err ->
                     if (err != null) {
-                        store.dispatch(IPProtectionAction.ToggleFailed)
+                        store.dispatch(IPProtectionAction.ToggleFailed(err))
                     }
                 }
                 if (activate) {
