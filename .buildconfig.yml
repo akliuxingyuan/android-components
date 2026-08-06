@@ -2706,6 +2706,7 @@ projects:
     - components:concept-base
     - components:concept-fetch
     - components:support-base
+    - components:support-test
     - components:tooling-lint
   components:service-nimbus:
     description: A client-side experiment SDK
