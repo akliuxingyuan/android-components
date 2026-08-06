@@ -56,6 +56,7 @@ internal class AddressSaveDialogFragment : PromptDialogFragment() {
                 val bottomSheet =
                     findViewById<View>(materialR.id.design_bottom_sheet) as FrameLayout
                 val behavior = BottomSheetBehavior.from(bottomSheet)
+                behavior.peekHeight = context.resources.displayMetrics.heightPixels
                 behavior.state = BottomSheetBehavior.STATE_EXPANDED
             }
         }
