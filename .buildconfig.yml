@@ -2698,6 +2698,15 @@ projects:
     - components:support-test
     - components:support-utils
     - components:tooling-lint
+  components:service-merino-weather:
+    description: A library for fetching weather forecasts from the Merino service.
+    path: components/service/merino-weather
+    publish: true
+    upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:support-base
+    - components:tooling-lint
   components:service-nimbus:
     description: A client-side experiment SDK
     path: components/service/nimbus
