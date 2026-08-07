@@ -145,7 +145,7 @@ data class MlpaConfig(
          */
         val nonProd
             get() = MlpaConfig(
-                baseUrl = "https://mlpa-nonprod-dev-mozilla.global.ssl.fastly.net",
+                baseUrl = "https://mlpa-nonprod-dev-mozilla.freetls.fastly.net",
             )
 
         /**
@@ -153,7 +153,7 @@ data class MlpaConfig(
          */
         val prodProd
             get() = MlpaConfig(
-                baseUrl = "https://mlpa-prod-prod-mozilla.global.ssl.fastly.net",
+                baseUrl = "https://mlpa-prod-prod-mozilla.freetls.fastly.net",
             )
     }
 }
