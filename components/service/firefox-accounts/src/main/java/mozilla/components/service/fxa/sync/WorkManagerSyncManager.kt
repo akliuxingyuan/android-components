@@ -24,6 +24,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mozilla.appservices.fxaclient.FxaException
 import mozilla.appservices.sync15.SyncTelemetryPing
 import mozilla.appservices.syncmanager.ServiceStatus
 import mozilla.appservices.syncmanager.SyncAuthInfo
@@ -551,6 +552,9 @@ internal class WorkManagerSyncWorker(
                 syncKey = authKey.k,
                 tokenserverUrl = tokenServerUrl,
             )
+        } catch (exception: FxaException.Forbidden) {
+            logger.error("Account is not authorized for the Sync scope", exception)
+            null
         } catch (exception: IllegalStateException) {
             logger.error("Error getting sync auth info", exception)
             null
