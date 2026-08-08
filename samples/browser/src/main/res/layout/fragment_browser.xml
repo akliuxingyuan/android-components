@@ -63,7 +63,8 @@
             android:background="#FFFFFFFF"
             android:elevation="10dp"
             android:paddingBottom="55dp"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:ignore="MozMultipleConstraintLayoutsAndCustomViews" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/readerViewAppearanceButton"

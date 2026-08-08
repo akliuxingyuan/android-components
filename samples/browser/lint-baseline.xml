@@ -1,15 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <issues format="6" by="lint 9.2.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.2.1)" variant="all" version="9.2.1">
 
-    <issue
-        id="MozMultipleConstraintLayoutsAndCustomViews"
-        message="Custom views extending `ConstraintLayout` are less efficient because they cannot share other `ConstraintLayout` defined in file."
-        errorLine1="        &lt;mozilla.components.feature.readerview.view.ReaderViewControlsBar"
-        errorLine2="         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/fragment_browser.xml"
-            line="58"
-            column="10"/>
-    </issue>
-
 </issues>
