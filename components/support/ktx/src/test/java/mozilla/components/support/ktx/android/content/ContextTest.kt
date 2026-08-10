@@ -376,6 +376,14 @@ class ContextTest {
         val versionName = context.appVersionName
         assertEquals("", versionName)
     }
+
+    @Test
+    fun `pixelSizeFor returns the same as getDimensionPixelSize`() {
+        assertEquals(
+            testContext.resources.getDimensionPixelSize(android.R.dimen.app_icon_size),
+            testContext.pixelSizeFor(android.R.dimen.app_icon_size),
+        )
+    }
 }
 
 @Implements(FileProvider::class)

@@ -39,6 +39,7 @@ import android.util.TypedValue
 import android.view.accessibility.AccessibilityManager
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
+import androidx.annotation.DimenRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
@@ -502,3 +503,17 @@ fun Context.isEdgeToEdgeDisabled(): Boolean =
 fun Context.doesDeviceHaveHinge(): Boolean =
     SDK_INT >= VERSION_CODES.R &&
         packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE)
+
+/**
+ * Returns the pixel size for the given dimension resource ID.
+ *
+ * This is a wrapper around `resources.getDimensionPixelSize`, reducing verbosity when accessing
+ * dimension values from a [Context].
+ *
+ * @param resId Resource ID of the dimension.
+ * @return The pixel size corresponding to the given dimension resource.
+ */
+@Suppress("Resources.GetDimensionPixelSizeInsteadOfPixelSizeFor")
+fun Context.pixelSizeFor(
+    @DimenRes resId: Int,
+) = resources.getDimensionPixelSize(resId)
