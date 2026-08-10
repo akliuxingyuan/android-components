@@ -10,7 +10,6 @@
     <issue id="MissingQuantity" severity="ignore" />
     <issue id="ImpliedQuantity" severity="ignore" />
     <issue id="Untranslatable" severity="ignore" />
-    <issue id="Resources.GetDimensionPixelSizeInsteadOfPixelSizeFor" severity="ignore" />
     <issue id="AssertTrueInsteadOfAssertIs" severity="warning" />
     <issue id="JUnitAssertNotNull" severity="warning" />
     <issue id="BrandUsage" severity="error">
