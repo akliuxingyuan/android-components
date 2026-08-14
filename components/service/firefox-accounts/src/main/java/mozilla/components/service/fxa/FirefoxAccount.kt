@@ -209,6 +209,10 @@ class FirefoxAccount internal constructor(
         return deviceConstellation
     }
 
+    override fun hasScope(scope: String): Boolean {
+        return inner.hasScope(scope)
+    }
+
     override fun toJSONString(): String = inner.toJSONString()
 
     companion object {

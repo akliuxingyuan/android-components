@@ -114,7 +114,6 @@ open class FxaAccountManager(
     private val accountOnDisk by lazy { getStorageWrapper().account() }
     private val account by lazy { accountOnDisk.account() }
     private val accountStateEventsObserver = AccountStateEventsObserver(this::queueEvent)
-    private val accountScopeAccessor by lazy { AccountScopeAccessor(getAccountStorage()) }
 
     // Note on threading: we use a single-threaded executor, so there's no concurrent access possible.
     // However, that executor doesn't guarantee that it'll always use the same thread, and so vars
@@ -251,19 +250,9 @@ open class FxaAccountManager(
      * @param scope The OAuth scope to look for.
      * @return `true` if the scope is granted, `false` otherwise.
      */
-    suspend fun containsScope(scope: String): Boolean {
-        if (authenticatedAccount() == null) {
-            return false
-        }
-        return when (val status = accountScopeAccessor.containsScope(scope)) {
-            ScopeStatus.Granted -> true
-            ScopeStatus.NotGranted -> false
-            is ScopeStatus.Unavailable -> {
-                logger.warn("Unable to determine scope status for account.", status.cause)
-                crashReporter?.submitCaughtException(status.cause ?: ScopeUnavailableException(status.reason))
-                false
-            }
-        }
+    fun containsScope(scope: String): Boolean {
+        val account = authenticatedAccount() ?: return false
+        return account.hasScope(scope)
     }
 
     /**

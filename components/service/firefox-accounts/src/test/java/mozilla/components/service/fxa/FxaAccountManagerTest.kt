@@ -146,16 +146,11 @@ class FxaAccountManagerTest {
             crashReporter = crashReporter,
         )
         val account = fxaManager.testableStorageWrapper.account
-        whenever(account.toJSONString()).thenReturn(
-            """{"refresh_token":{"token":"t","scopes":["profile","$SCOPE_SYNC"]}}""",
-        )
-        whenever(accountStorage.read()).thenReturn(account)
+        whenever(account.hasScope(scope = any())).thenReturn(true)
         whenever(account.processEvent(any())).thenReturn(FxaState.AuthIssues)
         fxaManager.start()
 
         assertTrue(fxaManager.containsScope(SCOPE_SYNC))
-        assertFalse(fxaManager.containsScope("https://identity.mozilla.com/apps/vpn"))
-        verify(crashReporter, never()).submitCaughtException(any())
     }
 
     @Test
@@ -172,11 +167,11 @@ class FxaAccountManagerTest {
             coroutineContext = this.coroutineContext,
             crashReporter = crashReporter,
         )
+        whenever(fxaManager.testableStorageWrapper.account.hasScope(SCOPE_SYNC)).thenReturn(false)
         whenever(fxaManager.testableStorageWrapper.account.processEvent(any())).thenReturn(FxaState.AuthIssues)
         fxaManager.start()
 
         assertFalse(fxaManager.containsScope(SCOPE_SYNC))
-        verify(crashReporter).submitCaughtException(any())
     }
 
     @Test
@@ -200,8 +195,6 @@ class FxaAccountManagerTest {
         whenever(fxaManager.testableStorageWrapper.account.processEvent(any())).thenReturn(FxaState.Disconnected)
         fxaManager.start()
         assertFalse(fxaManager.containsScope(SCOPE_SYNC))
-
-        verify(crashReporter, never()).submitCaughtException(any())
     }
 
     @Test

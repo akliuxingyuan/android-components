@@ -370,6 +370,7 @@ class FxRelayTest {
         override fun deviceConstellation(): DeviceConstellation =
             throw UnsupportedOperationException()
 
+        override fun hasScope(scope: String): Boolean = false
         override suspend fun disconnect() = false
         override fun toJSONString() = ""
         override fun close() = Unit

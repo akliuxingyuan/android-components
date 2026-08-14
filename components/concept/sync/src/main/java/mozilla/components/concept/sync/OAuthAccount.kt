@@ -139,6 +139,13 @@ interface OAuthAccount : AutoCloseable {
     fun deviceConstellation(): DeviceConstellation
 
     /**
+     * Checks whether the account has already been granted the [scope]
+     *
+     * @param scope The scope we are checking for.
+     */
+    fun hasScope(scope: String): Boolean
+
+    /**
      * Reset internal account state and destroy current device record.
      * Use this when device record is no longer relevant, e.g. while logging out. On success, other
      * devices will no longer see the current device in their device lists.
