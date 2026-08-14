@@ -236,7 +236,7 @@ internal class OriginView @JvmOverloads constructor(
     /**
      * Sets the typeface of the text for the URL/search term displayed in the toolbar.
      */
-    var typeface: Typeface
+    var typeface: Typeface?
         get() = urlView.typeface
         set(value) {
             urlView.typeface = value

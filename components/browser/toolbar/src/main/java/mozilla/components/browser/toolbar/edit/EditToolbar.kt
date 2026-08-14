@@ -203,7 +203,7 @@ class EditToolbar internal constructor(
     /**
      * Sets the typeface of the text for the URL/search term displayed in the toolbar.
      */
-    var typeface: Typeface
+    var typeface: Typeface?
         get() = views.url.typeface
         set(value) { views.url.typeface = value }
 

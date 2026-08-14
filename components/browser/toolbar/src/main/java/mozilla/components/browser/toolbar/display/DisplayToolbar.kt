@@ -423,7 +423,7 @@ class DisplayToolbar internal constructor(
     /**
      * Sets the typeface of the text for the URL/search term displayed in the toolbar.
      */
-    var typeface: Typeface
+    var typeface: Typeface?
         get() = views.origin.typeface
         set(value) {
             views.origin.typeface = value
