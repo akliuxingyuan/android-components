@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton as M3TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -25,7 +26,6 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.acornPrivateColorScheme
 import mozilla.components.compose.base.theme.privateColorPalette
-import androidx.compose.material3.TextButton as M3TextButton
 import mozilla.components.ui.icons.R as iconsR
 
 /**
@@ -34,8 +34,7 @@ import mozilla.components.ui.icons.R as iconsR
  * @param text The button text to be displayed.
  * @param onClick Invoked when the user clicks on the button.
  * @param modifier [Modifier] Used to shape and position the underlying [androidx.compose.material3.TextButton].
- * @param enabled Controls the enabled state of the button. When `false`, this button will not
- * be clickable.
+ * @param enabled Controls the enabled state of the button. When `false`, this button will not be clickable.
  * @param colors The [ButtonColors] used to color the [TextButton].
  * @param border Optional [BorderStroke] to apply to the [TextButton].
  */
@@ -64,15 +63,14 @@ fun TextButton(
 }
 
 /**
- * Text button displaying custom [content], for the cases where a label alone is not enough, such as
- * a button pairing an icon with its label.
+ * Text button displaying custom [content], for the cases where a label alone is not enough, such as a button pairing an
+ * icon with its label.
  *
  * @param onClick Invoked when the user clicks on the button.
  * @param modifier [Modifier] Used to shape and position the underlying [androidx.compose.material3.TextButton].
- * @param enabled Controls the enabled state of the button. When `false`, this button will not
- * be clickable.
- * @param colors The [ButtonColors] used to color the [TextButton]. The content color is provided to
- * [content] as [androidx.compose.material3.LocalContentColor].
+ * @param enabled Controls the enabled state of the button. When `false`, this button will not be clickable.
+ * @param colors The [ButtonColors] used to color the [TextButton]. The content color is provided to [content] as
+ *   [androidx.compose.material3.LocalContentColor].
  * @param border Optional [BorderStroke] to apply to the [TextButton].
  * @param content The content to display inside the button, laid out in a [RowScope].
  */
