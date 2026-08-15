@@ -2,10 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// We allow wildcard imports as a convenience for the many json extension
-// methods used.
-@file:Suppress("ktlint:standard:no-wildcard-imports")
-
 package mozilla.components.lib.crash.service
 
 import android.content.Context

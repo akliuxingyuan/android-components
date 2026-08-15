@@ -18,7 +18,6 @@ plugins {
 }
 
 mozilla {
-    ktlintSourcePaths = ["components/**/*.kt", "samples/**/*.kt", "buildSrc/**/*.kt", "!**/build/**/*.kt"]
     ktfmtSourcePaths = ["components/**/*.kt", "samples/**/*.kt", "buildSrc/**/*.kt", "!**/build/**/*.kt"]
     detektSourcePaths = [
         "**/components/**/*.kt", "**/buildSrc/**/*.kt", "**/samples/**/*.kt",
