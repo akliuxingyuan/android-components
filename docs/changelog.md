@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 155.0 (In Development)
+* **browser-state**
+    * ⚠️ **Breaking change**: Removed `TabPartition` and `TabGroup` from `BrowserState`.
 
 # 154.0
 * **browser-icons**

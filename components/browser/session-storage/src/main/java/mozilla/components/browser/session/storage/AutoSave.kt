@@ -28,7 +28,6 @@ import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.normalTabs
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.BrowserState
-import mozilla.components.browser.state.state.TabPartition
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.lib.state.ext.flow
 import mozilla.components.support.base.log.logger.Logger
@@ -194,7 +193,6 @@ private class StateMonitoring(private val autoSave: AutoSave) {
                     selectedTabId = state.selectedTabId,
                     tabs = state.normalTabs.size,
                     loading = state.selectedTab?.content?.loading,
-                    tabPartitions = state.tabPartitions,
                 )
             }
             .distinctUntilChanged()
@@ -219,9 +217,6 @@ private class StateMonitoring(private val autoSave: AutoSave) {
             } else if (lastObservation!!.loading != observation.loading && observation.loading == false) {
                 autoSave.logger.info("Save: Load finished")
                 true
-            } else if (lastObservation!!.tabPartitions != observation.tabPartitions) {
-                autoSave.logger.info("Save: Tab partitions changed")
-                true
             } else {
                 false
             }
@@ -237,6 +232,5 @@ private class StateMonitoring(private val autoSave: AutoSave) {
         val selectedTabId: String?,
         val tabs: Int,
         val loading: Boolean?,
-        val tabPartitions: Map<String, TabPartition>,
     )
 }
