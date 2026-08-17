@@ -25,14 +25,17 @@ import androidx.work.WorkerParameters
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.appservices.fxaclient.FxaException
 import mozilla.appservices.sync15.SyncTelemetryPing
 import mozilla.appservices.syncmanager.ServiceStatus
 import mozilla.appservices.syncmanager.SyncAuthInfo
 import mozilla.appservices.syncmanager.SyncEngineSelection
-import mozilla.appservices.syncmanager.SyncManager as RustSyncManager
 import mozilla.appservices.syncmanager.SyncParams
 import mozilla.appservices.syncmanager.SyncTelemetry
 import mozilla.components.concept.storage.KeyProvider
@@ -54,7 +57,7 @@ internal enum class SyncWorkerTag {
     Debounce, // will debounce if another sync happened recently
 }
 
-private enum class SyncWorkerName {
+internal enum class SyncWorkerName {
     Periodic,
     Immediate,
 }
@@ -65,19 +68,14 @@ private const val KEY_REASON = "reason"
 private const val SYNC_WORKER_BACKOFF_DELAY_MINUTES = 3L
 
 /**
- * The Rust implemented SyncManager. Must be a singleton as it carries some state between syncs. Does no IO at creation
- * time so is safe to call on any thread.
- */
-val syncManager: RustSyncManager by lazy { RustSyncManager() }
-
-/**
  * A [SyncManager] implementation which uses WorkManager APIs to schedule sync tasks.
  *
  * Must be initialized on the main thread.
  */
 internal class WorkManagerSyncManager(
     private val context: Context,
-    syncConfig: SyncConfig,
+    private val syncConfig: SyncConfig,
+    private val coroutineContext: CoroutineContext,
 ) : SyncManager(syncConfig) {
     override val logger = Logger("BgSyncManager")
 
@@ -92,7 +90,13 @@ internal class WorkManagerSyncManager(
     }
 
     override fun createDispatcher(supportedEngines: Set<SyncEngine>): SyncDispatcher {
-        return WorkManagerSyncDispatcher(context, supportedEngines)
+        return WorkManagerSyncDispatcher(
+            context = context,
+            supportedEngines = supportedEngines,
+            syncConfig = syncConfig,
+            coroutineContext = coroutineContext,
+            rustSyncManager = DefaultRustSyncManager,
+        )
     }
 
     override fun dispatcherUpdated(dispatcher: SyncDispatcher) {
@@ -141,27 +145,39 @@ internal object WorkersLiveDataObserver {
 internal class WorkManagerSyncDispatcher(
     private val context: Context,
     private val supportedEngines: Set<SyncEngine>,
+    private val syncConfig: SyncConfig,
+    private val coroutineContext: CoroutineContext,
+    rustSyncManager: RustSyncManager,
 ) : SyncDispatcher, Observable<SyncStatusObserver> by ObserverRegistry(), Closeable {
     private val logger = Logger("WMSyncDispatcher")
+    private val coroutineScope = CoroutineScope(coroutineContext + SupervisorJob())
 
-    // TODO does this need to be volatile?
     private var isSyncActive = false
 
     init {
         // Stop any currently active periodic syncing. Consumers of this class are responsible for
         // starting periodic syncing via [startPeriodicSync] if they need it.
         stopPeriodicSync()
+
+        GlobalAccountManager.setRustSyncManager(rustSyncManager)
     }
 
-    override fun workersStateChanged(currentWorkStates: List<WorkInfo.State>?) {
-        if (currentWorkStates?.any { it == WorkInfo.State.RUNNING } == true) {
-            notifyObservers { onStarted() }
-            isSyncActive = true
-        } else if (currentWorkStates?.any { it.isFinished } == true) {
-            notifyObservers { onIdle() }
-            isSyncActive = false
+    override fun initialize() {
+        coroutineScope.launch(context = coroutineContext) {
+            SyncOperationTracker.isSyncInProgress.collect { active ->
+                isSyncActive = active
+                notifyObservers {
+                    if (active) {
+                        onStarted()
+                    } else {
+                        onIdle()
+                    }
+                }
+            }
         }
     }
+
+    override fun workersStateChanged(currentWorkStates: List<WorkInfo.State>?) = Unit
 
     override fun isSyncActive(): Boolean {
         return isSyncActive
@@ -211,6 +227,7 @@ internal class WorkManagerSyncDispatcher(
     }
 
     override fun close() {
+        coroutineScope.cancel()
         unregisterObservers()
         stopPeriodicSync()
     }
@@ -296,6 +313,9 @@ internal class WorkManagerSyncWorker(
     private val accountManager: FxaAccountManager
         get() = GlobalAccountManager.requireAccountManager()
 
+    private val rustSyncManager: RustSyncManager
+        get() = GlobalAccountManager.requireRustSyncManager()
+
     @VisibleForTesting
     internal fun isDebounced(): Boolean {
         return params.tags.contains(SyncWorkerTag.Debounce.name)
@@ -311,7 +331,7 @@ internal class WorkManagerSyncWorker(
     }
 
     override suspend fun doWork(): Result =
-        withContext(Dispatchers.IO) {
+        withContext(GlobalAccountManager.syncIoDispatcher) {
             logger.debug("Starting sync... Tagged as: ${params.tags}")
 
             // We will need a list of SyncableStores.
@@ -346,7 +366,9 @@ internal class WorkManagerSyncWorker(
                 // Don't update the "last-synced" timestamp because we haven't actually synced anything.
                 Result.success()
             } else {
-                doSync(syncableStores)
+                SyncOperationTracker.executeSyncOperation {
+                    doSync(syncableStores)
+                }
             }
         }
 
@@ -459,7 +481,8 @@ internal class WorkManagerSyncWorker(
                 localEncryptionKeys = localEncryptionKeys,
             )
 
-        val syncResult = syncManager.sync(syncParams)
+        logger.debug("Calling into rust sync manager")
+        val syncResult = rustSyncManager.sync(syncParams)
 
         // Persist the sync state; it may have changed during a sync, and RustSyncManager relies on us
         // to store it.
@@ -522,7 +545,6 @@ internal class WorkManagerSyncWorker(
                 // `nextSyncAllowedAt`, so we should be good either way.
                 Result.retry()
             }
-
             // Failure cases.
             ServiceStatus.AUTH_ERROR -> {
                 logger.error("Auth error")
@@ -543,6 +565,7 @@ internal class WorkManagerSyncWorker(
     /** Get sync auth info and notify the sync observers of any error */
     private suspend fun getSyncAuthInfo(): SyncAuthInfo? {
         return try {
+            logger.debug("Fetching account & sync token for auth info")
             val account = accountManager.connectedAccount() ?: error("No connected account")
             val token = account.getAccessToken(SCOPE_SYNC) ?: error("Unable to retrieve the sync access token")
             val tokenServerUrl = account.getTokenServerEndpointURL() ?: error("Unable to retrieve the token server url")
