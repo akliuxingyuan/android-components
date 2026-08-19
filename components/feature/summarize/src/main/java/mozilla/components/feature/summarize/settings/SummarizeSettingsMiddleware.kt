@@ -5,7 +5,6 @@
 package mozilla.components.feature.summarize.settings
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mozilla.components.lib.state.Middleware
 
@@ -43,17 +42,6 @@ class SummarizeSettingsMiddleware(
         next(action)
 
         when (action) {
-            ViewAppeared ->
-                scope.launch {
-                    dispatch(
-                        SettingsLoaded(
-                            isFeatureEnabled = settings.getFeatureEnabledUserStatus().first() == true,
-                            isGestureEnabled = settings.getGestureEnabledUserStatus().first(),
-                            shakeSensitivity = settings.getShakeSensitivity().first(),
-                        )
-                    )
-                }
-
             SummarizePagesPreferenceToggled ->
                 scope.launch {
                     settings.setFeatureEnabledUserStatus(getState().isFeatureEnabled)
@@ -70,8 +58,7 @@ class SummarizeSettingsMiddleware(
                 }
 
             LearnMoreClicked,
-            LearnMoreHandled,
-            is SettingsLoaded -> Unit
+            LearnMoreHandled -> Unit
         }
     }
 }
