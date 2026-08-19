@@ -54,19 +54,39 @@ fun SummarizeSettingsContent(
     store: SummarizeSettingsStore,
     modifier: Modifier = Modifier,
 ) {
-    LaunchedEffect(Unit) {
-        store.dispatch(ViewAppeared)
-    }
-
     val state by store.stateFlow.collectAsStateWithLifecycle()
+
+    SummarizeSettingsContent(
+        state = state,
+        dispatch = { store.dispatch(it) },
+        modifier = modifier,
+    )
+}
+
+/**
+ * Reusable composable that renders the summarize settings UI, driven by a host store that embeds
+ * [SummarizeSettingsState] as a sub-state.
+ *
+ * @param state The current [SummarizeSettingsState].
+ * @param dispatch Dispatches a [SummarizeSettingsAction] to the hosting store.
+ */
+@Composable
+fun SummarizeSettingsContent(
+    state: SummarizeSettingsState,
+    dispatch: (SummarizeSettingsAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LaunchedEffect(Unit) {
+        dispatch(ViewAppeared)
+    }
 
     SummarizeSettingsContent(
         modifier = modifier,
         state = state,
-        onSummarizePagesToggled = { store.dispatch(SummarizePagesPreferenceToggled) },
-        onShakeToSummarizeToggled = { store.dispatch(ShakeToSummarizePreferenceToggled) },
-        onLearnMoreClicked = { store.dispatch(LearnMoreClicked) },
-        onShakeSensitivityChanged = { store.dispatch(ShakeSensitivityChanged(it)) },
+        onSummarizePagesToggled = { dispatch(SummarizePagesPreferenceToggled) },
+        onShakeToSummarizeToggled = { dispatch(ShakeToSummarizePreferenceToggled) },
+        onLearnMoreClicked = { dispatch(LearnMoreClicked) },
+        onShakeSensitivityChanged = { dispatch(ShakeSensitivityChanged(it)) },
     )
 }
 

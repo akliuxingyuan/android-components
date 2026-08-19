@@ -185,6 +185,6 @@ class PageSummariesSettingsMiddlewareTest {
         SummarizeSettingsStore(
             initialState = SummarizeSettingsState(),
             reducer = ::summarizeSettingsReducer,
-            middleware = listOf(this),
+            middleware = listOf(asMiddleware()),
         )
 }
