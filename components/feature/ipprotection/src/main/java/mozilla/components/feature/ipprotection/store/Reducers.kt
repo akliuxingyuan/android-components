@@ -95,7 +95,7 @@ internal fun iPProtectionReducer(
                     LocationState(
                         selectedLocation = state.locationState.selectedLocation,
                         locations =
-                            listOf(Recommended()) +
+                            listOf(Recommended) +
                                 action.countries.map {
                                     Country(countryCode = it.code, available = it.available)
                                 },

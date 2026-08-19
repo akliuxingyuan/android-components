@@ -690,7 +690,7 @@ class IPProtectionReducerTest {
             assertNotNull(resultState.locationState.locations.find { it.countryCode == country.code })
         }
 
-        assert(resultState.locationState.locations.contains(Recommended()))
+        assert(resultState.locationState.locations.contains(Recommended))
     }
 
     @Test
@@ -698,7 +698,7 @@ class IPProtectionReducerTest {
         val updatedLocation = Country("JP", available = true)
         val initialState = buildIPProtectionState()
 
-        assertEquals(Recommended(), initialState.locationState.selectedLocation)
+        assertEquals(Recommended, initialState.locationState.selectedLocation)
 
         val resultState =
             iPProtectionReducer(
@@ -714,7 +714,7 @@ class IPProtectionReducerTest {
         val updatedLocation = Country("JP", available = true)
         val initialState = buildIPProtectionState(serviceStatus = ServiceState.Ready, proxyStatus = Authorized.Active)
 
-        assertEquals(Recommended(), initialState.locationState.selectedLocation)
+        assertEquals(Recommended, initialState.locationState.selectedLocation)
 
         val resultState =
             iPProtectionReducer(
@@ -731,7 +731,7 @@ class IPProtectionReducerTest {
         val updatedLocation = Country("JP", available = true)
         val initialState = buildIPProtectionState(serviceStatus = ServiceState.Ready, proxyStatus = Authorized.Idle)
 
-        assertEquals(Recommended(), initialState.locationState.selectedLocation)
+        assertEquals(Recommended, initialState.locationState.selectedLocation)
 
         val resultState =
             iPProtectionReducer(

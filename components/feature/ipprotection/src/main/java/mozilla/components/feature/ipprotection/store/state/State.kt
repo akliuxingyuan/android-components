@@ -84,8 +84,8 @@ data class AccountState(val status: AccountStatus = AccountStatus.Uninitialized)
  * @property locations The list of locations for user to choose from.
  */
 data class LocationState(
-    val selectedLocation: Location = Recommended(),
-    val locations: List<Location> = listOf(Recommended()),
+    val selectedLocation: Location = Recommended,
+    val locations: List<Location> = listOf(Recommended),
 )
 
 /**
@@ -98,7 +98,9 @@ sealed interface Location {
 }
 
 /** The "recommended" (default) location, letting the proxy pick the server automatically. */
-data class Recommended(override val countryCode: String? = null) : Location
+object Recommended : Location {
+    override val countryCode: String? = null
+}
 
 /**
  * A specific country from the IP protection proxy server list.
