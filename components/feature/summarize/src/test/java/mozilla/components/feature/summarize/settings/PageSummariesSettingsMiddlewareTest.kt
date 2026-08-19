@@ -13,18 +13,10 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.lib.shake.ShakeSensitivity
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PageSummariesSettingsMiddlewareTest {
-
-    private var learnMoreClicked = false
-
-    @Before
-    fun setup() {
-        learnMoreClicked = false
-    }
 
     @Test
     fun `WHEN summarize pages is toggled on THEN feature is enabled `() = runTest {
@@ -154,8 +146,13 @@ class PageSummariesSettingsMiddlewareTest {
     }
 
     @Test
-    fun `WHEN learn more is clicked THEN callback is invoked`() = runTest {
-        val settings = SummarizationSettings.inMemory()
+    fun `WHEN learn more is requested and handled THEN no preference is persisted`() = runTest {
+        val settings =
+            SummarizationSettings.inMemory(
+                isFeatureEnabled = true,
+                isGestureEnabled = true,
+                shakeSensitivity = ShakeSensitivity.High,
+            )
         val middleware = buildMiddleware(settings, this)
         val store = middleware.makeStore()
 
@@ -164,8 +161,15 @@ class PageSummariesSettingsMiddlewareTest {
 
         store.dispatch(LearnMoreClicked)
         this.runCurrent()
+        assertTrue(store.state.isLearnMoreRequested)
 
-        assertTrue(learnMoreClicked)
+        store.dispatch(LearnMoreHandled)
+        this.runCurrent()
+        assertFalse(store.state.isLearnMoreRequested)
+
+        assertTrue(settings.getFeatureEnabledUserStatus().first() == true)
+        assertTrue(settings.getGestureEnabledUserStatus().first())
+        assertEquals(ShakeSensitivity.High, settings.getShakeSensitivity().first())
     }
 
     private fun buildMiddleware(
@@ -174,7 +178,6 @@ class PageSummariesSettingsMiddlewareTest {
     ) =
         SummarizeSettingsMiddleware(
             settings = settings,
-            onLearnMoreClicked = { learnMoreClicked = true },
             scope = scope,
         )
 

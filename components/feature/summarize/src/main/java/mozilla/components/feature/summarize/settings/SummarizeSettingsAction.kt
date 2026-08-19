@@ -31,3 +31,6 @@ data object ShakeToSummarizePreferenceToggled : SummarizeSettingsAction
 
 /** The user clicked the learn more link. */
 data object LearnMoreClicked : SummarizeSettingsAction
+
+/** The host opened the learn more link, so the pending request can be cleared. */
+data object LearnMoreHandled : SummarizeSettingsAction

@@ -30,6 +30,9 @@ fun summarizeSettingsReducer(
             state.copy(isGestureEnabled = !state.isGestureEnabled)
         }
 
-        ViewAppeared,
-        LearnMoreClicked -> state
+        LearnMoreClicked -> state.copy(isLearnMoreRequested = true)
+
+        LearnMoreHandled -> state.copy(isLearnMoreRequested = false)
+
+        ViewAppeared -> state
     }

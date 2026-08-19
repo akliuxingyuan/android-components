@@ -14,11 +14,10 @@ import mozilla.components.lib.state.Store
  * Middleware for the summarize settings screen that persists preference changes.
  *
  * @param settings The [SummarizationSettings] to persist preference changes to.
- * @param onLearnMoreClicked Callback invoked when the learn more link is clicked.
+ * @param scope [CoroutineScope] to run suspended functions on.
  */
 class SummarizeSettingsMiddleware(
     private val settings: SummarizationSettings,
-    private val onLearnMoreClicked: () -> Unit,
     private val scope: CoroutineScope,
 ) : Middleware<SummarizeSettingsState, SummarizeSettingsAction> {
 
@@ -58,10 +57,8 @@ class SummarizeSettingsMiddleware(
                     settings.setGestureEnabledUserStatus(store.state.isGestureEnabled)
                 }
 
-            LearnMoreClicked -> {
-                onLearnMoreClicked()
-            }
-
+            LearnMoreClicked,
+            LearnMoreHandled,
             is SettingsLoaded -> Unit
         }
     }
