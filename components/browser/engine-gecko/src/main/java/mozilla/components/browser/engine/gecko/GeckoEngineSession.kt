@@ -902,6 +902,7 @@ class GeckoEngineSession(
                         wordCount = metadata.wordCount,
                         language = metadata.language,
                         isReaderable = metadata.isReaderable,
+                        isGated = metadata.isGated,
                     )
                 )
                 GeckoResult<Unit>()

@@ -54,6 +54,7 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.concept.llm.AttestationFailure
 import mozilla.components.concept.llm.LlmProvider
 import mozilla.components.concept.llm.RequestTooLarge
+import mozilla.components.feature.summarize.content.PaywalledContentException
 import mozilla.components.feature.summarize.settings.SettingsAppBar
 import mozilla.components.feature.summarize.settings.SummarizeSettingsContent
 import mozilla.components.feature.summarize.settings.SummarizeSettingsState
@@ -63,6 +64,7 @@ import mozilla.components.feature.summarize.ui.FxaSignInContent
 import mozilla.components.feature.summarize.ui.InfoError
 import mozilla.components.feature.summarize.ui.OffDeviceSummarizationConsent
 import mozilla.components.feature.summarize.ui.OnDeviceSummarizationConsent
+import mozilla.components.feature.summarize.ui.PaywalledContentError
 import mozilla.components.feature.summarize.ui.SummarizingContent
 import mozilla.components.feature.summarize.ui.SummaryContentLoaded
 import mozilla.components.feature.summarize.ui.gradient.summaryLoadingGradient
@@ -244,9 +246,14 @@ private fun SummarizationErrorContent(
         is SummarizationError.SummarizationFailed ->
             when (error.exception) {
                 is RequestTooLarge -> ContentTooLongError(onDismiss = { dispatch(ErrorAction.ErrorDismissed) })
+
+                is PaywalledContentException ->
+                    PaywalledContentError(onDismiss = { dispatch(ErrorAction.ErrorDismissed) })
+
                 is AttestationFailure -> {
                     FxaSignInContent(dispatchAction = { dispatch(it) })
                 }
+
                 else ->
                     InfoError(
                         errorCode = errorCodeFor(error.exception),

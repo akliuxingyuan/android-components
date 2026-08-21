@@ -251,7 +251,7 @@ class GeckoEngineSessionPageExtractionTest {
     @Test
     fun `given page metadata extractor returns metadata successfully, then the result is returned without error`() {
         whenever(mockedSessionPageExtractor.pageMetadata)
-            .thenReturn(GeckoResult.fromValue(PageMetadata(arrayOf("Article"), 42, "en", true)))
+            .thenReturn(GeckoResult.fromValue(PageMetadata(arrayOf("Article"), 42, "en", true, false)))
 
         var resultMetadata: mozilla.components.concept.engine.pageextraction.PageMetadata? = null
         var resultError: Throwable? = null
@@ -267,5 +267,23 @@ class GeckoEngineSessionPageExtractionTest {
         assertEquals(42, resultMetadata?.wordCount)
         assertEquals("en", resultMetadata?.language)
         assertTrue("Expected isReaderable to be true", resultMetadata?.isReaderable == true)
+        assertEquals(false, resultMetadata?.isGated)
+    }
+
+    @Test
+    fun `given page metadata reports gated content, then isGated is mapped through`() {
+        whenever(mockedSessionPageExtractor.pageMetadata)
+            .thenReturn(GeckoResult.fromValue(PageMetadata(arrayOf("NewsArticle"), 42, "en", false, true)))
+
+        var resultMetadata: mozilla.components.concept.engine.pageextraction.PageMetadata? = null
+        engineSession.getPageMetadata(
+            onResult = { resultMetadata = it },
+            onException = {},
+        )
+
+        shadowOf(getMainLooper()).idle()
+
+        assertEquals(true, resultMetadata?.isGated)
+        assertEquals(false, resultMetadata?.isReaderable)
     }
 }

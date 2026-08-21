@@ -34,6 +34,7 @@ import mozilla.components.feature.summarize.SummarizationState.Summarizing
 import mozilla.components.feature.summarize.content.Content
 import mozilla.components.feature.summarize.content.ContentProvider
 import mozilla.components.feature.summarize.content.PageMetadata
+import mozilla.components.feature.summarize.content.PaywalledContentException
 import mozilla.components.feature.summarize.ext.defaultInstructions
 import mozilla.components.feature.summarize.ext.recipeInstructions
 import mozilla.components.feature.summarize.fakes.FakeCloudProvider
@@ -688,6 +689,65 @@ class SummarizationStoreTest {
         assertEquals(expected, states)
         assertEquals(Prompt(content, defaultInstructions("en")), llm.lastPrompt)
     }
+
+    @Test
+    fun `if the page metadata indicates gated content, the content is never extracted and the gated error is shown`() =
+        runTest {
+            val provider = FakeCloudProvider(preparedState = CloudLlmProvider.State.Ready(FakeLlm.successful))
+            val pageTitle = "Article Headline"
+            var extractedContent = false
+            val store =
+                SummarizationStore(
+                    initialState = Inert(true),
+                    reducer = ::summarizationReducer,
+                    middleware =
+                        listOf(
+                            SummarizationMiddleware(
+                                isPageLoadingFlow = MutableStateFlow(false),
+                                settings = SummarizationSettings.inMemory(hasConsentedToShake = true),
+                                llmProvider = provider,
+                                contentProvider =
+                                    ContentProvider.fromPage(
+                                        pageTitle = pageTitle,
+                                        pageMetadataExtractor = {
+                                            Result.success(
+                                                PageMetadata(
+                                                    listOf("NewsArticle"),
+                                                    0,
+                                                    "en",
+                                                    isReaderable = true,
+                                                    isGated = true,
+                                                )
+                                            )
+                                        },
+                                        pageContentExtractor = {
+                                            extractedContent = true
+                                            Result.success("this body should never be requested")
+                                        },
+                                    ),
+                                errorReporter = errorReporter,
+                                scope = backgroundScope,
+                                dispatcher = StandardTestDispatcher(testScheduler),
+                            )
+                        ),
+                )
+
+            val states = mutableListOf<SummarizationState>()
+            backgroundScope.launch {
+                store.stateFlow.toList(states)
+            }
+            testScheduler.advanceTimeBy(1.seconds)
+
+            store.dispatch(ViewAppeared)
+            testScheduler.advanceTimeBy(15.seconds)
+
+            assertEquals(listOf(Inert(true), Loading(provider.info)), states.dropLast(1))
+
+            val failure = (states.last() as Error).error as SummarizationError.SummarizationFailed
+            assertIs<PaywalledContentException>(failure.exception)
+            assertFalse("Expected the body extraction to be skipped for a gated page", extractedContent)
+            assertIs<PaywalledContentException>(reportedErrors.single())
+        }
 
     @Test
     fun `dismissing an error screen transitions to the ErrorDismissed finished state`() = runTest {
