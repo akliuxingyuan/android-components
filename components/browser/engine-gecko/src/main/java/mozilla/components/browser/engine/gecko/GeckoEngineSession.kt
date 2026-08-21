@@ -861,7 +861,11 @@ class GeckoEngineSession(
         onResult: (String) -> Unit,
         onException: (Throwable) -> Unit,
     ) {
-        val geckoViewOptions = PageExtractionController.ContentParams(options.removeBoilerplate)
+        val geckoViewOptions =
+            PageExtractionController.ContentParams(
+                options.removeBoilerplate,
+                options.useSimpleText,
+            )
         geckoSession.sessionPageExtractor
             .getPageContent(geckoViewOptions)
             .then(
