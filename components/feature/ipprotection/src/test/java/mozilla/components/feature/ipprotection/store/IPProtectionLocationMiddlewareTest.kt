@@ -8,6 +8,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
+import mozilla.components.feature.ipprotection.store.state.AccountState
+import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.Location
@@ -222,6 +224,34 @@ class IPProtectionLocationMiddlewareTest {
             assertEquals(null, fakeRepository.getSelectedLocationCode())
         }
 
+    @Test
+    fun `GIVEN a cached selected location WHEN a user logs out THEN the cache is cleared`() = scope.runTest {
+        val cachedCode = "JA"
+        val selectedCountry = Country(countryCode = cachedCode, available = true)
+        val store =
+            buildStore(
+                accountState = AccountState(AccountStatus.EnrolledAndEntitled),
+                selectedLocation = selectedCountry,
+                locations =
+                    listOf(
+                        selectedCountry,
+                        Country(countryCode = "CA", available = true),
+                        Country(countryCode = "GB", available = true),
+                        Country(countryCode = "FR", available = true),
+                    ),
+                middleware = listOf(middleware),
+            )
+        fakeRepository.setSelectedLocationCode(cachedCode)
+
+        assertEquals(selectedCountry, store.state.locationState.selectedLocation)
+        assertEquals(cachedCode, fakeRepository.getSelectedLocationCode())
+
+        store.dispatch(InternalAction.AccountManagerStateChanged(status = AccountStatus.NoAccount))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(null, fakeRepository.getSelectedLocationCode())
+    }
+
     private fun buildStore(
         selectedLocation: Location = Recommended,
         locations: List<Location> = listOf(Recommended),
@@ -230,8 +260,17 @@ class IPProtectionLocationMiddlewareTest {
                 selectedLocation = selectedLocation,
                 locations = locations,
             ),
+        accountState: AccountState = AccountState(),
         middleware: List<Middleware<IPProtectionState, IPProtectionAction>> = emptyList(),
-    ) = IPProtectionStore(initialState = IPProtectionState(locationState = locationState), middleware = middleware)
+    ) =
+        IPProtectionStore(
+            initialState =
+                IPProtectionState(
+                    locationState = locationState,
+                    accountState = accountState,
+                ),
+            middleware = middleware,
+        )
 
     private class FakeIPProtectionLocationRepository : IPProtectionLocationRepository {
         private var selectedLocationCode: String? = null
