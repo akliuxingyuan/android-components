@@ -13,8 +13,9 @@ permalink: /changelog/
     * 🆕 Added `FxaCapability.PAIRING_V2`, which advertises `capabilities.pairingVersion` in the `fxaccounts:fxa_status` WebChannel response and enables the `fxaccounts:pair_oauth_start` WebChannel command.
 * **support-ktx**
     * 🆕 Added `File.toSampledBitmap` and `InputStream.toSampledBitmap`, which subsample as they decode so an image is never allocated at full resolution. [Bug 2061502](https://bugzilla.mozilla.org/show_bug.cgi?id=2061502)
-* **feature-addons**
-    * Add-on icons from AMO are now decoded at the size they are displayed at. [Bug 2061502](https://bugzilla.mozilla.org/show_bug.cgi?id=2061502)
+    * ⚠️ **Breaking change**: `String.base64ToBitmap` now takes the target width and height, in pixels, and subsamples to suit. [Bug 2061502](https://bugzilla.mozilla.org/show_bug.cgi?id=2061502)
+* **feature-addons**, **feature-prompts**
+    * Add-on and identity credential icons are now decoded at the size they are displayed at. [Bug 2061502](https://bugzilla.mozilla.org/show_bug.cgi?id=2061502)
 
 # 155.0
 

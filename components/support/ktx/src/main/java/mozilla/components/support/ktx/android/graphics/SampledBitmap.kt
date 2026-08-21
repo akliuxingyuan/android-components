@@ -36,6 +36,26 @@ fun File.toSampledBitmap(
     }
 
 /**
+ * Decodes these bytes into a [Bitmap], subsampling them as part of the decode so that a full resolution bitmap is never
+ * allocated.
+ *
+ * The result is the largest subsample whose dimensions are still at least [targetWidth] x [targetHeight], so it is
+ * never smaller than requested and callers can scale it the rest of the way down for display without visible quality
+ * loss.
+ *
+ * @param targetWidth The minimum width, in pixels, the decoded bitmap should have.
+ * @param targetHeight The minimum height, in pixels, the decoded bitmap should have.
+ * @return the decoded [Bitmap], or null if the data could not be decoded.
+ */
+internal fun ByteArray.toSampledBitmap(
+    @Px targetWidth: Int,
+    @Px targetHeight: Int,
+): Bitmap? =
+    decodeSampled(targetWidth, targetHeight) { options ->
+        BitmapFactory.decodeByteArray(this, 0, size, options)
+    }
+
+/**
  * Decodes this stream into a [Bitmap], subsampling it as part of the decode so that a full resolution bitmap is never
  * allocated.
  *
@@ -69,9 +89,7 @@ fun InputStream.toSampledBitmap(
             null
         } ?: return null
 
-    return decodeSampled(targetWidth, targetHeight) { options ->
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-    }
+    return bytes.toSampledBitmap(targetWidth, targetHeight)
 }
 
 /** Reads up to [max] bytes from this stream, or returns null if it carries more than that. */
