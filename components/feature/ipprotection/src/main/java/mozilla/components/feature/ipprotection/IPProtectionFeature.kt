@@ -159,7 +159,7 @@ class IPProtectionFeature(
     }
 
     private suspend fun registerAndInit() =
-        withContext(Dispatchers.Main) {
+        withContext(mainDispatcher) {
             handler =
                 engine.registerIPProtectionDelegate(
                     object : IPProtectionDelegate {
@@ -210,12 +210,12 @@ class IPProtectionFeature(
         }
 
     private suspend fun uninit() =
-        withContext(Dispatchers.Main) {
+        withContext(mainDispatcher) {
             handler?.uninit()
         }
 
     private suspend fun observeToggle() =
-        withContext(Dispatchers.Main) {
+        withContext(mainDispatcher) {
             // Dedupe over the nullable so `true -> null -> true` reads as two edges, not one.
             store
                 .flow()
