@@ -130,6 +130,7 @@ class IPProtectionFeature(
                         }
 
                         AccountStatus.AwaitingEnrollment -> {
+                            handler?.notifyAccountStatus(true)
                             handler?.enroll { enrollInfo ->
                                 store.dispatch(
                                     InternalAction.FinishingEnrollment(success = enrollInfo.isEnrolledAndEntitled)
