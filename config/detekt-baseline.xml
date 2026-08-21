@@ -503,10 +503,6 @@
     <ID>UndocumentedPublicFunction:PermissionRequest.kt$PermissionRequest$fun containsVideoAndAudioSources()</ID>
     <ID>UndocumentedPublicFunction:PictureInPictureFeature.kt$PictureInPictureFeature$fun onHomePressed(): Boolean</ID>
     <ID>UndocumentedPublicFunction:Providers.kt$BaseDomainAutocompleteProvider$fun initialize(context: Context)</ID>
-    <ID>UndocumentedPublicFunction:ReaderViewControlsView.kt$ReaderViewControlsView.Listener$fun onColorSchemeChanged(scheme: ColorScheme)</ID>
-    <ID>UndocumentedPublicFunction:ReaderViewControlsView.kt$ReaderViewControlsView.Listener$fun onFontChanged(font: FontType)</ID>
-    <ID>UndocumentedPublicFunction:ReaderViewControlsView.kt$ReaderViewControlsView.Listener$fun onFontSizeDecreased(): Int</ID>
-    <ID>UndocumentedPublicFunction:ReaderViewControlsView.kt$ReaderViewControlsView.Listener$fun onFontSizeIncreased(): Int</ID>
     <ID>UndocumentedPublicFunction:ReversibleString.kt$ReversibleString$abstract fun charAt(position: Int): Char</ID>
     <ID>UndocumentedPublicFunction:ReversibleString.kt$ReversibleString$abstract fun substring(startIndex: Int): ReversibleString</ID>
     <ID>UndocumentedPublicFunction:ReversibleString.kt$fun String.reverse(): ReversibleString</ID>

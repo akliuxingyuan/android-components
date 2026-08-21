@@ -182,8 +182,9 @@ class ReaderViewFeatureTest {
         runTest(testDispatcher) {
             val view: ReaderViewControlsView = mock()
             val feature = spy(ReaderViewFeature(testContext, mock(), BrowserStore(), view))
+            val isListenToPageEnabled = false
 
-            feature.showControls()
+            feature.showControls(isListenToPageEnabled)
 
             verify(view).setColorScheme(any())
             verify(view).setFont(any())

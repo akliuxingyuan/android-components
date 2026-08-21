@@ -48,4 +48,8 @@ internal class ReaderViewControlsInteractor(
     override fun onColorSchemeChanged(scheme: ColorScheme) {
         config.colorScheme = scheme
     }
+
+    override fun onListenClicked() {
+        // will be fixed in  Bug 2062979
+    }
 }

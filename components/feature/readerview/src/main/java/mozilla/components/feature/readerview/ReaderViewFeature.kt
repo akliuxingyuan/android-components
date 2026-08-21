@@ -185,8 +185,8 @@ class ReaderViewFeature(
     }
 
     /** Shows the reader view appearance controls. */
-    fun showControls() {
-        controlsPresenter.show()
+    fun showControls(isListenEnabled: Boolean) {
+        controlsPresenter.show(isListenEnabled)
     }
 
     /** Hides the reader view appearance controls. */
