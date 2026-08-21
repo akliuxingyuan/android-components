@@ -4,13 +4,15 @@ title: Changelog
 permalink: /changelog/
 ---
 
-# 155.0 (In Development)
+# 156.0 (In Development)
 * **browser-domains**
     * ⚠️ **Breaking change**: Removed the deprecated `DomainAutoCompleteProvider` class. Use `ShippedDomainsProvider` or `CustomDomainsProvider` instead.
 * **browser-state**
     * ⚠️ **Breaking change**: Removed `TabPartition` and `TabGroup` from `BrowserState`.
 * **feature-accounts**
     * 🆕 Added `FxaCapability.PAIRING_V2`, which advertises `capabilities.pairingVersion` in the `fxaccounts:fxa_status` WebChannel response and enables the `fxaccounts:pair_oauth_start` WebChannel command.
+
+# 155.0
 
 # 154.0
 * **browser-icons**
