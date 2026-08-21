@@ -27,7 +27,7 @@ const val BYTES_PER_GB = 1024 * 1024 * 1024f
  * @property accountState The state of the authenticator being used.
  * @property lastError The last error received from the IPProtection service.
  * @property proxyActivation Tracks recent activation or deactivation state changes. See [ProxyActivation].
- * @property activate To turn protection on or off.
+ * @property pendingActivationRequest The activation state - handles activation and deactivation of the proxy.
  * @property locationState The location selection state.
  */
 data class IPProtectionState(
@@ -40,7 +40,7 @@ data class IPProtectionState(
     val accountState: AccountState = AccountState(),
     val lastError: String? = null,
     val proxyActivation: ProxyActivation = ProxyActivation.Idle,
-    val activate: Boolean? = null,
+    val pendingActivationRequest: PendingActivationRequest? = null,
     val locationState: LocationState = LocationState(),
 ) : State
 
@@ -120,6 +120,20 @@ data class Country(
             } catch (_: IllformedLocaleException) {
                 countryCode
             }
+}
+
+/** Represents a pending proxy activation request. */
+sealed class PendingActivationRequest {
+    /**
+     * Requesting proxy activation.
+     *
+     * @property selectedLocationCode ISO 3166-1 alpha-2 country code for the desired proxy location, or null to use the
+     *   recommended default.
+     */
+    data class Activate(val selectedLocationCode: String?) : PendingActivationRequest()
+
+    /** Requesting proxy deactivation. */
+    object Deactivate : PendingActivationRequest()
 }
 
 /**
