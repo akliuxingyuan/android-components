@@ -13,7 +13,7 @@ import mozilla.components.concept.sync.Profile
 import mozilla.components.concept.sync.StatePersistenceCallback
 
 /** Stubbed [OAuthAccount] manager for tests */
-abstract class TestOAuthAccount() : OAuthAccount {
+abstract class TestOAuthAccount : OAuthAccount {
     override suspend fun getAccessToken(singleScope: String): AccessTokenInfo? = null
 
     override suspend fun getAttachedClient(): List<AttachedClient> = emptyList()

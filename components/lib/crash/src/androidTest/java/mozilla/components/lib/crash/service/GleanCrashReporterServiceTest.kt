@@ -10,7 +10,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 import java.util.Date
 import kotlin.test.assertNotNull
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import mozilla.components.concept.base.crash.Breadcrumb
 import mozilla.components.lib.crash.BuildConfig
 import mozilla.components.lib.crash.Crash

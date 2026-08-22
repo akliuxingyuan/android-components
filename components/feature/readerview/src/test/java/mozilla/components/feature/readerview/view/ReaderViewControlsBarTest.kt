@@ -229,7 +229,7 @@ class ReaderViewControlsBarTest {
     }
 
     companion object {
-        val LISTEN_TO_PAGE_ENABLED: Boolean = true
-        val LISTEN_TO_PAGE_DISABLED: Boolean = false
+        const val LISTEN_TO_PAGE_ENABLED: Boolean = true
+        const val LISTEN_TO_PAGE_DISABLED: Boolean = false
     }
 }
