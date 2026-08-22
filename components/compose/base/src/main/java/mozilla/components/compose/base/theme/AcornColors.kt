@@ -247,9 +247,16 @@ val privateColorPalette =
 
 val oledColorPalette =
     darkColorPalette.copy(
+        informationContainer = NovaColors.Blue80,
+        onInformationContainer = NovaColors.Gray20,
         successContainer = NovaColors.Green80,
         onSuccessContainer = NovaColors.Gray20,
+        warningContainer = NovaColors.Yellow80,
+        onWarningContainer = NovaColors.Gray20,
+        surfaceDimVariant = NovaColors.Gray90,
         surfaceContainerSelected = NovaColors.Gray65,
+        autofillText = NovaColors.VioletDesaturated60,
+        selectedText = NovaColors.Gray60,
         sheetOutline = NovaColors.Gray65,
     )
 
@@ -381,16 +388,27 @@ fun acornOledColorScheme(): ColorScheme =
     acornDarkColorScheme()
         .copy(
             primaryContainer = NovaColors.Violet70,
+            onPrimaryContainer = NovaColors.Gray20,
             secondaryContainer = NovaColors.VioletDesaturated80,
+            onSecondaryContainer = NovaColors.Gray20,
+            tertiaryContainer = NovaColors.Gray90,
+            onTertiaryContainer = NovaColors.Gray20,
             background = NovaColors.Black,
             onBackground = NovaColors.Gray20,
             surface = NovaColors.Black,
             onSurface = NovaColors.Gray20,
             onSurfaceVariant = NovaColors.Gray40,
             errorContainer = NovaColors.Red80,
+            onErrorContainer = NovaColors.Gray20,
             outline = NovaColors.Gray50,
             outlineVariant = NovaColors.Gray65,
             surfaceBright = NovaColors.Gray80,
+            surfaceDim = NovaColors.Black,
+            surfaceContainer = NovaColors.Black,
+            surfaceContainerHigh = NovaColors.Gray90,
+            surfaceContainerHighest = NovaColors.Gray80,
+            surfaceContainerLow = NovaColors.Gray90,
+            surfaceContainerLowest = NovaColors.Black,
         )
 
 // M3 color scheme extensions
