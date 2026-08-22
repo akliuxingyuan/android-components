@@ -32,9 +32,6 @@ sealed class IPProtectionAction : Action {
      */
     data class LocationChanged(val location: Location) : IPProtectionAction()
 
-    /** Reports a location reset, due to the previously selected location being unavailable. */
-    object LocationReset : IPProtectionAction()
-
     /** Reports a change in whether the user is signed in to a Firefox Account. */
     data class AccountStateChanged(val state: AccountStatus) : IPProtectionAction()
 
