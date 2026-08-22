@@ -473,16 +473,6 @@ class SearchEngineReaderTest {
             )
         return engineDefinition
     }
-
-    private fun sampleAttachmentModelData(): AttachmentModel {
-        return AttachmentModel(
-            filename = "test",
-            mimetype = "image/jpeg",
-            location = "main-workspace/search-config-icons/d0e5c407-7b88-4030-8870-f44498141ec7.jpg",
-            hash = "test",
-            size = 100u,
-        )
-    }
 }
 
 private const val LARGE_PNG_SIZE = 128

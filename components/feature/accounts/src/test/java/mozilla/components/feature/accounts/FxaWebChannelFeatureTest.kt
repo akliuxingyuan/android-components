@@ -1341,14 +1341,6 @@ class FxaWebChannelFeatureTest {
         }
     }
 
-    private fun JSONObject.getPairingSupport(): Boolean? {
-        return try {
-            this.getJSONObject("message").getJSONObject("data").getJSONObject("capabilities").getBoolean("pairing")
-        } catch (e: JSONException) {
-            null
-        }
-    }
-
     private fun JSONObject.getErrorMessage(): String {
         return this.getJSONObject("message").getJSONObject("data").getJSONObject("error").getString("message")
     }

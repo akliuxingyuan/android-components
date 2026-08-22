@@ -1897,7 +1897,7 @@ class GeckoEngineSessionTest {
         val observers = mutableListOf<EngineSession.Observer>()
         val policy = TrackingProtectionPolicy.strict()
 
-        for (x in 1..5) {
+        repeat(5) {
             observers.add(spy(object : EngineSession.Observer {}))
         }
 
@@ -5027,7 +5027,7 @@ class GeckoEngineSessionTest {
                 runtime = mock(),
                 geckoSessionProvider = geckoSessionProvider,
             )
-        class MockGeckoPrintException() : GeckoPrintException()
+        class MockGeckoPrintException : GeckoPrintException()
         whenever(geckoSession.didPrintPageContent()).thenReturn(GeckoResult.fromException(MockGeckoPrintException()))
 
         engineSession.register(

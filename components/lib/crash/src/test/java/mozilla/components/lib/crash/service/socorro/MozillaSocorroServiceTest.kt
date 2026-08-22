@@ -71,7 +71,6 @@ class MozillaSocorroServiceTest {
 
     @Test
     fun `MozillaSocorroService generated server URL have no spaces`() {
-        val versionName = "test version name"
         val service =
             MozillaSocorroService(
                 testContext,
