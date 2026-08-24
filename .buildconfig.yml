@@ -798,6 +798,12 @@ projects:
     - components:ui-colors
     - components:ui-icons
     - components:ui-widgets
+  components:feature-automotive:
+    description: Component adding support for Android Automotive OS.
+    path: components/feature/automotive
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:feature-awesomebar:
     description: Component connecting a concept-toolbar with a concept-awesomebar.
     path: components/feature/awesomebar
