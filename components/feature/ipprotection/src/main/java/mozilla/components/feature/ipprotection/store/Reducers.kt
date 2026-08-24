@@ -14,6 +14,7 @@ import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.LocationState
+import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
 import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.feature.ipprotection.store.state.Recommended
@@ -34,21 +35,17 @@ internal fun iPProtectionReducer(
             val newProxyStatus = action.info.asProxyStatus()
 
             // Clear `activate` once the engine settles so a re-request reads as a new transition.
-            val newActivate =
+            val newPendingActivationRequest =
                 when (action.info.serviceState) {
-                    ServiceState.Uninitialized -> {
-                        null
-                    }
+                    ServiceState.Uninitialized -> null
 
                     ServiceState.Unavailable,
                     ServiceState.Unauthenticated,
-                    ServiceState.OptedOut -> {
-                        false
-                    }
+                    ServiceState.OptedOut -> PendingActivationRequest.Deactivate
 
                     ServiceState.Ready ->
                         when (newProxyStatus) {
-                            Authorized.Activating -> state.activate
+                            Authorized.Activating -> state.pendingActivationRequest
                             else -> null
                         }
                 }
@@ -99,7 +96,7 @@ internal fun iPProtectionReducer(
                 accountState = state.accountState.copy(status = newAccountStatus),
                 lastError = action.info.lastError,
                 proxyActivation = newProxyActivation,
-                activate = newActivate,
+                pendingActivationRequest = newPendingActivationRequest,
             )
         }
 
@@ -132,12 +129,17 @@ internal fun iPProtectionReducer(
                 ServiceState.Ready -> {
                     return when (state.proxyStatus) {
                         Authorized.Idle -> {
-                            state.copy(activate = true)
+                            state.copy(
+                                pendingActivationRequest =
+                                    PendingActivationRequest.Activate(
+                                        selectedLocationCode = state.locationState.selectedLocation.countryCode
+                                    )
+                            )
                         }
 
                         Authorized.ConnectionError,
                         Authorized.Active -> {
-                            state.copy(activate = false)
+                            state.copy(pendingActivationRequest = PendingActivationRequest.Deactivate)
                         }
 
                         Authorized.Activating,
@@ -216,7 +218,7 @@ internal fun iPProtectionReducer(
                 }
 
             // Reset `activate` so the next Toggle reads as a fresh edge in observeToggle().
-            state.copy(activate = null, accountState = accountState)
+            state.copy(pendingActivationRequest = null, accountState = accountState)
         }
 
         is IPProtectionAction.CheckAccount -> {
@@ -231,7 +233,18 @@ internal fun iPProtectionReducer(
 
         is IPProtectionAction.LocationChanged ->
             state.copy(
-                activate = if (state.proxyStatus == Authorized.Active) true else null,
+                pendingActivationRequest =
+                    // Authorized.Activating state could be problematic here: if the user turns vpn on and that toggle
+                    // is taking a lot of time, then changing a country won't make an additional request, but the UI
+                    // will be showing the newly selected country. We already had problems with spamming activation
+                    // request to the toolkit code while it's still processing the previous one, we probably want to
+                    // prevent user from being able to toggle the countries while the proxy is in activating state,
+                    // but that requires UX change - tracked here: https://bugzilla.mozilla.org/show_bug.cgi?id=2065317
+                    if (state.proxyStatus == Authorized.Active) {
+                        PendingActivationRequest.Activate(action.location.countryCode)
+                    } else {
+                        state.pendingActivationRequest
+                    },
                 locationState =
                     LocationState(
                         selectedLocation = action.location,
@@ -332,7 +345,7 @@ private fun IPProtectionState.clearProfileData(action: InternalAction.AccountMan
         maxDataBytes = -1L,
         resetDate = null,
         proxyActivation = ProxyActivation.Idle,
-        activate = false,
+        pendingActivationRequest = PendingActivationRequest.Deactivate,
         accountState = accountState.copy(status = action.status),
     )
 }
@@ -341,7 +354,8 @@ private fun IPProtectionState.handleFinishingEnrollment(action: InternalAction.F
     return if (action.success) {
         copy(
             accountState = accountState.copy(status = AccountStatus.EnrolledAndEntitled),
-            activate = true,
+            pendingActivationRequest =
+                PendingActivationRequest.Activate(selectedLocationCode = locationState.selectedLocation.countryCode),
         )
     } else {
         copy(accountState = accountState.copy(status = AccountStatus.NeedsAuthorization))
