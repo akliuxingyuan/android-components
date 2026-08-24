@@ -239,6 +239,15 @@ internal fun iPProtectionReducer(
                     ),
             )
 
+        is IPProtectionAction.LocationReset ->
+            state.copy(
+                locationState =
+                    LocationState(
+                        selectedLocation = Recommended,
+                        locations = state.locationState.locations,
+                    )
+            )
+
         is InternalAction -> internalReducer(state, action)
     }
 
