@@ -279,29 +279,25 @@ class MozillaSocorroService(
         formDataWriter.sendAnnotation(Annotation.DistributionID, distributionId)
 
         var additionalDumps: FormDataWriter.AdditionalMinidumps? = null
-        var extrasFileKeys = setOf<String>()
+        var hasCrashEventId = false
 
         extrasFilePath?.let {
             val regex = "$FILE_REGEX$EXTRAS_FILE_EXT".toRegex()
             if (regex.matchEntire(it.substringAfterLast("/")) != null) {
                 val extrasFile = File(it)
                 val extrasMap = readExtrasFromFile(extrasFile)
-                extrasFileKeys = extrasMap.keys
                 for (key in extrasMap.keys) {
                     formDataWriter.sendPart(key, extrasMap[key])
                 }
+                hasCrashEventId = extrasMap.containsKey(Annotation.CrashEventID.toString())
                 additionalDumps = formDataWriter.AdditionalMinidumps(extrasMap)
                 extrasFile.delete()
             }
         }
 
-        val sendIfMissing = { a: Annotation, value: () -> String ->
-            if (!extrasFileKeys.contains(a.toString())) {
-                formDataWriter.sendAnnotation(a, value())
-            }
+        if (!hasCrashEventId) {
+            formDataWriter.sendAnnotation(Annotation.CrashEventID, crashEventId)
         }
-
-        sendIfMissing(Annotation.CrashEventID) { crashEventId }
 
         if (throwable?.stackTrace?.isEmpty() == false) {
             formDataWriter.sendAnnotation(
@@ -363,9 +359,6 @@ class MozillaSocorroService(
                 formDataWriter.sendAnnotation(Annotation.Android_CPU_ABI2, Build.SUPPORTED_ABIS[1])
             }
         }
-        sendIfMissing(Annotation.OS) { "Android" }
-        sendIfMissing(Annotation.OSVersion) { "${Build.VERSION.SDK_INT}" }
-        sendIfMissing(Annotation.CPUArchitecture) { Crash.CPU_ARCH }
 
         formDataWriter.finish()
     }
