@@ -204,6 +204,8 @@ private fun SummarizationScreenContent(
                 info = state.info,
                 document = state.document,
                 onSettingsClicked = { store.dispatch(SettingsClicked) },
+                feedback = state.feedback,
+                onFeedbackClicked = { store.dispatch(SummaryFeedbackProvided(it)) },
             )
 
         is SummarizationState.Settings -> {
