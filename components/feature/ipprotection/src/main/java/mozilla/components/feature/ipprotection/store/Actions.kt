@@ -59,6 +59,13 @@ sealed class IPProtectionAction : Action {
     data class ToggleFailed(val error: Throwable? = null) : IPProtectionAction()
 
     /**
+     * Reports that switching to a new location failed.
+     *
+     * @property error The [Throwable] the engine rejected the request with, or null when the engine gave no reason.
+     */
+    data class LocationSwitchFailed(val error: Throwable? = null) : IPProtectionAction()
+
+    /**
      * Checks if an account has already been entitled. If so, this will lead to a token exchange that gives us a new
      * refresh token with increased scopes. If not, we do nothing.
      */

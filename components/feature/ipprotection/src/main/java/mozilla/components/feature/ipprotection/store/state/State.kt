@@ -82,10 +82,13 @@ data class AccountState(val status: AccountStatus = AccountStatus.Uninitialized)
  *
  * @property selectedLocation The location to use when connecting to VPN.
  * @property locations The list of locations for user to choose from.
+ * @property previousLocation Cached previous selection. Intended to be used as a rollback value in case switching to a
+ *   new locations fails.
  */
 data class LocationState(
     val selectedLocation: Location = Recommended,
     val locations: List<Location> = listOf(Recommended),
+    val previousLocation: Location? = null,
 )
 
 /**
@@ -131,6 +134,14 @@ sealed class PendingActivationRequest {
      *   recommended default.
      */
     data class Activate(val selectedLocationCode: String?) : PendingActivationRequest()
+
+    /**
+     * Requesting to switch to a new location.
+     *
+     * @property selectedLocationCode ISO 3166-1 alpha-2 country code for the desired proxy location, or null to use the
+     *   recommended default.
+     */
+    data class Switch(val selectedLocationCode: String?) : PendingActivationRequest()
 
     /** Requesting proxy deactivation. */
     object Deactivate : PendingActivationRequest()

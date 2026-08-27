@@ -145,6 +145,25 @@ class IPProtectionReducerTest {
     }
 
     @Test
+    fun `WHEN LocationSwitchFailed is dispatched THEN activation state is cleared and location is reset to the previous one`() {
+        val previousLocation = Country("JP", available = true)
+        val state =
+            buildIPProtectionState()
+                .copy(
+                    pendingActivationRequest = PendingActivationRequest.Switch("CA"),
+                    locationState =
+                        LocationState(
+                            selectedLocation = Country("CA", available = true),
+                            previousLocation = previousLocation,
+                        ),
+                )
+
+        val result = iPProtectionReducer(state, IPProtectionAction.LocationSwitchFailed())
+
+        assertEquals(previousLocation, result.locationState.selectedLocation)
+    }
+
+    @Test
     fun `GIVEN user has already finished auth flow successfully but service is still unauthenticated WHEN ToggleFailed is dispatched THEN activation state is cleared and account is set for another check`() {
         val state =
             buildIPProtectionState()
@@ -788,7 +807,7 @@ class IPProtectionReducerTest {
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
         assertEquals(
-            PendingActivationRequest.Activate(updatedLocation.countryCode),
+            PendingActivationRequest.Switch(updatedLocation.countryCode),
             resultState.pendingActivationRequest,
         )
     }

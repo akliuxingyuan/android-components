@@ -229,13 +229,27 @@ class IPProtectionFeature(
                             store.dispatch(IPProtectionAction.ToggleFailed(err))
                         }
                     }
-                    if (activationState is PendingActivationRequest.Activate) {
-                        handler?.activate(
-                            countryCode = activationState.selectedLocationCode,
-                            onResult = onResult,
-                        )
-                    } else {
-                        handler?.deactivate(onResult)
+
+                    when (activationState) {
+                        is PendingActivationRequest.Activate -> {
+                            handler?.activate(
+                                countryCode = activationState.selectedLocationCode,
+                                onResult = onResult,
+                            )
+                        }
+                        is PendingActivationRequest.Switch -> {
+                            handler?.activate(
+                                countryCode = activationState.selectedLocationCode,
+                                onResult = { err ->
+                                    if (err != null) {
+                                        store.dispatch(IPProtectionAction.LocationSwitchFailed(err))
+                                    }
+                                },
+                            )
+                        }
+                        is PendingActivationRequest.Deactivate -> {
+                            handler?.deactivate(onResult)
+                        }
                     }
                 }
         }

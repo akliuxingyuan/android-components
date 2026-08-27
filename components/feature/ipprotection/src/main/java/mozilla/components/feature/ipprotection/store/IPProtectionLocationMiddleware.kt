@@ -45,6 +45,7 @@ class IPProtectionLocationMiddleware(
             is IPProtectionAction.EligibilityChanged,
             is IPProtectionAction.EngineStateChanged,
             is IPProtectionAction.LocationReset,
+            is IPProtectionAction.LocationSwitchFailed,
             is IPProtectionAction.ProxyActivationShown,
             is IPProtectionAction.Toggle,
             is IPProtectionAction.ToggleFailed,

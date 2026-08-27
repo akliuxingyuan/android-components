@@ -110,6 +110,7 @@ internal fun iPProtectionReducer(
                                 action.countries.map {
                                     Country(countryCode = it.code, available = it.available)
                                 },
+                        previousLocation = state.locationState.previousLocation,
                     )
             )
         }
@@ -221,6 +222,17 @@ internal fun iPProtectionReducer(
             state.copy(pendingActivationRequest = null, accountState = accountState)
         }
 
+        is IPProtectionAction.LocationSwitchFailed -> {
+            state.copy(
+                pendingActivationRequest = null,
+                locationState =
+                    state.locationState.copy(
+                        selectedLocation = state.locationState.previousLocation ?: Recommended,
+                        previousLocation = null,
+                    ),
+            )
+        }
+
         is IPProtectionAction.CheckAccount -> {
             if (state.accountState.status == AccountStatus.NeedsAuthorization) {
                 // When we "try again" we signal to the IPProtectionHandler to attempt retrieving an access token.
@@ -241,7 +253,7 @@ internal fun iPProtectionReducer(
                     // prevent user from being able to toggle the countries while the proxy is in activating state,
                     // but that requires UX change - tracked here: https://bugzilla.mozilla.org/show_bug.cgi?id=2065317
                     if (state.proxyStatus == Authorized.Active) {
-                        PendingActivationRequest.Activate(action.location.countryCode)
+                        PendingActivationRequest.Switch(action.location.countryCode)
                     } else {
                         state.pendingActivationRequest
                     },
@@ -249,6 +261,7 @@ internal fun iPProtectionReducer(
                     LocationState(
                         selectedLocation = action.location,
                         locations = state.locationState.locations,
+                        previousLocation = state.locationState.selectedLocation,
                     ),
             )
 
