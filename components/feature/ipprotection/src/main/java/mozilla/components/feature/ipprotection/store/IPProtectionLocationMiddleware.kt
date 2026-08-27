@@ -42,10 +42,12 @@ class IPProtectionLocationMiddleware(
 
             is IPProtectionAction.AccountStateChanged,
             is IPProtectionAction.CheckAccount,
+            is IPProtectionAction.CheckLocations,
             is IPProtectionAction.EligibilityChanged,
             is IPProtectionAction.EngineStateChanged,
             is IPProtectionAction.LocationReset,
             is IPProtectionAction.LocationSwitchFailed,
+            is IPProtectionAction.LocationUpdateFailed,
             is IPProtectionAction.ProxyActivationShown,
             is IPProtectionAction.Toggle,
             is IPProtectionAction.ToggleFailed,

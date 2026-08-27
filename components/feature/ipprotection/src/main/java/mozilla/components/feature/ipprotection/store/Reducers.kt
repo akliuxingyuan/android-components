@@ -246,6 +246,24 @@ internal fun iPProtectionReducer(
             )
         }
 
+        is IPProtectionAction.LocationUpdateFailed -> {
+            // Edge case: the user might log out while the request is in progress. Logging out does
+            // reset the update state, so a failed request after a reset should be ignored.
+            if (state.locationState.updateState == LocationListUpdateState.Requested) {
+                state.copy(locationState = state.locationState.copy(updateState = LocationListUpdateState.Failed))
+            } else {
+                state
+            }
+        }
+
+        is IPProtectionAction.CheckLocations -> {
+            if (state.locationState.updateState == LocationListUpdateState.Failed) {
+                state.copy(locationState = state.locationState.copy(updateState = LocationListUpdateState.Requested))
+            } else {
+                state
+            }
+        }
+
         is IPProtectionAction.CheckAccount -> {
             if (state.accountState.status == AccountStatus.NeedsAuthorization) {
                 // When we "try again" we signal to the IPProtectionHandler to attempt retrieving an access token.

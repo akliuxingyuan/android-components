@@ -942,4 +942,73 @@ class IPProtectionReducerTest {
 
         assertEquals(LocationListUpdateState.NotRequested, resultState.locationState.updateState)
     }
+
+    @Test
+    fun `WHEN LocationUpdateFailed is dispatched THEN the location list update is marked as failed`() {
+        val initialState = buildIPProtectionState(updateState = LocationListUpdateState.Requested)
+
+        val resultState =
+            iPProtectionReducer(
+                state = initialState,
+                action = IPProtectionAction.LocationUpdateFailed(RuntimeException("unknown-error")),
+            )
+
+        assertEquals(LocationListUpdateState.Failed, resultState.locationState.updateState)
+    }
+
+    @Test
+    fun `GIVEN no pending location list update WHEN LocationUpdateFailed is dispatched THEN the update state is unchanged`() {
+        val initialState = buildIPProtectionState(updateState = LocationListUpdateState.NotRequested)
+
+        val resultState =
+            iPProtectionReducer(
+                state = initialState,
+                action = IPProtectionAction.LocationUpdateFailed(RuntimeException("unknown-error")),
+            )
+
+        assertEquals(LocationListUpdateState.NotRequested, resultState.locationState.updateState)
+    }
+
+    @Test
+    fun `GIVEN a failed location list update WHEN EngineStateChanged is dispatched THEN the update is not retried`() {
+        val initialState =
+            buildIPProtectionState(
+                serviceStatus = ServiceState.Ready,
+                updateState = LocationListUpdateState.Failed,
+            )
+
+        val resultState =
+            iPProtectionReducer(
+                state = initialState,
+                action = IPProtectionAction.EngineStateChanged(StateInfo(serviceState = ServiceState.Ready)),
+            )
+
+        assertEquals(LocationListUpdateState.Failed, resultState.locationState.updateState)
+    }
+
+    @Test
+    fun `GIVEN a failed location list update WHEN CheckLocations is dispatched THEN the update is retried`() {
+        val initialState = buildIPProtectionState(updateState = LocationListUpdateState.Failed)
+
+        val resultState =
+            iPProtectionReducer(
+                state = initialState,
+                action = IPProtectionAction.CheckLocations,
+            )
+
+        assertEquals(LocationListUpdateState.Requested, resultState.locationState.updateState)
+    }
+
+    @Test
+    fun `GIVEN an updated location list WHEN CheckLocations is dispatched THEN no update is requested`() {
+        val initialState = buildIPProtectionState(updateState = LocationListUpdateState.Updated)
+
+        val resultState =
+            iPProtectionReducer(
+                state = initialState,
+                action = IPProtectionAction.CheckLocations,
+            )
+
+        assertEquals(LocationListUpdateState.Updated, resultState.locationState.updateState)
+    }
 }

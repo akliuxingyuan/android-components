@@ -137,6 +137,9 @@ sealed class LocationListUpdateState {
 
     /** The location list has been updated. */
     data object Updated : LocationListUpdateState()
+
+    /** The location list update failed. */
+    data object Failed : LocationListUpdateState()
 }
 
 /** Represents a pending proxy activation request. */

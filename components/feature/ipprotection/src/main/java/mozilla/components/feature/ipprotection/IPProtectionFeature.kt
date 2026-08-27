@@ -173,7 +173,11 @@ class IPProtectionFeature(
                     service == ServiceState.Ready && update == LocationListUpdateState.Requested
                 }
                 .collect {
-                    handler?.updateCountryList()
+                    handler?.updateCountryList { error ->
+                        if (error != null) {
+                            store.dispatch(IPProtectionAction.LocationUpdateFailed(error))
+                        }
+                    }
                 }
         }
     }
