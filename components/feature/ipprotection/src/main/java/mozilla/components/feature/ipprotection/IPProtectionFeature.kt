@@ -224,33 +224,33 @@ class IPProtectionFeature(
                 .distinctUntilChanged()
                 .filterNotNull()
                 .collect { activationState ->
-                    val onResult: (Throwable?) -> Unit = { err ->
-                        if (err != null) {
-                            store.dispatch(IPProtectionAction.ToggleFailed(err))
-                        }
-                    }
-
                     when (activationState) {
                         is PendingActivationRequest.Activate -> {
                             handler?.activate(
                                 countryCode = activationState.selectedLocationCode,
-                                onResult = onResult,
-                            )
-                        }
-                        is PendingActivationRequest.Switch -> {
-                            handler?.activate(
-                                countryCode = activationState.selectedLocationCode,
                                 onResult = { err ->
-                                    if (err != null) {
-                                        store.dispatch(IPProtectionAction.LocationSwitchFailed(err))
-                                    }
+                                    dispatchActivationFailure(err, activationState.isLocationSwitch)
                                 },
                             )
                         }
                         is PendingActivationRequest.Deactivate -> {
-                            handler?.deactivate(onResult)
+                            handler?.deactivate { err -> dispatchActivationFailure(err, isLocationSwitch = false) }
                         }
                     }
                 }
         }
+
+    private fun dispatchActivationFailure(error: Throwable?, isLocationSwitch: Boolean) {
+        if (error == null) {
+            return
+        }
+
+        store.dispatch(
+            if (isLocationSwitch) {
+                IPProtectionAction.LocationSwitchFailed(error)
+            } else {
+                IPProtectionAction.ToggleFailed(error)
+            }
+        )
+    }
 }

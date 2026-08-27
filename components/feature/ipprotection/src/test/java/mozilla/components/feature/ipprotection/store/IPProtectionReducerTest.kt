@@ -150,7 +150,7 @@ class IPProtectionReducerTest {
         val state =
             buildIPProtectionState()
                 .copy(
-                    pendingActivationRequest = PendingActivationRequest.Switch("CA"),
+                    pendingActivationRequest = PendingActivationRequest.Activate("CA", isLocationSwitch = true),
                     locationState =
                         LocationState(
                             selectedLocation = Country("CA", available = true),
@@ -807,7 +807,7 @@ class IPProtectionReducerTest {
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
         assertEquals(
-            PendingActivationRequest.Switch(updatedLocation.countryCode),
+            PendingActivationRequest.Activate(updatedLocation.countryCode, isLocationSwitch = true),
             resultState.pendingActivationRequest,
         )
     }

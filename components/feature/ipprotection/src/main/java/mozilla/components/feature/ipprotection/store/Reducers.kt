@@ -253,7 +253,7 @@ internal fun iPProtectionReducer(
                     // prevent user from being able to toggle the countries while the proxy is in activating state,
                     // but that requires UX change - tracked here: https://bugzilla.mozilla.org/show_bug.cgi?id=2065317
                     if (state.proxyStatus == Authorized.Active) {
-                        PendingActivationRequest.Switch(action.location.countryCode)
+                        PendingActivationRequest.Activate(action.location.countryCode, isLocationSwitch = true)
                     } else {
                         state.pendingActivationRequest
                     },

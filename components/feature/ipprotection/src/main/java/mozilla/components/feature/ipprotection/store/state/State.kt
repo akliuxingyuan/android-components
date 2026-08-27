@@ -132,16 +132,12 @@ sealed class PendingActivationRequest {
      *
      * @property selectedLocationCode ISO 3166-1 alpha-2 country code for the desired proxy location, or null to use the
      *   recommended default.
+     * @property isLocationSwitch Whether the proxy was already running, meaning a failure rolls the selection back.
      */
-    data class Activate(val selectedLocationCode: String?) : PendingActivationRequest()
-
-    /**
-     * Requesting to switch to a new location.
-     *
-     * @property selectedLocationCode ISO 3166-1 alpha-2 country code for the desired proxy location, or null to use the
-     *   recommended default.
-     */
-    data class Switch(val selectedLocationCode: String?) : PendingActivationRequest()
+    data class Activate(
+        val selectedLocationCode: String?,
+        val isLocationSwitch: Boolean = false,
+    ) : PendingActivationRequest()
 
     /** Requesting proxy deactivation. */
     object Deactivate : PendingActivationRequest()
