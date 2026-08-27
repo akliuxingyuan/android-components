@@ -13,6 +13,7 @@ import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.ipprotection.store.state.LocationListUpdateState
 import mozilla.components.feature.ipprotection.store.state.LocationState
 import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
@@ -87,6 +88,16 @@ internal fun iPProtectionReducer(
                     else -> state.proxyActivation
                 }
 
+            val newLocationState =
+                if (
+                    action.info.serviceState == ServiceState.Ready &&
+                        state.locationState.updateState == LocationListUpdateState.NotRequested
+                ) {
+                    state.locationState.copy(updateState = LocationListUpdateState.Requested)
+                } else {
+                    state.locationState
+                }
+
             state.copy(
                 remainingDataBytes = action.info.remaining,
                 maxDataBytes = action.info.max,
@@ -97,6 +108,7 @@ internal fun iPProtectionReducer(
                 lastError = action.info.lastError,
                 proxyActivation = newProxyActivation,
                 pendingActivationRequest = newPendingActivationRequest,
+                locationState = newLocationState,
             )
         }
 
@@ -111,6 +123,7 @@ internal fun iPProtectionReducer(
                                     Country(countryCode = it.code, available = it.available)
                                 },
                         previousLocation = state.locationState.previousLocation,
+                        updateState = LocationListUpdateState.Updated,
                     )
             )
         }
@@ -262,6 +275,7 @@ internal fun iPProtectionReducer(
                         selectedLocation = action.location,
                         locations = state.locationState.locations,
                         previousLocation = state.locationState.selectedLocation,
+                        updateState = state.locationState.updateState,
                     ),
             )
 
@@ -271,6 +285,7 @@ internal fun iPProtectionReducer(
                     LocationState(
                         selectedLocation = Recommended,
                         locations = state.locationState.locations,
+                        updateState = state.locationState.updateState,
                     )
             )
 
@@ -360,6 +375,7 @@ private fun IPProtectionState.clearProfileData(action: InternalAction.AccountMan
         proxyActivation = ProxyActivation.Idle,
         pendingActivationRequest = PendingActivationRequest.Deactivate,
         accountState = accountState.copy(status = action.status),
+        locationState = LocationState(),
     )
 }
 

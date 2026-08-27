@@ -84,11 +84,13 @@ data class AccountState(val status: AccountStatus = AccountStatus.Uninitialized)
  * @property locations The list of locations for user to choose from.
  * @property previousLocation Cached previous selection. Intended to be used as a rollback value in case switching to a
  *   new locations fails.
+ * @property updateState the state of the location list update.
  */
 data class LocationState(
     val selectedLocation: Location = Recommended,
     val locations: List<Location> = listOf(Recommended),
     val previousLocation: Location? = null,
+    val updateState: LocationListUpdateState = LocationListUpdateState.NotRequested,
 )
 
 /**
@@ -123,6 +125,18 @@ data class Country(
             } catch (_: IllformedLocaleException) {
                 countryCode
             }
+}
+
+/** Represents the state of the location list update. */
+sealed class LocationListUpdateState {
+    /** The default, "no request yet", state. */
+    data object NotRequested : LocationListUpdateState()
+
+    /** A pending update request. */
+    data object Requested : LocationListUpdateState()
+
+    /** The location list has been updated. */
+    data object Updated : LocationListUpdateState()
 }
 
 /** Represents a pending proxy activation request. */

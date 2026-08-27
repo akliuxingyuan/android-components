@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.InternalAction
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
+import mozilla.components.feature.ipprotection.store.state.LocationListUpdateState
 import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.lib.state.ext.flow
 import mozilla.components.lib.state.ext.flowScoped
@@ -69,6 +71,9 @@ class IPProtectionFeature(
         }
         mainScope.launch {
             observeAccount(store, mainDispatcher)
+        }
+        mainScope.launch {
+            observeLocationUpdates(store, mainDispatcher)
         }
     }
 
@@ -159,6 +164,20 @@ class IPProtectionFeature(
         }
     }
 
+    private fun observeLocationUpdates(store: IPProtectionStore, mainDispatcher: CoroutineDispatcher) {
+        store.flowScoped(dispatcher = mainDispatcher) { flow ->
+            flow
+                .map { it.serviceStatus to it.locationState.updateState }
+                .distinctUntilChanged()
+                .filter { (service, update) ->
+                    service == ServiceState.Ready && update == LocationListUpdateState.Requested
+                }
+                .collect {
+                    handler?.updateCountryList()
+                }
+        }
+    }
+
     private suspend fun registerAndInit() =
         withContext(mainDispatcher) {
             handler =
@@ -205,8 +224,6 @@ class IPProtectionFeature(
                 // as a side effect, the init call triggers `IPProtectionController#onServiceStateChanged`
                 // that can trigger the account manager that leads to `AuthProvider#getToken`.
                 init()
-
-                updateCountryList()
             }
         }
 
