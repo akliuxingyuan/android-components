@@ -8,5 +8,6 @@ package mozilla.components.compose.base.theme
 enum class Theme {
     Light,
     Dark,
+    Oled,
     Private,
 }
