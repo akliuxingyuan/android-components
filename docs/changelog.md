@@ -4,7 +4,9 @@ title: Changelog
 permalink: /changelog/
 ---
 
-# 156.0 (In Development)
+# 157.0 (In Development)
+
+# 156.0
 * **browser-domains**
     * ⚠️ **Breaking change**: Removed the deprecated `DomainAutoCompleteProvider` class. Use `ShippedDomainsProvider` or `CustomDomainsProvider` instead.
 * **browser-state**
