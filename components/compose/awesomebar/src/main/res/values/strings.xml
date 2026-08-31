@@ -23,4 +23,6 @@
     <string name="mozac_browser_awesomebar_share_website_details">Share</string>
     <!-- Description for the button to copy the highlighted awesomebar element (URL, search query, etc.) -->
     <string name="mozac_browser_awesomebar_copy_website_details">Copy</string>
+    <!-- Description for the button to edit the highlighted awesomebar element (URL, search query, etc.) -->
+    <string name="mozac_browser_awesomebar_edit_website_details">Edit URL</string>
 </resources>

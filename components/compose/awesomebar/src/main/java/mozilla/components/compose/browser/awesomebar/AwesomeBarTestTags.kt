@@ -25,4 +25,7 @@ object AwesomeBarTestTags {
 
     /** Test tag for the copy current site details button shown in the AwesomeBar. */
     const val COPY_CURRENT_SITE_DETAILS_BUTTON = "$TAG.copyCurrentSiteDetailsButton"
+
+    /** Test tag for the edit current site URL button shown in the AwesomeBar. */
+    const val EDIT_CURRENT_SITE_URL_BUTTON = "$TAG.editCurrentSiteUrlButton"
 }

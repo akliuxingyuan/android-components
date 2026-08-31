@@ -42,9 +42,11 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.COPY_CURRENT_SITE_DETAILS_BUTTON
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.CURRENT_SITE_DETAILS
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.CURRENT_URL_IN_SITE_DETAILS
+import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.EDIT_CURRENT_SITE_URL_BUTTON
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.SHARE_CURRENT_SITE_DETAILS_BUTTON
 import mozilla.components.compose.browser.awesomebar.R
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.CopyClicked
+import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.EditClicked
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.ShareClicked
 import mozilla.components.support.ktx.util.URLStringUtils
 import mozilla.components.ui.icons.R as iconsR
@@ -80,7 +82,7 @@ internal fun CurrentTabDetails(
                     collectionInfo =
                         CollectionInfo(
                             rowCount = 1,
-                            columnCount = 3,
+                            columnCount = 4,
                         )
                 },
         verticalAlignment = Alignment.CenterVertically,
@@ -164,6 +166,19 @@ internal fun CurrentTabDetails(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+
+        IconButton(
+            onClick = { onInteraction(EditClicked) },
+            contentDescription = stringResource(R.string.mozac_browser_awesomebar_edit_website_details),
+            modifier = Modifier.size(AcornTheme.layout.space.static600).testTag(EDIT_CURRENT_SITE_URL_BUTTON),
+        ) {
+            Icon(
+                painter = painterResource(iconsR.drawable.mozac_ic_edit_24),
+                contentDescription = null,
+                modifier = Modifier.size(AcornTheme.layout.space.static300),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -222,4 +237,7 @@ sealed class CurrentTabDetailsInteractions {
 
     /** Indicates the user clicked on the "copy" button. */
     data object CopyClicked : CurrentTabDetailsInteractions()
+
+    /** Indicates the user clicked on the "edit" button. */
+    data object EditClicked : CurrentTabDetailsInteractions()
 }
