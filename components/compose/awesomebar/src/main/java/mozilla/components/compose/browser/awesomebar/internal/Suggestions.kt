@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.parcelize.Parcelize
 import mozilla.components.compose.browser.awesomebar.AwesomeBarColors
 import mozilla.components.compose.browser.awesomebar.AwesomeBarOrientation
+import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags
 import mozilla.components.compose.browser.awesomebar.internal.optimizedsuggestions.FlightSuggestion
 import mozilla.components.compose.browser.awesomebar.internal.optimizedsuggestions.SportSuggestion
 import mozilla.components.compose.browser.awesomebar.internal.optimizedsuggestions.StockSuggestion
@@ -50,7 +51,7 @@ internal fun Suggestions(
 
     LazyColumn(
         state = state,
-        modifier = Modifier.testTag("mozac.awesomebar.suggestions"),
+        modifier = Modifier.testTag(AwesomeBarTestTags.SUGGESTIONS),
     ) {
         suggestions.forEach { (group, suggestions) ->
             val title = group.title

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import mozilla.components.compose.browser.awesomebar.AwesomeBarColors
 import mozilla.components.compose.browser.awesomebar.AwesomeBarOrientation
+import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags
 import mozilla.components.compose.browser.awesomebar.R
 import mozilla.components.concept.awesomebar.AwesomeBar
 import mozilla.components.ui.icons.R as iconsR
@@ -57,7 +58,7 @@ internal fun Suggestion(
         modifier =
             Modifier.clickable { onSuggestionClicked() }
                 .defaultMinSize(minHeight = 56.dp)
-                .testTag("mozac.awesomebar.suggestion")
+                .testTag(AwesomeBarTestTags.SUGGESTION)
                 .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)
     ) {
         val icon = suggestion.icon
