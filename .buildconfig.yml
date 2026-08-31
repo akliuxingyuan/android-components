@@ -2628,7 +2628,9 @@ projects:
     path: components/service/firefox-accounts
     publish: true
     upstream_dependencies:
+    - components:browser-errorpages
     - components:concept-base
+    - components:concept-engine
     - components:concept-fetch
     - components:concept-storage
     - components:concept-storage-bookmarks
@@ -2639,9 +2641,11 @@ projects:
     - components:support-base
     - components:support-ktx
     - components:support-test
+    - components:support-test-fakes
     - components:support-test-libstate
     - components:support-utils
     - components:tooling-lint
+    - components:ui-icons
   components:service-firefox-relay:
     description: A library to communicate with the Relay services API
     path: components/service/firefox-relay
