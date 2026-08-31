@@ -39,10 +39,12 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.COPY_CURRENT_SITE_DETAILS_BUTTON
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.CURRENT_SITE_DETAILS
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.CURRENT_URL_IN_SITE_DETAILS
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.SHARE_CURRENT_SITE_DETAILS_BUTTON
 import mozilla.components.compose.browser.awesomebar.R
+import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.CopyClicked
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.ShareClicked
 import mozilla.components.support.ktx.util.URLStringUtils
 import mozilla.components.ui.icons.R as iconsR
@@ -78,7 +80,7 @@ internal fun CurrentTabDetails(
                     collectionInfo =
                         CollectionInfo(
                             rowCount = 1,
-                            columnCount = 2,
+                            columnCount = 3,
                         )
                 },
         verticalAlignment = Alignment.CenterVertically,
@@ -149,6 +151,19 @@ internal fun CurrentTabDetails(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+
+        IconButton(
+            onClick = { onInteraction(CopyClicked) },
+            contentDescription = stringResource(R.string.mozac_browser_awesomebar_copy_website_details),
+            modifier = Modifier.size(AcornTheme.layout.space.static600).testTag(COPY_CURRENT_SITE_DETAILS_BUTTON),
+        ) {
+            Icon(
+                painter = painterResource(iconsR.drawable.mozac_ic_copy_24),
+                contentDescription = null,
+                modifier = Modifier.size(AcornTheme.layout.space.static300),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -204,4 +219,7 @@ sealed class CurrentTabDetailsInteractions {
 
     /** Indicates the user clicked on the "share" button. */
     data object ShareClicked : CurrentTabDetailsInteractions()
+
+    /** Indicates the user clicked on the "copy" button. */
+    data object CopyClicked : CurrentTabDetailsInteractions()
 }

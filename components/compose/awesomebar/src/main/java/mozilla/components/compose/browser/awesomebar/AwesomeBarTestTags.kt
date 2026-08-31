@@ -22,4 +22,7 @@ object AwesomeBarTestTags {
 
     /** Test tag for the share current site details button shown in the AwesomeBar. */
     const val SHARE_CURRENT_SITE_DETAILS_BUTTON = "$TAG.shareCurrentSiteDetailsButton"
+
+    /** Test tag for the copy current site details button shown in the AwesomeBar. */
+    const val COPY_CURRENT_SITE_DETAILS_BUTTON = "$TAG.copyCurrentSiteDetailsButton"
 }
