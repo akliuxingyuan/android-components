@@ -13,4 +13,7 @@ object AwesomeBarTestTags {
 
     /** Test tag for the list of all suggestions shown in the AwesomeBar. */
     const val SUGGESTIONS = "$TAG.suggestions"
+
+    /** Test tag for the current site details (icon, title, URL) shown in the AwesomeBar. */
+    const val CURRENT_SITE_DETAILS = "$TAG.currentSiteDetails"
 }

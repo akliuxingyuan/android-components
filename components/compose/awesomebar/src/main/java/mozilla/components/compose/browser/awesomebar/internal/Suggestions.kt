@@ -5,6 +5,7 @@
 package mozilla.components.compose.browser.awesomebar.internal
 
 import android.os.Parcelable
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -44,6 +45,8 @@ internal fun Suggestions(
     onRemoveClicked: (AwesomeBar.SuggestionProviderGroup, AwesomeBar.Suggestion) -> Unit,
     onVisibilityStateUpdated: (AwesomeBar.VisibilityState) -> Unit,
     onScroll: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val state = rememberLazyListState()
 
@@ -51,7 +54,8 @@ internal fun Suggestions(
 
     LazyColumn(
         state = state,
-        modifier = Modifier.testTag(AwesomeBarTestTags.SUGGESTIONS),
+        modifier = modifier.testTag(AwesomeBarTestTags.SUGGESTIONS),
+        contentPadding = contentPadding,
     ) {
         suggestions.forEach { (group, suggestions) ->
             val title = group.title

@@ -50,6 +50,7 @@
     <ID>ForbiddenSuppress:AnimatedProgressBar.kt$@Suppress("MagicNumber")</ID>
     <ID>ForbiddenSuppress:AppLinksInterceptor.kt$AppLinksInterceptor$@Suppress("CognitiveComplexMethod", "ReturnCount", "CyclomaticComplexMethod")</ID>
     <ID>ForbiddenSuppress:AppLinksUseCases.kt$AppLinksUseCases.GetAppLinkRedirect$@Suppress("CyclomaticComplexMethod")</ID>
+    <ID>ForbiddenSuppress:AwesomeBar.kt$@Suppress("LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:BaseBrowserFragment.kt$BaseBrowserFragment$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:BrowserDisplayToolbar.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:BrowserFragment.kt$BrowserFragment$@Suppress("LongMethod")</ID>
@@ -160,6 +161,7 @@
     <ID>HardcodedPaddingUsage:AnimatedPillButton.kt$(horizontal = 4.dp)</ID>
     <ID>HardcodedPaddingUsage:AnimatedPillButton.kt$(horizontal = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:AnimationLayer.kt$(16.dp)</ID>
+    <ID>HardcodedPaddingUsage:AwesomeBar.kt$( horizontal = AcornTheme.layout.space.static200, vertical = TAB_DETAILS_PADDING.dp, )</ID>
     <ID>HardcodedPaddingUsage:BadgedIcon.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:BannerScreen.kt$(horizontal = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:BannerScreen.kt$(vertical = 16.dp)</ID>
