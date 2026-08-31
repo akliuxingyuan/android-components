@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabData
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetails
+import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions
 import mozilla.components.compose.browser.awesomebar.internal.SuggestionFetcher
 import mozilla.components.compose.browser.awesomebar.internal.Suggestions
 import mozilla.components.concept.awesomebar.AwesomeBar
@@ -50,6 +51,8 @@ private const val TAB_DETAILS_PADDING = 18
  * @param orientation Whether the AwesomeBar is oriented to the top or the bottom of the screen.
  * @param onSuggestionClicked Gets invoked whenever the user clicks on a suggestion in the AwesomeBar.
  * @param onAutoComplete Gets invoked when the user clicks on the "autocomplete" icon of a suggestion.
+ * @param onRemoveClicked Gets invoked when the user clicks on the "remove" icon of a suggestion.
+ * @param onCurrentSiteDetailsInteraction Invoked when the user interacts with any of the shown buttons.
  * @param onVisibilityStateUpdated Gets invoked when the list of currently displayed suggestions changes.
  * @param onScroll Gets invoked at the beginning of the user performing a scroll gesture.
  */
@@ -64,6 +67,7 @@ fun AwesomeBar(
     onSuggestionClicked: (AwesomeBar.SuggestionItem) -> Unit,
     onAutoComplete: (AwesomeBar.Suggestion) -> Unit,
     onRemoveClicked: (GroupedSuggestion) -> Unit,
+    onCurrentSiteDetailsInteraction: (CurrentTabDetailsInteractions) -> Unit = {},
     onVisibilityStateUpdated: (AwesomeBar.VisibilityState) -> Unit = {},
     onScroll: () -> Unit = {},
     profiler: Profiler? = null,
@@ -91,6 +95,7 @@ fun AwesomeBar(
         onSuggestionClicked = { _, suggestion -> onSuggestionClicked(suggestion) },
         onAutoComplete = { _, suggestion -> onAutoComplete(suggestion) },
         onRemoveClicked = { group, suggestion -> onRemoveClicked(GroupedSuggestion(suggestion, group.id)) },
+        onCurrentSiteDetailsInteraction = onCurrentSiteDetailsInteraction,
         onVisibilityStateUpdated = onVisibilityStateUpdated,
         onScroll = onScroll,
         profiler = profiler,
@@ -108,6 +113,8 @@ fun AwesomeBar(
  * @param orientation Whether the AwesomeBar is oriented to the top or the bottom of the screen.
  * @param onSuggestionClicked Gets invoked whenever the user clicks on a suggestion in the AwesomeBar.
  * @param onAutoComplete Gets invoked when the user clicks on the "autocomplete" icon of a suggestion.
+ * @param onRemoveClicked Gets invoked when the user clicks on the "remove" icon of a suggestion.
+ * @param onCurrentSiteDetailsInteraction Invoked when the user interacts with any of the shown buttons.
  * @param onVisibilityStateUpdated Gets invoked when the list of currently displayed suggestions changes.
  * @param onScroll Gets invoked at the beginning of the user performing a scroll gesture.
  */
@@ -123,6 +130,7 @@ fun AwesomeBar(
     onSuggestionClicked: (AwesomeBar.SuggestionProviderGroup, AwesomeBar.SuggestionItem) -> Unit,
     onAutoComplete: (AwesomeBar.SuggestionProviderGroup, AwesomeBar.Suggestion) -> Unit,
     onRemoveClicked: (AwesomeBar.SuggestionProviderGroup, AwesomeBar.Suggestion) -> Unit,
+    onCurrentSiteDetailsInteraction: (CurrentTabDetailsInteractions) -> Unit,
     onVisibilityStateUpdated: (AwesomeBar.VisibilityState) -> Unit = {},
     onScroll: () -> Unit = {},
     profiler: Profiler? = null,
@@ -214,6 +222,7 @@ fun AwesomeBar(
             currentTabData?.let {
                 CurrentTabDetails(
                     it,
+                    onInteraction = onCurrentSiteDetailsInteraction,
                     modifier =
                         Modifier.align(
                                 when (hasTabDetailsAtBottom) {

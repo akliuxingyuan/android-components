@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,15 +27,23 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.collectionInfo
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags
+import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.CURRENT_SITE_DETAILS
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.CURRENT_URL_IN_SITE_DETAILS
+import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.SHARE_CURRENT_SITE_DETAILS_BUTTON
+import mozilla.components.compose.browser.awesomebar.R
+import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.ShareClicked
 import mozilla.components.support.ktx.util.URLStringUtils
 import mozilla.components.ui.icons.R as iconsR
 
@@ -42,11 +51,14 @@ import mozilla.components.ui.icons.R as iconsR
  * A composable that displays the current tab details in the AwesomeBar.
  *
  * @param currentTabData The current tab details to be displayed.
+ * @param onInteraction Invoked when the user interacts with any of the shown buttons.
  * @param modifier The modifier to be applied to the composable.
  */
 @Composable
+@Suppress("LongMethod")
 internal fun CurrentTabDetails(
     currentTabData: CurrentTabData,
+    onInteraction: (CurrentTabDetailsInteractions) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -58,58 +70,83 @@ internal fun CurrentTabDetails(
                 )
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 56.dp)
-                .clearAndSetSemantics {
+                .padding(
+                    horizontal = AcornTheme.layout.space.static50,
+                    vertical = AcornTheme.layout.space.static100,
+                )
+                .semantics {
+                    collectionInfo =
+                        CollectionInfo(
+                            rowCount = 1,
+                            columnCount = 2,
+                        )
+                },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier =
+                Modifier.weight(1f).clearAndSetSemantics {
                     contentDescription =
                         when (currentTabData.title.isNotBlank()) {
                             true -> currentTabData.title
                             else -> currentTabData.url
                         }
-                    testTag = AwesomeBarTestTags.CURRENT_SITE_DETAILS
+                    testTag = CURRENT_SITE_DETAILS
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val icon = currentTabData.icon
+
+            Image(
+                painter =
+                    when (icon) {
+                        null -> painterResource(iconsR.drawable.mozac_ic_globe_24)
+                        else -> remember(icon) { BitmapPainter(icon.asImageBitmap()) }
+                    },
+                contentDescription = null,
+                colorFilter =
+                    when (icon) {
+                        null -> ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+                        else -> null
+                    },
+                modifier =
+                    Modifier.padding(AcornTheme.layout.space.static100)
+                        .size(AcornTheme.layout.space.static400)
+                        .padding(AcornTheme.layout.space.static50),
+            )
+
+            Column {
+                if (currentTabData.title.isNotBlank()) {
+                    Text(
+                        text = currentTabData.title,
+                        style = AcornTheme.typography.body1,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
                 }
-                .padding(
-                    horizontal = AcornTheme.layout.space.static50,
-                    vertical = AcornTheme.layout.space.static100,
-                ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val icon = currentTabData.icon
 
-        Image(
-            painter =
-                when (icon) {
-                    null -> painterResource(iconsR.drawable.mozac_ic_globe_24)
-                    else -> remember(icon) { BitmapPainter(icon.asImageBitmap()) }
-                },
-            contentDescription = null,
-            colorFilter =
-                when (icon) {
-                    null -> ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
-                    else -> null
-                },
-            modifier =
-                Modifier.padding(AcornTheme.layout.space.static100)
-                    .size(AcornTheme.layout.space.static400)
-                    .padding(AcornTheme.layout.space.static50),
-        )
-
-        Column {
-            if (currentTabData.title.isNotBlank()) {
                 Text(
-                    text = currentTabData.title,
-                    style = AcornTheme.typography.body1,
+                    text = URLStringUtils.toDisplayUrl(currentTabData.url).toString(),
+                    modifier = Modifier.testTag(CURRENT_URL_IN_SITE_DETAILS),
+                    style = AcornTheme.typography.body2,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
 
-            Text(
-                text = URLStringUtils.toDisplayUrl(currentTabData.url).toString(),
-                modifier = Modifier.testTag(CURRENT_URL_IN_SITE_DETAILS),
-                style = AcornTheme.typography.body2,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        IconButton(
+            onClick = { onInteraction(ShareClicked) },
+            contentDescription = stringResource(R.string.mozac_browser_awesomebar_share_website_details),
+            modifier = Modifier.size(AcornTheme.layout.space.static600).testTag(SHARE_CURRENT_SITE_DETAILS_BUTTON),
+        ) {
+            Icon(
+                painter = painterResource(iconsR.drawable.mozac_ic_share_android_24),
+                contentDescription = null,
+                modifier = Modifier.size(AcornTheme.layout.space.static300),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -123,9 +160,10 @@ private fun CurrentTabDetailsPreview() {
             CurrentTabDetails(
                 CurrentTabData(
                     title = "Headline",
-                    url = "https://www.mozilla.org/firefox",
+                    url = "https://www.mozilla.org/firefox/android",
                     icon = null,
-                )
+                ),
+                onInteraction = {},
             )
         }
     }
@@ -139,9 +177,10 @@ private fun CurrentTabDetailsWithUrlOnlyPreview() {
             CurrentTabDetails(
                 CurrentTabData(
                     title = "",
-                    url = "https://www.mozilla.org/firefox",
+                    url = "https://www.mozilla.org/firefox/android",
                     icon = null,
-                )
+                ),
+                onInteraction = {},
             )
         }
     }
@@ -159,3 +198,10 @@ data class CurrentTabData(
     val url: String,
     val icon: Bitmap?,
 )
+
+/** All possible interactions with the View showing the current website details and controls. */
+sealed class CurrentTabDetailsInteractions {
+
+    /** Indicates the user clicked on the "share" button. */
+    data object ShareClicked : CurrentTabDetailsInteractions()
+}

@@ -19,4 +19,7 @@ object AwesomeBarTestTags {
 
     /** Test tag for the current URL shown in the AwesomeBar. */
     const val CURRENT_URL_IN_SITE_DETAILS = "$TAG.currentUrlInSiteDetails"
+
+    /** Test tag for the share current site details button shown in the AwesomeBar. */
+    const val SHARE_CURRENT_SITE_DETAILS_BUTTON = "$TAG.shareCurrentSiteDetailsButton"
 }
