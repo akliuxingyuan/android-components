@@ -162,7 +162,6 @@
     <ID>HardcodedPaddingUsage:AnimatedPillButton.kt$(horizontal = 4.dp)</ID>
     <ID>HardcodedPaddingUsage:AnimatedPillButton.kt$(horizontal = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:AnimationLayer.kt$(16.dp)</ID>
-    <ID>HardcodedPaddingUsage:AwesomeBar.kt$( horizontal = AcornTheme.layout.space.static200, vertical = TAB_DETAILS_PADDING.dp, )</ID>
     <ID>HardcodedPaddingUsage:BadgedIcon.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:BannerScreen.kt$(horizontal = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:BannerScreen.kt$(vertical = 16.dp)</ID>
@@ -233,11 +232,10 @@
     <ID>HardcodedPaddingUsage:StockSuggestion.kt$(end = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:StockSuggestion.kt$(start = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:Suggestion.kt$(12.dp)</ID>
-    <ID>HardcodedPaddingUsage:Suggestion.kt$(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)</ID>
+    <ID>HardcodedPaddingUsage:Suggestion.kt$(end = 10.dp)</ID>
     <ID>HardcodedPaddingUsage:Suggestion.kt$(start = 2.dp, end = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:Suggestion.kt$(top = 22.dp, start = 14.dp)</ID>
     <ID>HardcodedPaddingUsage:Suggestion.kt$(top = 8.dp)</ID>
-    <ID>HardcodedPaddingUsage:SuggestionGroup.kt$( vertical = 12.dp, horizontal = 16.dp, )</ID>
     <ID>HardcodedPaddingUsage:SummarizingContent.kt$(top = 80.dp)</ID>
     <ID>HardcodedPaddingUsage:Tab.kt$(8.dp)</ID>
     <ID>HardcodedPaddingUsage:TabCounterButton.kt$(16.dp)</ID>

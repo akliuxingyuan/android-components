@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.awesomebar.AwesomeBarColors
 import mozilla.components.compose.browser.awesomebar.AwesomeBarOrientation
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags
@@ -57,23 +58,26 @@ internal fun Suggestion(
     Row(
         modifier =
             Modifier.clickable { onSuggestionClicked() }
-                .defaultMinSize(minHeight = 56.dp)
+                .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
                 .testTag(AwesomeBarTestTags.SUGGESTION)
-                .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)
+                .padding(start = AcornTheme.layout.space.dynamic200, end = AcornTheme.layout.space.dynamic50)
     ) {
         val icon = suggestion.icon
         if (icon != null) {
             SuggestionIcon(
                 icon = icon,
                 indicator = suggestion.indicatorIcon,
-                modifier = Modifier.align(Alignment.CenterVertically),
+                modifier = Modifier.align(Alignment.CenterVertically).padding(end = 10.dp),
             )
         }
         SuggestionTitleAndDescription(
             title = suggestion.title?.take(SUGGESTION_TEXT_MAX_LENGTH),
             description = suggestion.description?.take(SUGGESTION_TEXT_MAX_LENGTH),
             colors = colors,
-            modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
+            modifier =
+                Modifier.weight(1f)
+                    .align(Alignment.CenterVertically)
+                    .padding(vertical = AcornTheme.layout.space.static100),
         )
         if (suggestion.editSuggestion != null) {
             AutocompleteButton(

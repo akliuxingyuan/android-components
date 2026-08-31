@@ -38,7 +38,6 @@ import mozilla.components.concept.awesomebar.AwesomeBar.GroupedSuggestion
 import mozilla.components.concept.base.profiler.Profiler
 
 private const val CURRENT_TAB_DETAILS_MIN_HEIGHT = 72
-private const val TAB_DETAILS_PADDING = 18
 
 /**
  * An awesome bar displaying suggestions from the list of provided [AwesomeBar.SuggestionProvider]s.
@@ -233,7 +232,7 @@ fun AwesomeBar(
                             .onSizeChanged { tabDetailsHeight = with(density) { it.height.toDp() } }
                             .padding(
                                 horizontal = AcornTheme.layout.space.static200,
-                                vertical = TAB_DETAILS_PADDING.dp,
+                                vertical = AcornTheme.layout.space.static100,
                             ),
                 )
             }
