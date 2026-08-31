@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -33,6 +34,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags
+import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.CURRENT_URL_IN_SITE_DETAILS
 import mozilla.components.support.ktx.util.URLStringUtils
 import mozilla.components.ui.icons.R as iconsR
 
@@ -103,6 +105,7 @@ internal fun CurrentTabDetails(
 
             Text(
                 text = URLStringUtils.toDisplayUrl(currentTabData.url).toString(),
+                modifier = Modifier.testTag(CURRENT_URL_IN_SITE_DETAILS),
                 style = AcornTheme.typography.body2,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,

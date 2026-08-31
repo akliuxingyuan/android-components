@@ -16,4 +16,7 @@ object AwesomeBarTestTags {
 
     /** Test tag for the current site details (icon, title, URL) shown in the AwesomeBar. */
     const val CURRENT_SITE_DETAILS = "$TAG.currentSiteDetails"
+
+    /** Test tag for the current URL shown in the AwesomeBar. */
+    const val CURRENT_URL_IN_SITE_DETAILS = "$TAG.currentUrlInSiteDetails"
 }
