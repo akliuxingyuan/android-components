@@ -14,7 +14,6 @@ import androidx.core.content.edit
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import mozilla.components.browser.domains.autocomplete.ShippedDomainsProvider
@@ -115,9 +114,7 @@ open class DefaultComponents(private val applicationContext: Context) {
         const val PREF_GLOBAL_PRIVACY_CONTROL = "sample_browser_global_privacy_control"
     }
 
-    /**
-     * A [CoroutineScope] tied to the lifetime of the application process.
-     */
+    /** A [CoroutineScope] tied to the lifetime of the application process. */
     val applicationScope: CoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     val preferences: SharedPreferences =
@@ -193,23 +190,23 @@ open class DefaultComponents(private val applicationContext: Context) {
                             applicationContext = applicationContext,
                             downloadServiceClass = DownloadService::class.java,
                             deleteFileFromStorage = { false },
-                            downloadFileUtils = DefaultDownloadFileUtils(context = applicationContext
-                    ),
-                ),
-                ReaderViewMiddleware(),
-                ThumbnailsMiddleware(thumbnailStorage),
-                UndoMiddleware(),
-                RegionMiddleware(
-                    applicationContext,
-                    LocationService.default(),
-                    applicationScope = applicationScope,
-                ),
-                SearchMiddleware(applicationContext),
-                RecordingDevicesMiddleware(applicationContext, notificationsDelegate),
-                LastAccessMiddleware(),
-                PromptMiddleware(),
-                SessionPrioritizationMiddleware(),
-            ) + EngineMiddleware.create(engine))
+                            downloadFileUtils = DefaultDownloadFileUtils(context = applicationContext),
+                        ),
+                        ReaderViewMiddleware(),
+                        ThumbnailsMiddleware(thumbnailStorage),
+                        UndoMiddleware(),
+                        RegionMiddleware(
+                            applicationContext,
+                            LocationService.default(),
+                            applicationScope = applicationScope,
+                        ),
+                        SearchMiddleware(applicationContext),
+                        RecordingDevicesMiddleware(applicationContext, notificationsDelegate),
+                        LastAccessMiddleware(),
+                        PromptMiddleware(),
+                        SessionPrioritizationMiddleware(),
+                    ) + EngineMiddleware.create(engine)
+            )
             .apply {
                 WebNotificationFeature(
                     applicationContext,
@@ -382,7 +379,7 @@ open class DefaultComponents(private val applicationContext: Context) {
 
         items.add(
             SimpleBrowserMenuItem("Add to homescreen") {
-                    MainScope().launch {
+                    applicationScope.launch {
                         webAppUseCases.addToHomescreen()
                     }
                 }
