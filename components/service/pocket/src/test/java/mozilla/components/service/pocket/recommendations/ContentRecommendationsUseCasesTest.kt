@@ -10,7 +10,7 @@ import mozilla.components.concept.fetch.Client
 import mozilla.components.service.pocket.ContentRecommendationsRequestConfig
 import mozilla.components.service.pocket.PocketStory.ContentRecommendation
 import mozilla.components.service.pocket.helpers.PocketTestResources
-import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsEndpoint
+import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsProvider
 import mozilla.components.service.pocket.stories.api.PocketResponse
 import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
@@ -39,11 +39,11 @@ class ContentRecommendationsUseCasesTest {
             )
         )
     private val repository: ContentRecommendationsRepository = mock()
-    private val endPoint: ContentRecommendationsEndpoint = mock()
+    private val provider: ContentRecommendationsProvider = mock()
 
     @Before
     fun setup() {
-        doReturn(endPoint).`when`(useCases).getContentRecommendationsEndpoint(any(), any())
+        doReturn(provider).`when`(useCases).getContentRecommendationsProvider(any(), any())
         doReturn(repository).`when`(useCases).getContentRecommendationsRepository(any())
     }
 
@@ -64,12 +64,12 @@ class ContentRecommendationsUseCasesTest {
         runTest {
             val fetchUseCase = useCases.FetchContentRecommendations()
             val response = getSuccessContentRecommendationsResponse()
-            doReturn(response).`when`(endPoint).getContentRecommendations()
+            doReturn(response).`when`(provider).getContentRecommendations()
 
             val result = fetchUseCase.invoke()
 
             assertTrue(result)
-            verify(endPoint).getContentRecommendations()
+            verify(provider).getContentRecommendations()
             verify(repository).updateContentRecommendations((response as PocketResponse.Success).data)
         }
 
@@ -78,12 +78,12 @@ class ContentRecommendationsUseCasesTest {
         runTest {
             val fetchUseCase = useCases.FetchContentRecommendations()
             val response = getFailResponse()
-            doReturn(response).`when`(endPoint).getContentRecommendations()
+            doReturn(response).`when`(provider).getContentRecommendations()
 
             val result = fetchUseCase.invoke()
 
             assertFalse(result)
-            verify(endPoint).getContentRecommendations()
+            verify(provider).getContentRecommendations()
             verify(repository, never()).updateContentRecommendations(any())
         }
 

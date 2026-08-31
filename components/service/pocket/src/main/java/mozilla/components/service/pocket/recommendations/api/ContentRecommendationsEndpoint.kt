@@ -19,7 +19,8 @@ import mozilla.components.service.pocket.stories.api.PocketResponse
  * @see [newInstance] to retrieve an instance.
  */
 internal class ContentRecommendationsEndpoint
-internal constructor(@get:VisibleForTesting internal val rawEndpoint: ContentRecommendationEndpointRaw) {
+internal constructor(@get:VisibleForTesting internal val rawEndpoint: ContentRecommendationEndpointRaw) :
+    ContentRecommendationsProvider {
     /**
      * Returns a response containing the content recommendations from the provided endpoint on success.
      *
@@ -27,7 +28,7 @@ internal constructor(@get:VisibleForTesting internal val rawEndpoint: ContentRec
      *   [PocketResponse.Failure] on error.
      */
     @WorkerThread
-    fun getContentRecommendations(): PocketResponse<ContentRecommendationsResponse> {
+    override fun getContentRecommendations(): PocketResponse<ContentRecommendationsResponse> {
         val response =
             rawEndpoint.getContentRecommendations()?.let {
                 try {

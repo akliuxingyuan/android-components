@@ -10,6 +10,7 @@ import mozilla.components.concept.fetch.Client
 import mozilla.components.service.pocket.ContentRecommendationsRequestConfig
 import mozilla.components.service.pocket.PocketStory.ContentRecommendation
 import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsEndpoint
+import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsProvider
 import mozilla.components.service.pocket.stories.api.PocketResponse
 
 /**
@@ -72,7 +73,7 @@ internal class ContentRecommendationsUseCases(
 
         /** Fetches content recommendations based on the provided [config] and stores the items in storage. */
         suspend operator fun invoke(): Boolean {
-            val response = getContentRecommendationsEndpoint(client, config).getContentRecommendations()
+            val response = getContentRecommendationsProvider(client, config).getContentRecommendations()
 
             if (response !is PocketResponse.Success) {
                 return false
@@ -110,8 +111,8 @@ internal class ContentRecommendationsUseCases(
     internal fun getContentRecommendationsRepository(context: Context) = ContentRecommendationsRepository(context)
 
     @VisibleForTesting
-    internal fun getContentRecommendationsEndpoint(
+    internal fun getContentRecommendationsProvider(
         client: Client,
         config: ContentRecommendationsRequestConfig,
-    ) = ContentRecommendationsEndpoint.newInstance(client, config)
+    ): ContentRecommendationsProvider = ContentRecommendationsEndpoint.newInstance(client, config)
 }
