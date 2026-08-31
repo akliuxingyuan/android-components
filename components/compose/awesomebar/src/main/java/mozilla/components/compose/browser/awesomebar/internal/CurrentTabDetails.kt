@@ -7,6 +7,7 @@ package mozilla.components.compose.browser.awesomebar.internal
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collectionInfo
 import androidx.compose.ui.semantics.contentDescription
@@ -46,6 +48,7 @@ import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.EDIT_CUR
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags.SHARE_CURRENT_SITE_DETAILS_BUTTON
 import mozilla.components.compose.browser.awesomebar.R
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.CopyClicked
+import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.DetailsClicked
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.EditClicked
 import mozilla.components.compose.browser.awesomebar.internal.CurrentTabDetailsInteractions.ShareClicked
 import mozilla.components.support.ktx.util.URLStringUtils
@@ -89,14 +92,21 @@ internal fun CurrentTabDetails(
     ) {
         Row(
             modifier =
-                Modifier.weight(1f).clearAndSetSemantics {
-                    contentDescription =
-                        when (currentTabData.title.isNotBlank()) {
-                            true -> currentTabData.title
-                            else -> currentTabData.url
-                        }
-                    testTag = CURRENT_SITE_DETAILS
-                },
+                Modifier.weight(1f)
+                    .clickable(
+                        onClickLabel = stringResource(R.string.mozac_browser_awesomebar_reload_website),
+                        role = Role.Button,
+                    ) {
+                        onInteraction(DetailsClicked)
+                    }
+                    .clearAndSetSemantics {
+                        contentDescription =
+                            when (currentTabData.title.isNotBlank()) {
+                                true -> currentTabData.title
+                                else -> currentTabData.url
+                            }
+                        testTag = CURRENT_SITE_DETAILS
+                    },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val icon = currentTabData.icon
@@ -231,6 +241,8 @@ data class CurrentTabData(
 
 /** All possible interactions with the View showing the current website details and controls. */
 sealed class CurrentTabDetailsInteractions {
+    /** Indicates the user clicked on the current website (icon, title, URL) details. */
+    data object DetailsClicked : CurrentTabDetailsInteractions()
 
     /** Indicates the user clicked on the "share" button. */
     data object ShareClicked : CurrentTabDetailsInteractions()
