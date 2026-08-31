@@ -8,9 +8,11 @@ import android.app.Application
 import java.util.Calendar
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.SystemAction
 import mozilla.components.browser.storage.sync.GlobalPlacesDependencyProvider
@@ -47,6 +49,8 @@ class SampleApplication : Application() {
     private val logger = Logger("SampleApplication")
 
     val components by lazy { Components(this) }
+
+    val applicationScope: CoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     // Sample-only code with no injectable clock seam and no time-dependent behavior to test.
     @Suppress("NoSystemCurrentTimeMillis")
@@ -120,6 +124,11 @@ class SampleApplication : Application() {
             // Web extension support is only available for engine gecko
             Logger.error("Failed to initialize web extension support", e)
         }
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        // applicationScope.cancel() - User can add this in commit 2
     }
 
     @DelicateCoroutinesApi
