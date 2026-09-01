@@ -235,6 +235,15 @@ internal fun iPProtectionReducer(
             state.copy(pendingActivationRequest = null, accountState = accountState)
         }
 
+        is IPProtectionAction.ActivationRequestCompleted -> {
+            // Only clear the request this reply is for. A different one may have been queued in the meantime.
+            if (state.pendingActivationRequest == action.request) {
+                state.copy(pendingActivationRequest = null)
+            } else {
+                state
+            }
+        }
+
         is IPProtectionAction.LocationSwitchFailed -> {
             state.copy(
                 pendingActivationRequest = null,
@@ -279,10 +288,8 @@ internal fun iPProtectionReducer(
                 pendingActivationRequest =
                     // Authorized.Activating state could be problematic here: if the user turns vpn on and that toggle
                     // is taking a lot of time, then changing a country won't make an additional request, but the UI
-                    // will be showing the newly selected country. We already had problems with spamming activation
-                    // request to the toolkit code while it's still processing the previous one, we probably want to
-                    // prevent user from being able to toggle the countries while the proxy is in activating state,
-                    // but that requires UX change - tracked here: https://bugzilla.mozilla.org/show_bug.cgi?id=2065317
+                    // will be showing the newly selected country. The location picker is disabled while an activation
+                    // is in flight so the user cannot reach this, but a location restored from the cache still can.
                     if (state.proxyStatus == Authorized.Active) {
                         PendingActivationRequest.Activate(action.location.countryCode, isLocationSwitch = true)
                     } else {

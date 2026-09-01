@@ -12,6 +12,7 @@ import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.Location
+import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.lib.state.Action
 
 /** Actions that can be dispatched to [IPProtectionStore]. */
@@ -64,6 +65,13 @@ sealed class IPProtectionAction : Action {
      * @property error The [Throwable] the engine rejected the request with, or null when the engine gave no reason.
      */
     data class LocationSwitchFailed(val error: Throwable? = null) : IPProtectionAction()
+
+    /**
+     * Reports that the engine accepted a queued activation request.
+     *
+     * @property request The request the engine accepted, so that a request queued after it is not cleared by mistake.
+     */
+    data class ActivationRequestCompleted(val request: PendingActivationRequest.Activate) : IPProtectionAction()
 
     /**
      * Reports that a location list update has failed.

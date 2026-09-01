@@ -249,9 +249,7 @@ class IPProtectionFeature(
                         is PendingActivationRequest.Activate -> {
                             handler?.activate(
                                 countryCode = activationState.selectedLocationCode,
-                                onResult = { err ->
-                                    dispatchActivationFailure(err, activationState.isLocationSwitch)
-                                },
+                                onResult = { err -> dispatchActivationResult(activationState, err) },
                             )
                         }
                         is PendingActivationRequest.Deactivate -> {
@@ -260,6 +258,17 @@ class IPProtectionFeature(
                     }
                 }
         }
+
+    // A pending request is normally cleared when the engine reports the new proxy state. Changing country while
+    // the VPN is on does not change that state, so no report arrives and nothing else would clear it.
+    private fun dispatchActivationResult(request: PendingActivationRequest.Activate, error: Throwable?) {
+        if (error == null) {
+            store.dispatch(IPProtectionAction.ActivationRequestCompleted(request))
+            return
+        }
+
+        dispatchActivationFailure(error, request.isLocationSwitch)
+    }
 
     private fun dispatchActivationFailure(error: Throwable?, isLocationSwitch: Boolean) {
         if (error == null) {

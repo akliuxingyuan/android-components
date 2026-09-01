@@ -39,6 +39,7 @@ class IPProtectionLocationMiddleware(
             is IPProtectionAction.LocationChanged -> handleLocationChanged(action)
 
             is IPProtectionAction.AccountStateChanged,
+            is IPProtectionAction.ActivationRequestCompleted,
             is IPProtectionAction.CheckAccount,
             is IPProtectionAction.CheckLocations,
             is IPProtectionAction.EligibilityChanged,
