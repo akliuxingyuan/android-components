@@ -14,6 +14,7 @@ package mozilla.components.feature.listentopage
 fun listenReducer(state: ListenState, action: ListenAction): ListenState =
     when (action) {
         is ListenAction.Session -> reduceSession(action)
+        is ListenAction.Content -> reduceContent(state, action)
         ListenAction.ErrorDismissed -> state.copy(error = null)
     }
 
@@ -26,4 +27,11 @@ private fun reduceSession(action: ListenAction.Session): ListenState =
         ListenAction.Session.StopRequested -> {
             ListenState()
         }
+    }
+
+private fun reduceContent(state: ListenState, action: ListenAction.Content): ListenState =
+    when (action) {
+        is ListenAction.Content.ContentReady -> state.copy(languageTag = action.languageTag)
+
+        ListenAction.Content.ContentUnavailable -> state.copy(error = ListenError.ContentUnavailable)
     }

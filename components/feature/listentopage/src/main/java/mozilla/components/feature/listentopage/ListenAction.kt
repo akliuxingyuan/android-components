@@ -25,6 +25,23 @@ sealed interface ListenAction : Action {
         data object StopRequested : Session
     }
 
+    /** Actions reporting the article the session reads out. */
+    sealed interface Content : ListenAction {
+        /**
+         * The article was extracted from the page.
+         *
+         * @property text The article text, as plain prose.
+         * @property languageTag language of the article.
+         */
+        data class ContentReady(
+            val text: String,
+            val languageTag: String,
+        ) : Content
+
+        /** The page gave back no usable text. */
+        data object ContentUnavailable : Content
+    }
+
     /** The error that needs to be cleared it is shown. */
     data object ErrorDismissed : ListenAction
 }
