@@ -18,6 +18,9 @@ internal interface SyncStateStorage {
     /** The last synced [Instant] timestamp or null if we have never been synced */
     var lastSynced: Instant?
 
+    /** Whether or not sync is enabled on this device */
+    var syncEnabled: Boolean
+
     /**
      * Persisted sync state received as a result of a successful sync. The absence of a value indicates that sync has
      * not happened yet
@@ -47,6 +50,14 @@ internal class SharedPrefsSyncStateStorage(private val sharedPrefs: SharedPrefer
             }
         }
 
+    override var syncEnabled: Boolean
+        get() = sharedPrefs.getBoolean(SYNC_ENABLED_KEY, false)
+        set(value) {
+            sharedPrefs.edit {
+                putBoolean(SYNC_ENABLED_KEY, value)
+            }
+        }
+
     override var persistedSyncState: String?
         get() = sharedPrefs.getString(SYNC_STATE_KEY, null)
         set(value) {
@@ -63,6 +74,7 @@ internal class SharedPrefsSyncStateStorage(private val sharedPrefs: SharedPrefer
         const val SYNC_STATE_PREFS_KEY = "syncPrefs"
         const val SYNC_LAST_SYNCED_KEY = "lastSynced"
         const val SYNC_STATE_KEY = "persistedState"
+        const val SYNC_ENABLED_KEY = "syncEnabled"
     }
 
     /**

@@ -9,7 +9,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Instant
 import mozilla.components.support.test.fakes.android.FakeSharedPreferences
@@ -70,5 +72,30 @@ class SharedPrefsSyncStateStorageTest {
         storage.clear()
 
         assertEquals(emptyMap<String, Any?>(), sharedPrefs.all, "shared prefs should be empty after clearing")
+    }
+
+    @Test
+    fun `GIVEN shared pref contains syncEnabled, WHEN accessed, THEN it is returned`() {
+        sharedPrefs.edit { putBoolean(SharedPrefsSyncStateStorage.SYNC_ENABLED_KEY, true) }
+
+        assertTrue(storage.syncEnabled, "syncEnabled should be true")
+    }
+
+    @Test
+    fun `GIVEN shared pref does not contain syncEnabled, WHEN accessed, THEN false is returned`() {
+        assertFalse(storage.syncEnabled, "syncEnabled should be false when the pref key does not exist")
+    }
+
+    @Test
+    fun `GIVEN shared pref does not contain syncEnabled, WHEN accessed, THEN shared pref should still not contain syncEnabled`() {
+        sharedPrefs.edit { clear() }
+
+        val syncEnabled = storage.syncEnabled
+
+        assertFalse(syncEnabled)
+        assertFalse(
+            sharedPrefs.contains(SharedPrefsSyncStateStorage.SYNC_ENABLED_KEY),
+            "pref key should remain null after read-access",
+        )
     }
 }
