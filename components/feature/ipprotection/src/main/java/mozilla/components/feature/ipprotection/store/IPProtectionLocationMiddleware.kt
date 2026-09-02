@@ -70,20 +70,17 @@ class IPProtectionLocationMiddleware(
         action: IPProtectionAction.CountryListChanged,
         store: Store<IPProtectionState, IPProtectionAction>,
     ) = coroutineScope.launch {
+        val cachedLocationCode = repository.getSelectedLocationCode()
         val selectedLocation =
-            action.countries.find {
-                it.code == repository.getSelectedLocationCode() && it.available
-            }
+            action.countries
+                .find { it.code == cachedLocationCode && it.available }
+                ?.let { Country(countryCode = it.code, available = it.available) }
 
         if (selectedLocation != null) {
             // if we have found the cached selection in the update list, we should check if that's
             // the selected location, and - if it is not - update it.
             if (selectedLocation != store.state.locationState.selectedLocation) {
-                store.dispatch(
-                    IPProtectionAction.LocationChanged(
-                        location = Country(selectedLocation.code, selectedLocation.available)
-                    )
-                )
+                store.dispatch(IPProtectionAction.LocationChanged(location = selectedLocation))
             }
         } else {
             // if we couldn't find the cached selection, we should clear the cached value and

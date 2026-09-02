@@ -8,13 +8,17 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
+import mozilla.components.feature.ipprotection.IPProtectionTestMiddleware
 import mozilla.components.feature.ipprotection.store.state.AccountState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
+import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.Location
 import mozilla.components.feature.ipprotection.store.state.LocationState
+import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.feature.ipprotection.store.state.Recommended
+import mozilla.components.feature.ipprotection.store.state.Uninitialized
 import mozilla.components.lib.state.Middleware
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,7 +42,7 @@ class IPProtectionLocationMiddlewareTest {
     fun `WHEN location changes THEN the selected location code is saved in the repository`() = scope.runTest {
         listOf(
                 Recommended,
-                Country(countryCode = "JA", available = true),
+                Country(countryCode = "JP", available = true),
                 Country(countryCode = "CA", available = true),
             )
             .forEach { location ->
@@ -69,17 +73,17 @@ class IPProtectionLocationMiddlewareTest {
     @Test
     fun `GIVEN a country list update contains a country with a code that matches the cached code WHEN country list updates THEN selected location equals the matching country`() =
         scope.runTest {
-            val cachedCode = "JA"
+            val cachedLocationCode = "JP"
             val store = buildStore(locationState = LocationState(), middleware = listOf(middleware))
-            fakeRepository.setSelectedLocationCode(cachedCode)
+            fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
-            assertFalse(cachedCode == store.state.locationState.selectedLocation.countryCode)
+            assertFalse(cachedLocationCode == store.state.locationState.selectedLocation.countryCode)
 
             store.dispatch(
                 IPProtectionAction.CountryListChanged(
                     countries =
                         listOf(
-                            IPProtectionHandler.Country(code = cachedCode, available = true),
+                            IPProtectionHandler.Country(code = cachedLocationCode, available = true),
                             IPProtectionHandler.Country(code = "CA", available = true),
                             IPProtectionHandler.Country(code = "GB", available = true),
                             IPProtectionHandler.Country(code = "FR", available = true),
@@ -88,16 +92,16 @@ class IPProtectionLocationMiddlewareTest {
             )
             testScheduler.advanceUntilIdle()
 
-            assertEquals(cachedCode, store.state.locationState.selectedLocation.countryCode)
+            assertEquals(cachedLocationCode, store.state.locationState.selectedLocation.countryCode)
         }
 
     // simulates the start of the app when a country list does not contain the previously cached code
     @Test
     fun `GIVEN default location state AND a country list update does not contain the selected country WHEN country list updates THEN cache is reset and the selected location is Recommended`() =
         scope.runTest {
-            val cachedCode = "JA"
+            val cachedLocationCode = "JP"
             val store = buildStore(locationState = LocationState(), middleware = listOf(middleware))
-            fakeRepository.setSelectedLocationCode(cachedCode)
+            fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
             store.dispatch(
                 IPProtectionAction.CountryListChanged(
@@ -121,8 +125,8 @@ class IPProtectionLocationMiddlewareTest {
     @Test
     fun `GIVEN populated location state AND a country list update does not contain the selected country WHEN country list updates THEN cache is reset and selected country resets to default`() =
         scope.runTest {
-            val cachedCode = "JA"
-            val selectedCountry = Country(countryCode = cachedCode, available = true)
+            val cachedLocationCode = "JP"
+            val selectedCountry = Country(countryCode = cachedLocationCode, available = true)
             val store =
                 buildStore(
                     selectedLocation = selectedCountry,
@@ -135,10 +139,10 @@ class IPProtectionLocationMiddlewareTest {
                         ),
                     middleware = listOf(middleware),
                 )
-            fakeRepository.setSelectedLocationCode(cachedCode)
+            fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
             assertEquals(selectedCountry, store.state.locationState.selectedLocation)
-            assertEquals(cachedCode, fakeRepository.getSelectedLocationCode())
+            assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
 
             store.dispatch(
                 IPProtectionAction.CountryListChanged(
@@ -160,8 +164,8 @@ class IPProtectionLocationMiddlewareTest {
     @Test
     fun `GIVEN populated location state AND the previously selected country turns unavailable WHEN country list updates THEN cache is reset and selected country resets to default`() =
         scope.runTest {
-            val cachedCode = "JA"
-            val selectedCountry = Country(countryCode = cachedCode, available = true)
+            val cachedLocationCode = "JP"
+            val selectedCountry = Country(countryCode = cachedLocationCode, available = true)
             val store =
                 buildStore(
                     selectedLocation = selectedCountry,
@@ -174,16 +178,16 @@ class IPProtectionLocationMiddlewareTest {
                         ),
                     middleware = listOf(middleware),
                 )
-            fakeRepository.setSelectedLocationCode(cachedCode)
+            fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
             assertEquals(selectedCountry, store.state.locationState.selectedLocation)
-            assertEquals(cachedCode, fakeRepository.getSelectedLocationCode())
+            assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
 
             store.dispatch(
                 IPProtectionAction.CountryListChanged(
                     countries =
                         listOf(
-                            IPProtectionHandler.Country(code = cachedCode, available = false),
+                            IPProtectionHandler.Country(code = cachedLocationCode, available = false),
                             IPProtectionHandler.Country(code = "CA", available = true),
                             IPProtectionHandler.Country(code = "GB", available = true),
                             IPProtectionHandler.Country(code = "FR", available = true),
@@ -201,17 +205,17 @@ class IPProtectionLocationMiddlewareTest {
     @Test
     fun `GIVEN default location state AND the previously selected country turns unavailable WHEN country list updates THEN cache is reset and the selected location remains Recommended`() =
         scope.runTest {
-            val cachedCode = "JA"
+            val cachedLocationCode = "JP"
             val store = buildStore(locationState = LocationState(), middleware = listOf(middleware))
-            fakeRepository.setSelectedLocationCode(cachedCode)
+            fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
-            assertFalse(cachedCode == store.state.locationState.selectedLocation.countryCode)
+            assertFalse(cachedLocationCode == store.state.locationState.selectedLocation.countryCode)
 
             store.dispatch(
                 IPProtectionAction.CountryListChanged(
                     countries =
                         listOf(
-                            IPProtectionHandler.Country(code = cachedCode, available = false),
+                            IPProtectionHandler.Country(code = cachedLocationCode, available = false),
                             IPProtectionHandler.Country(code = "CA", available = true),
                             IPProtectionHandler.Country(code = "GB", available = true),
                             IPProtectionHandler.Country(code = "FR", available = true),
@@ -226,8 +230,8 @@ class IPProtectionLocationMiddlewareTest {
 
     @Test
     fun `GIVEN a cached selected location WHEN a user logs out THEN the cache is retained`() = scope.runTest {
-        val cachedCode = "JP"
-        val selectedCountry = Country(countryCode = cachedCode, available = true)
+        val cachedLocationCode = "JP"
+        val selectedCountry = Country(countryCode = cachedLocationCode, available = true)
         val store =
             buildStore(
                 accountState = AccountState(AccountStatus.EnrolledAndEntitled),
@@ -241,16 +245,51 @@ class IPProtectionLocationMiddlewareTest {
                     ),
                 middleware = listOf(middleware),
             )
-        fakeRepository.setSelectedLocationCode(cachedCode)
+        fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
         assertEquals(selectedCountry, store.state.locationState.selectedLocation)
-        assertEquals(cachedCode, fakeRepository.getSelectedLocationCode())
+        assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
 
         store.dispatch(InternalAction.AccountManagerStateChanged(status = AccountStatus.NoAccount))
         testScheduler.advanceUntilIdle()
 
-        assertEquals(cachedCode, fakeRepository.getSelectedLocationCode())
+        assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
     }
+
+    // a country list push can arrive at any time, including while the proxy is running
+    @Test
+    fun `GIVEN the cached selection is already selected AND the proxy is active WHEN country list updates THEN no location switch is requested`() =
+        scope.runTest {
+            val cachedLocationCode = "JP"
+            val selectedCountry = Country(countryCode = cachedLocationCode, available = true)
+            val captureMiddleware = IPProtectionTestMiddleware()
+            val store =
+                buildStore(
+                    selectedLocation = selectedCountry,
+                    locations =
+                        listOf(
+                            selectedCountry,
+                            Country(countryCode = "CA", available = true),
+                        ),
+                    proxyStatus = Authorized.Active,
+                    middleware = listOf(middleware, captureMiddleware),
+                )
+            fakeRepository.setSelectedLocationCode(cachedLocationCode)
+
+            store.dispatch(
+                IPProtectionAction.CountryListChanged(
+                    countries =
+                        listOf(
+                            IPProtectionHandler.Country(code = cachedLocationCode, available = true),
+                            IPProtectionHandler.Country(code = "CA", available = true),
+                        )
+                )
+            )
+            testScheduler.advanceUntilIdle()
+
+            captureMiddleware.assertNotDispatched(IPProtectionAction.LocationChanged::class)
+            assertEquals(selectedCountry, store.state.locationState.selectedLocation)
+        }
 
     private fun buildStore(
         selectedLocation: Location = Recommended,
@@ -261,6 +300,7 @@ class IPProtectionLocationMiddlewareTest {
                 locations = locations,
             ),
         accountState: AccountState = AccountState(),
+        proxyStatus: ProxyStatus = Uninitialized,
         middleware: List<Middleware<IPProtectionState, IPProtectionAction>> = emptyList(),
     ) =
         IPProtectionStore(
@@ -268,6 +308,7 @@ class IPProtectionLocationMiddlewareTest {
                 IPProtectionState(
                     locationState = locationState,
                     accountState = accountState,
+                    proxyStatus = proxyStatus,
                 ),
             middleware = middleware,
         )
