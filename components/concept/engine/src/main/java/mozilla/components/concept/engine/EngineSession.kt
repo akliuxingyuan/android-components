@@ -426,6 +426,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
         val bounceTrackingProtectionMode: BounceTrackingProtectionMode = BounceTrackingProtectionMode.DISABLED,
         val allowListBaselineTrackingProtection: Boolean = true,
         val allowListConvenienceTrackingProtection: Boolean = true,
+        val fingerprintingProtection: Boolean? = null,
+        val fingerprintingProtectionPrivateBrowsing: Boolean? = null,
     ) {
 
         /**
@@ -538,6 +540,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
                     bounceTrackingProtectionMode = BounceTrackingProtectionMode.ENABLED,
                     allowListBaselineTrackingProtection = allowListBaselineTrackingProtection,
                     allowListConvenienceTrackingProtection = allowListConvenienceTrackingProtection,
+                    fingerprintingProtection = true,
+                    fingerprintingProtectionPrivateBrowsing = true,
                 )
 
             /**
@@ -553,6 +557,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
                     bounceTrackingProtectionMode = BounceTrackingProtectionMode.ENABLED_STANDBY,
                     allowListBaselineTrackingProtection = true,
                     allowListConvenienceTrackingProtection = true,
+                    fingerprintingProtection = false,
+                    fingerprintingProtectionPrivateBrowsing = true,
                 )
 
             /**
@@ -583,6 +589,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
                     BounceTrackingProtectionMode.ENABLED_STANDBY,
                 allowListBaselineTrackingProtection: Boolean = true,
                 allowListConvenienceTrackingProtection: Boolean = false,
+                fingerprintingProtection: Boolean? = null,
+                fingerprintingProtectionPrivateBrowsing: Boolean? = null,
             ) =
                 TrackingProtectionPolicyForSessionTypes(
                     trackingCategory = trackingCategories,
@@ -593,6 +601,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
                     bounceTrackingProtectionMode = bounceTrackingProtectionMode,
                     allowListBaselineTrackingProtection = allowListBaselineTrackingProtection,
                     allowListConvenienceTrackingProtection = allowListConvenienceTrackingProtection,
+                    fingerprintingProtection = fingerprintingProtection,
+                    fingerprintingProtectionPrivateBrowsing = fingerprintingProtectionPrivateBrowsing,
                 )
         }
 
@@ -656,6 +666,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
         bounceTrackingProtectionMode: BounceTrackingProtectionMode = BounceTrackingProtectionMode.DISABLED,
         allowListBaselineTrackingProtection: Boolean = true,
         allowListConvenienceTrackingProtection: Boolean = true,
+        fingerprintingProtection: Boolean? = null,
+        fingerprintingProtectionPrivateBrowsing: Boolean? = null,
     ) :
         TrackingProtectionPolicy(
             trackingCategories = trackingCategory,
@@ -666,6 +678,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
             bounceTrackingProtectionMode = bounceTrackingProtectionMode,
             allowListBaselineTrackingProtection = allowListBaselineTrackingProtection,
             allowListConvenienceTrackingProtection = allowListConvenienceTrackingProtection,
+            fingerprintingProtection = fingerprintingProtection,
+            fingerprintingProtectionPrivateBrowsing = fingerprintingProtectionPrivateBrowsing,
         ) {
         /** Marks this policy to be used for private sessions only. */
         fun forPrivateSessionsOnly() =
@@ -680,6 +694,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
                 bounceTrackingProtectionMode = bounceTrackingProtectionMode,
                 allowListBaselineTrackingProtection = allowListBaselineTrackingProtection,
                 allowListConvenienceTrackingProtection = allowListConvenienceTrackingProtection,
+                fingerprintingProtection = fingerprintingProtection,
+                fingerprintingProtectionPrivateBrowsing = fingerprintingProtectionPrivateBrowsing,
             )
 
         /** Marks this policy to be used for regular (non-private) sessions only. */
@@ -695,6 +711,8 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
                 bounceTrackingProtectionMode = bounceTrackingProtectionMode,
                 allowListBaselineTrackingProtection = allowListBaselineTrackingProtection,
                 allowListConvenienceTrackingProtection = allowListConvenienceTrackingProtection,
+                fingerprintingProtection = fingerprintingProtection,
+                fingerprintingProtectionPrivateBrowsing = fingerprintingProtectionPrivateBrowsing,
             )
     }
 
