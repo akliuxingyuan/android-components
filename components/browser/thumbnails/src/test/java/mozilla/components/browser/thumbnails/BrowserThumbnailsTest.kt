@@ -12,7 +12,11 @@ import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
 import mozilla.components.concept.engine.EngineView
+import mozilla.components.support.base.Component
+import mozilla.components.support.base.facts.Action
+import mozilla.components.support.base.facts.processor.CollectionProcessor
 import mozilla.components.support.test.any
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
@@ -25,6 +29,8 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.`when`
+
+private const val ANY_TRIGGER = BrowserThumbnailsFacts.CaptureAttemptedTriggers.EXTERNAL_REQUEST
 
 @RunWith(AndroidJUnit4::class)
 class BrowserThumbnailsTest {
@@ -110,7 +116,7 @@ class BrowserThumbnailsTest {
             (it.arguments[0] as (Bitmap?) -> Unit).invoke(null)
         }
 
-        feature.requestScreenshot()
+        feature.requestScreenshot(ANY_TRIGGER)
 
         captureActionsMiddleware.assertNoActionDispatched()
     }
@@ -140,7 +146,7 @@ class BrowserThumbnailsTest {
             (it.arguments[0] as (Bitmap?) -> Unit).invoke(bitmap)
         }
 
-        feature.requestScreenshot()
+        feature.requestScreenshot(ANY_TRIGGER)
 
         captureActionsMiddleware.assertFirstAction(ContentAction.UpdateThumbnailAction::class) { action ->
             assertEquals(tabId, action.sessionId)
@@ -158,5 +164,45 @@ class BrowserThumbnailsTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         verify(engineView, never()).captureThumbnail(any())
+    }
+
+    @Test
+    fun `requestScreenshot emits a capture_attempted fact with the supplied trigger`() {
+        CollectionProcessor.withFactCollection { facts ->
+            thumbnails.requestScreenshot(trigger = BrowserThumbnailsFacts.CaptureAttemptedTriggers.TAB_COUNTER_CLICK)
+
+            assertEquals(1, facts.size)
+            with(facts.single()) {
+                assertEquals(Component.BROWSER_THUMBNAILS, component)
+                assertEquals(Action.IMPLEMENTATION_DETAIL, action)
+                assertEquals(BrowserThumbnailsFacts.Items.CAPTURE_ATTEMPTED, item)
+                assertEquals(
+                    BrowserThumbnailsFacts.CaptureAttemptedTriggers.TAB_COUNTER_CLICK,
+                    value,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `store-flow load transition triggers a capture_attempted fact with LOAD_COMPLETED`() {
+        CollectionProcessor.withFactCollection { facts ->
+            store.dispatch(ContentAction.UpdateLoadingStateAction(tabId, true))
+
+            thumbnails.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(0, facts.size)
+
+            store.dispatch(ContentAction.UpdateLoadingStateAction(tabId, false))
+            store.dispatch(ContentAction.UpdateFirstContentfulPaintStateAction(tabId, true))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(1, facts.size)
+            assertEquals(
+                BrowserThumbnailsFacts.CaptureAttemptedTriggers.LOAD_COMPLETED,
+                facts.single().value,
+            )
+        }
     }
 }

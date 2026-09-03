@@ -15,8 +15,11 @@ import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.ContentState
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
+import mozilla.components.browser.thumbnails.facts.emitBrowserThumbnailsFact
 import mozilla.components.concept.engine.EngineView
 import mozilla.components.lib.state.ext.flowScoped
+import mozilla.components.support.base.facts.Action
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.android.content.isOSOnLowMemory
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
@@ -46,7 +49,7 @@ class BrowserThumbnails(
                     .ifAnyChanged { arrayOf(it?.content?.loading, it?.content?.firstContentfulPaint) }
                     .collect { state ->
                         if (state?.content?.loading == false && state.content.firstContentfulPaint) {
-                            requestScreenshot()
+                            requestScreenshot(BrowserThumbnailsFacts.CaptureAttemptedTriggers.LOAD_COMPLETED)
                         }
                     }
             }
@@ -55,8 +58,17 @@ class BrowserThumbnails(
     /**
      * Requests a screenshot to be taken that can be observed from [BrowserStore] if successful. The request can fail if
      * the device is low on memory or if there is no tab attached to the [EngineView].
+     *
+     * @param trigger identifies why the capture was requested. Emitted as the `Fact.value` on the
+     *   `browser_thumbnails.capture_attempted` labeled counter. Callers must pass one of the
+     *   [BrowserThumbnailsFacts.CaptureAttemptedTriggers] constants.
      */
-    fun requestScreenshot() {
+    fun requestScreenshot(trigger: String) {
+        emitBrowserThumbnailsFact(
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = BrowserThumbnailsFacts.Items.CAPTURE_ATTEMPTED,
+            value = trigger,
+        )
         if (!isLowOnMemory()) {
             // Create a local reference to prevent capturing "this" in the lambda
             // which would leak the context if the view is destroyed before the
