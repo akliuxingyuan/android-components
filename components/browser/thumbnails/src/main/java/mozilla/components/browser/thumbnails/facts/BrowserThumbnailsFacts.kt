@@ -14,6 +14,7 @@ class BrowserThumbnailsFacts {
     /** Items that specify which thumbnail-capture event occurred. */
     object Items {
         const val CAPTURE_ATTEMPTED = "capture_attempted"
+        const val CAPTURE_RESULT = "capture_result"
     }
 
     /** Values passed as the [Fact.value] for [Items.CAPTURE_ATTEMPTED] to identify the trigger. */
@@ -29,6 +30,18 @@ class BrowserThumbnailsFacts {
 
         /** Any other consumer calling `requestScreenshot()` directly. */
         const val EXTERNAL_REQUEST = "external_request"
+    }
+
+    /** Values passed as the [Fact.value] for [Items.CAPTURE_RESULT] to identify the outcome. */
+    object CaptureResults {
+        /** The engine returned a bitmap and the store was updated. */
+        const val SUCCEEDED = "succeeded"
+
+        /** The engine returned no bitmap (typically the compositor detach race). */
+        const val NULL_BITMAP = "null_bitmap"
+
+        /** The `isLowOnMemory()` gate skipped the request before it reached the engine. */
+        const val LOW_MEMORY = "low_memory"
     }
 }
 

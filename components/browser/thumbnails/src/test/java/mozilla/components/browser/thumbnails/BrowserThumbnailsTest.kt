@@ -205,4 +205,48 @@ class BrowserThumbnailsTest {
             )
         }
     }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `requestScreenshot emits a capture_result fact with SUCCEEDED when the engine returns a bitmap`() {
+        val bitmap: Bitmap = mock()
+        `when`(engineView.captureThumbnail(any())).thenAnswer {
+            (it.arguments[0] as (Bitmap?) -> Unit).invoke(bitmap)
+        }
+
+        CollectionProcessor.withFactCollection { facts ->
+            thumbnails.requestScreenshot(ANY_TRIGGER)
+
+            val resultFact = facts.single { it.item == BrowserThumbnailsFacts.Items.CAPTURE_RESULT }
+            assertEquals(BrowserThumbnailsFacts.CaptureResults.SUCCEEDED, resultFact.value)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `requestScreenshot emits a capture_result fact with NULL_BITMAP when the engine returns null`() {
+        `when`(engineView.captureThumbnail(any())).thenAnswer {
+            (it.arguments[0] as (Bitmap?) -> Unit).invoke(null)
+        }
+
+        CollectionProcessor.withFactCollection { facts ->
+            thumbnails.requestScreenshot(ANY_TRIGGER)
+
+            val resultFact = facts.single { it.item == BrowserThumbnailsFacts.Items.CAPTURE_RESULT }
+            assertEquals(BrowserThumbnailsFacts.CaptureResults.NULL_BITMAP, resultFact.value)
+        }
+    }
+
+    @Test
+    fun `requestScreenshot emits a capture_result fact with LOW_MEMORY when the memory gate skips it`() {
+        thumbnails.testLowMemory = true
+
+        CollectionProcessor.withFactCollection { facts ->
+            thumbnails.requestScreenshot(ANY_TRIGGER)
+
+            val resultFact = facts.single { it.item == BrowserThumbnailsFacts.Items.CAPTURE_RESULT }
+            assertEquals(BrowserThumbnailsFacts.CaptureResults.LOW_MEMORY, resultFact.value)
+            verify(engineView, never()).captureThumbnail(any())
+        }
+    }
 }

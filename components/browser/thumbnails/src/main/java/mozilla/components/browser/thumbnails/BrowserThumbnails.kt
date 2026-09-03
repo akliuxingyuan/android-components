@@ -69,19 +69,32 @@ class BrowserThumbnails(
             item = BrowserThumbnailsFacts.Items.CAPTURE_ATTEMPTED,
             value = trigger,
         )
-        if (!isLowOnMemory()) {
-            // Create a local reference to prevent capturing "this" in the lambda
-            // which would leak the context if the view is destroyed before the
-            // callback is invoked. This is a workaround for:
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=1678364
-            val store = this.store
-            engineView.captureThumbnail {
-                val bitmap = it ?: return@captureThumbnail
-                val tabId = store.state.selectedTabId ?: return@captureThumbnail
-
-                store.dispatch(ContentAction.UpdateThumbnailAction(tabId, bitmap))
-            }
+        if (isLowOnMemory()) {
+            emitCaptureResult(BrowserThumbnailsFacts.CaptureResults.LOW_MEMORY)
+            return
         }
+        // Create a local reference to prevent capturing "this" in the lambda
+        // which would leak the context if the view is destroyed before the
+        // callback is invoked. This is a workaround for:
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1678364
+        val store = this.store
+        engineView.captureThumbnail { bitmap ->
+            if (bitmap == null) {
+                emitCaptureResult(BrowserThumbnailsFacts.CaptureResults.NULL_BITMAP)
+                return@captureThumbnail
+            }
+            val tabId = store.state.selectedTabId ?: return@captureThumbnail
+            emitCaptureResult(BrowserThumbnailsFacts.CaptureResults.SUCCEEDED)
+            store.dispatch(ContentAction.UpdateThumbnailAction(tabId, bitmap))
+        }
+    }
+
+    private fun emitCaptureResult(result: String) {
+        emitBrowserThumbnailsFact(
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = BrowserThumbnailsFacts.Items.CAPTURE_RESULT,
+            value = result,
+        )
     }
 
     /** Stops observing the selected session. */
