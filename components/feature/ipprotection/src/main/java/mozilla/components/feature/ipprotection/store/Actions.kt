@@ -55,9 +55,13 @@ sealed class IPProtectionAction : Action {
     /**
      * Reports that the most recent activate or deactivate request failed.
      *
+     * @property operation Which of the two engine requests failed.
      * @property error The [Throwable] the engine rejected the request with, or null when the engine gave no reason.
      */
-    data class ToggleFailed(val error: Throwable? = null) : IPProtectionAction()
+    data class ToggleFailed(
+        val operation: ActivationOperation,
+        val error: Throwable? = null,
+    ) : IPProtectionAction()
 
     /**
      * Reports that switching to a new location failed.
@@ -120,4 +124,13 @@ internal sealed class InternalAction : IPProtectionAction() {
 
     /** Puts the auth flow into an intermediary state while an incomplete authentication is occurring. */
     data class AwaitingAuth(val status: AccountStatus) : InternalAction()
+}
+
+/** Which engine request an [IPProtectionAction.ToggleFailed] is reporting on. */
+enum class ActivationOperation {
+    /** An `activate` request. */
+    Activate,
+
+    /** A `deactivate` request. */
+    Deactivate,
 }
