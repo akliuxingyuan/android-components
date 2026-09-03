@@ -6,6 +6,9 @@ package mozilla.components.browser.thumbnails
 
 import android.graphics.Bitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.StandardTestDispatcher
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
@@ -13,6 +16,7 @@ import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
+import mozilla.components.browser.thumbnails.storage.ThumbnailStorage
 import mozilla.components.concept.engine.EngineView
 import mozilla.components.support.base.Component
 import mozilla.components.support.base.facts.Action
@@ -22,7 +26,6 @@ import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -48,6 +51,8 @@ class BrowserThumbnailsTest {
 
     @Before
     fun setup() {
+        val thumbnailStorage: ThumbnailStorage = mock()
+        `when`(thumbnailStorage.saveThumbnail(any(), any())).thenReturn(Job())
         store =
             BrowserStore(
                 BrowserState(
@@ -57,7 +62,7 @@ class BrowserThumbnailsTest {
                 middleware =
                     listOf(
                         captureActionsMiddleware,
-                        ThumbnailsMiddleware(mock()),
+                        ThumbnailsMiddleware(thumbnailStorage),
                     ),
             )
         engineView = mock()
@@ -126,6 +131,8 @@ class BrowserThumbnailsTest {
     @Suppress("UNCHECKED_CAST")
     @Test
     fun `feature never updates the store if there is no tab ID`() {
+        val thumbnailStorage: ThumbnailStorage = mock()
+        `when`(thumbnailStorage.saveThumbnail(any(), any())).thenReturn(Job())
         val store =
             BrowserStore(
                 BrowserState(
@@ -135,7 +142,7 @@ class BrowserThumbnailsTest {
                 middleware =
                     listOf(
                         captureActionsMiddleware,
-                        ThumbnailsMiddleware(mock()),
+                        ThumbnailsMiddleware(thumbnailStorage),
                     ),
             )
 
@@ -265,8 +272,8 @@ class BrowserThumbnailsTest {
             val durationFact = facts.single { it.item == BrowserThumbnailsFacts.Items.CAPTURE_DURATION }
             val durationMs = durationFact.metadata?.get(BrowserThumbnailsFacts.MetadataKeys.DURATION_MS)
             assertNotNull(durationMs)
-            assertTrue(durationMs is Long)
-            assertTrue((durationMs as Long) >= 0)
+            assertIs<Long>(durationMs)
+            assertTrue(durationMs >= 0)
         }
     }
 
