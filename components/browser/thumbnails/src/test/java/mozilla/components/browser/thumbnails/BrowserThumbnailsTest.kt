@@ -22,6 +22,8 @@ import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -247,6 +249,35 @@ class BrowserThumbnailsTest {
             val resultFact = facts.single { it.item == BrowserThumbnailsFacts.Items.CAPTURE_RESULT }
             assertEquals(BrowserThumbnailsFacts.CaptureResults.LOW_MEMORY, resultFact.value)
             verify(engineView, never()).captureThumbnail(any())
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `requestScreenshot emits a capture_duration fact when the engine callback fires`() {
+        `when`(engineView.captureThumbnail(any())).thenAnswer {
+            (it.arguments[0] as (Bitmap?) -> Unit).invoke(mock())
+        }
+
+        CollectionProcessor.withFactCollection { facts ->
+            thumbnails.requestScreenshot(ANY_TRIGGER)
+
+            val durationFact = facts.single { it.item == BrowserThumbnailsFacts.Items.CAPTURE_DURATION }
+            val durationMs = durationFact.metadata?.get(BrowserThumbnailsFacts.MetadataKeys.DURATION_MS)
+            assertNotNull(durationMs)
+            assertTrue(durationMs is Long)
+            assertTrue((durationMs as Long) >= 0)
+        }
+    }
+
+    @Test
+    fun `requestScreenshot does not emit a capture_duration fact when the memory gate skips the request`() {
+        thumbnails.testLowMemory = true
+
+        CollectionProcessor.withFactCollection { facts ->
+            thumbnails.requestScreenshot(ANY_TRIGGER)
+
+            assertTrue(facts.none { it.item == BrowserThumbnailsFacts.Items.CAPTURE_DURATION })
         }
     }
 }

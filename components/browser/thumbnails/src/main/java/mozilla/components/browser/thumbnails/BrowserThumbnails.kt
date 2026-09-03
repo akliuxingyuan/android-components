@@ -5,6 +5,7 @@
 package mozilla.components.browser.thumbnails
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -78,7 +79,9 @@ class BrowserThumbnails(
         // callback is invoked. This is a workaround for:
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1678364
         val store = this.store
+        val startedAt = SystemClock.elapsedRealtime()
         engineView.captureThumbnail { bitmap ->
+            emitCaptureDuration(SystemClock.elapsedRealtime() - startedAt)
             if (bitmap == null) {
                 emitCaptureResult(BrowserThumbnailsFacts.CaptureResults.NULL_BITMAP)
                 return@captureThumbnail
@@ -94,6 +97,14 @@ class BrowserThumbnails(
             action = Action.IMPLEMENTATION_DETAIL,
             item = BrowserThumbnailsFacts.Items.CAPTURE_RESULT,
             value = result,
+        )
+    }
+
+    private fun emitCaptureDuration(durationMs: Long) {
+        emitBrowserThumbnailsFact(
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = BrowserThumbnailsFacts.Items.CAPTURE_DURATION,
+            metadata = mapOf(BrowserThumbnailsFacts.MetadataKeys.DURATION_MS to durationMs),
         )
     }
 

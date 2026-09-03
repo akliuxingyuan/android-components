@@ -15,6 +15,13 @@ class BrowserThumbnailsFacts {
     object Items {
         const val CAPTURE_ATTEMPTED = "capture_attempted"
         const val CAPTURE_RESULT = "capture_result"
+        const val CAPTURE_DURATION = "capture_duration"
+    }
+
+    /** Keys for values passed through [Fact.metadata]. */
+    object MetadataKeys {
+        /** Duration of an [Items.CAPTURE_DURATION] event, as a `Long` in milliseconds. */
+        const val DURATION_MS = "duration_ms"
     }
 
     /** Values passed as the [Fact.value] for [Items.CAPTURE_ATTEMPTED] to identify the trigger. */
