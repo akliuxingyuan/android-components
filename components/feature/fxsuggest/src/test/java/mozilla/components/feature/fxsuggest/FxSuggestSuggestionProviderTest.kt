@@ -203,7 +203,6 @@ class FxSuggestSuggestionProviderTest {
                         rawClickUrl = "https://example.com/click_url",
                         score = 0.3,
                         ftsMatchInfo = null,
-                        suggestionId = "test-suggestion-id",
                     )
                 )
             )
@@ -341,7 +340,6 @@ class FxSuggestSuggestionProviderTest {
                         rawClickUrl = "https://example.com/click_url",
                         score = 0.3,
                         ftsMatchInfo = null,
-                        suggestionId = "test-suggestion-id",
                     )
                 )
             )
@@ -434,7 +432,6 @@ class FxSuggestSuggestionProviderTest {
                         rawClickUrl = "https://example.com/click_url",
                         score = 0.3,
                         ftsMatchInfo = null,
-                        suggestionId = "test-suggestion-id",
                     )
                 )
             )
