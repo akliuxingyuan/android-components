@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage.synthesis
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice as TtsVoice
 import java.util.Locale
 import mozilla.components.feature.listentopage.Voice
 
@@ -28,13 +29,20 @@ fun interface SpeechSynthesizer {
 internal class AndroidTtsSpeechSynthesizer(private val tts: TextToSpeech) : SpeechSynthesizer {
 
     /*
+     * Rank voices by quality first, then latency. Voices with same quality and latency are ranked by name as
+     * the Tie break.
+     */
+    internal val voiceRanking: Comparator<TtsVoice> =
+        compareByDescending<TtsVoice> { it.quality }.thenBy { it.latency }.thenBy { it.name }
+
+    /*
     We fetch offline voices by ensuring that the voice both does not require a network connection and is already
     installed. We then match this to language tags, using ranges to construct best matches in the case of malformed
     tags.
      */
     override fun loadAvailableVoices(langTag: String): List<Voice> {
         val offlineVoices = runCatching {
-            tts.voices.filter { it.isAvailableOffline() }
+            tts.voices.filter { it.isAvailableOffline() }.sortedWith(voiceRanking)
         }
             .getOrDefault(listOf())
         val ranges =

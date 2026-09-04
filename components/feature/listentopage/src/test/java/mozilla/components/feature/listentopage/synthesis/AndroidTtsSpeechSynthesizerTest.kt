@@ -110,13 +110,33 @@ class AndroidTtsSpeechSynthesizerTest {
         assertEquals(emptyList<Voice>(), synthesizer.loadAvailableVoices(""))
     }
 
+    @Test
+    fun `test that voices are ranked by quality first and then by latency`() {
+        installVoice("normal-fast", Locale.US, quality = TtsVoice.QUALITY_NORMAL, latency = TtsVoice.LATENCY_LOW)
+        installVoice("high-slow", Locale.US, quality = TtsVoice.QUALITY_HIGH, latency = TtsVoice.LATENCY_HIGH)
+        installVoice("high-fast", Locale.US, quality = TtsVoice.QUALITY_HIGH, latency = TtsVoice.LATENCY_LOW)
+        installVoice("low-fast", Locale.US, quality = TtsVoice.QUALITY_LOW, latency = TtsVoice.LATENCY_VERY_LOW)
+
+        assertEquals(
+            listOf(Voice("high-fast"), Voice("high-slow"), Voice("normal-fast"), Voice("low-fast")),
+            synthesizer.loadAvailableVoices("en-US"),
+        )
+    }
+
+    @Test
+    fun `test that voices of equal quality and latency are ranked by name`() {
+        installVoice("en-us-zeta", Locale.US)
+        installVoice("en-us-alpha", Locale.US)
+
+        assertEquals(listOf(Voice("en-us-alpha"), Voice("en-us-zeta")), synthesizer.loadAvailableVoices("en-US"))
+    }
+
     private fun installVoice(
         name: String,
         locale: Locale,
+        quality: Int = TtsVoice.QUALITY_NORMAL,
+        latency: Int = TtsVoice.LATENCY_NORMAL,
         requiresNetwork: Boolean = false,
         features: Set<String> = emptySet(),
-    ) =
-        ShadowTextToSpeech.addVoice(
-            TtsVoice(name, locale, TtsVoice.QUALITY_NORMAL, TtsVoice.LATENCY_NORMAL, requiresNetwork, features)
-        )
+    ) = ShadowTextToSpeech.addVoice(TtsVoice(name, locale, quality, latency, requiresNetwork, features))
 }
