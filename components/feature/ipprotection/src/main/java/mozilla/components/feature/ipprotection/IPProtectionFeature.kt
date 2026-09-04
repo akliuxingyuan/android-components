@@ -24,6 +24,7 @@ import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.IPProtectionFxaAuthFlow.Companion.SCOPE_IPPROTECTION
 import mozilla.components.feature.ipprotection.auth.IPProtectionAuthProvider
+import mozilla.components.feature.ipprotection.store.ActivationOperation
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.InternalAction
@@ -228,28 +229,31 @@ class IPProtectionFeature(
                         is PendingActivationRequest.Activate -> {
                             handler?.activate(
                                 countryCode = activationState.selectedLocationCode,
-                                onResult = { err ->
-                                    dispatchActivationFailure(err, activationState.isLocationSwitch)
-                                },
+                                onResult = { err -> handleActivationResult(activationState, err) },
                             )
                         }
                         is PendingActivationRequest.Deactivate -> {
-                            handler?.deactivate { err -> dispatchActivationFailure(err, isLocationSwitch = false) }
+                            handler?.deactivate { err -> handleActivationResult(activationState, err) }
                         }
                     }
                 }
         }
 
-    private fun dispatchActivationFailure(error: Throwable?, isLocationSwitch: Boolean) {
+    private fun handleActivationResult(request: PendingActivationRequest, error: Throwable?) {
         if (error == null) {
             return
         }
 
         store.dispatch(
-            if (isLocationSwitch) {
-                IPProtectionAction.LocationSwitchFailed(error)
-            } else {
-                IPProtectionAction.ToggleFailed(error)
+            when (request) {
+                is PendingActivationRequest.Activate ->
+                    if (request.isLocationSwitch) {
+                        IPProtectionAction.LocationSwitchFailed(error)
+                    } else {
+                        IPProtectionAction.ToggleFailed(ActivationOperation.Activate, error)
+                    }
+                is PendingActivationRequest.Deactivate ->
+                    IPProtectionAction.ToggleFailed(ActivationOperation.Deactivate, error)
             }
         )
     }

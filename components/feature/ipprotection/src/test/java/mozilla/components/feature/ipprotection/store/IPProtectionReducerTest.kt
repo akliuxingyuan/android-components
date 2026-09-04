@@ -140,7 +140,7 @@ class IPProtectionReducerTest {
         val state = buildIPProtectionState().copy(pendingActivationRequest = PendingActivationRequest.Activate(null))
         assertEquals(
             state.copy(pendingActivationRequest = null),
-            iPProtectionReducer(state, IPProtectionAction.ToggleFailed()),
+            iPProtectionReducer(state, IPProtectionAction.ToggleFailed(ActivationOperation.Activate)),
         )
     }
 
@@ -177,7 +177,7 @@ class IPProtectionReducerTest {
                 pendingActivationRequest = null,
                 accountState = state.accountState.copy(status = AccountStatus.TryAgain),
             ),
-            iPProtectionReducer(state, IPProtectionAction.ToggleFailed()),
+            iPProtectionReducer(state, IPProtectionAction.ToggleFailed(ActivationOperation.Activate)),
         )
     }
 
@@ -192,7 +192,7 @@ class IPProtectionReducerTest {
                 )
         assertEquals(
             state.copy(pendingActivationRequest = null, accountState = state.accountState),
-            iPProtectionReducer(state, IPProtectionAction.ToggleFailed()),
+            iPProtectionReducer(state, IPProtectionAction.ToggleFailed(ActivationOperation.Activate)),
         )
     }
 
