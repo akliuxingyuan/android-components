@@ -15,6 +15,7 @@ import mozilla.components.lib.state.State
  *   notification, so it is state rather than something the UI reads from the tab.
  * @property languageTag The BCP 47 language of the article, used to pick a voice.
  * @property error The last error, or `null`.
+ * @property voiceState State relating to narrator voice.
  */
 data class ListenState(
     val tabId: String? = null,
@@ -23,6 +24,7 @@ data class ListenState(
     val languageTag: String? = null,
     val mode: ListenMode = ListenMode.Player,
     val error: ListenError? = null,
+    val voiceState: VoiceState = VoiceState(),
 ) : State
 
 /** What the user asked to see. */
@@ -45,3 +47,13 @@ sealed interface ListenError {
     /** The player failed part-way through. Reported as a dialog over the player. */
     data object PlaybackFailed : ListenError
 }
+
+/**
+ * State relating to narrator voice.
+ *
+ * @property availableVoices The currently available voices.
+ */
+data class VoiceState(val availableVoices: List<Voice> = listOf())
+
+/** Metadata defining a narrator voice. */
+data class Voice(val id: String)

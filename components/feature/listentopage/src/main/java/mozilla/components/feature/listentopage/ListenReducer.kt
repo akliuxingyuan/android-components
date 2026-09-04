@@ -13,19 +13,19 @@ package mozilla.components.feature.listentopage
  */
 fun listenReducer(state: ListenState, action: ListenAction): ListenState =
     when (action) {
-        is ListenAction.Session -> reduceSession(action)
+        is ListenAction.Session -> reduceSession(state, action)
         is ListenAction.Content -> reduceContent(state, action)
         ListenAction.ErrorDismissed -> state.copy(error = null)
     }
 
-private fun reduceSession(action: ListenAction.Session): ListenState =
+private fun reduceSession(state: ListenState, action: ListenAction.Session): ListenState =
     when (action) {
         is ListenAction.Session.ListenRequested -> {
-            ListenState(tabId = action.tabId, url = action.url)
+            ListenState(tabId = action.tabId, url = action.url, voiceState = VoiceState())
         }
 
         ListenAction.Session.StopRequested -> {
-            ListenState()
+            ListenState(tabId = null, url = null, voiceState = state.voiceState.copy())
         }
     }
 

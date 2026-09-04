@@ -20,6 +20,7 @@ private val fullState =
         languageTag = "de-DE",
         mode = ListenMode.Player,
         error = ListenError.PlaybackFailed,
+        voiceState = VoiceState(availableVoices = listOf("Gonzo", "Animal", "Kermit").map { Voice(it) }),
     )
 
 class ListenReducerTest {
@@ -51,8 +52,11 @@ class ListenReducerTest {
     }
 
     @Test
-    fun `test that stopping resets to the initial state`() {
-        assertEquals(ListenState(), listenReducer(fullState, ListenAction.Session.StopRequested))
+    fun `test that stopping resets appropriate fields`() {
+        assertEquals(
+            ListenState(voiceState = fullState.voiceState.copy()),
+            listenReducer(fullState, ListenAction.Session.StopRequested),
+        )
     }
 
     @Test
