@@ -52,8 +52,12 @@ sealed interface ListenError {
  * State relating to narrator voice.
  *
  * @property availableVoices The currently available voices.
+ * @property selectedVoice The currently selected voice.
  */
-data class VoiceState(val availableVoices: List<Voice> = listOf())
+data class VoiceState(
+    val availableVoices: List<Voice> = listOf(),
+    val selectedVoice: Voice? = null,
+)
 
 /** Metadata defining a narrator voice. */
 data class Voice(val id: String)

@@ -38,6 +38,7 @@ class ListenMiddleware(
 
             is ListenAction.Content.ContentReady,
             ListenAction.Content.ContentUnavailable,
+            is ListenAction.Voices.VoiceSelected,
             ListenAction.ErrorDismissed -> Unit
         }
     }

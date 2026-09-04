@@ -15,6 +15,7 @@ fun listenReducer(state: ListenState, action: ListenAction): ListenState =
     when (action) {
         is ListenAction.Session -> reduceSession(state, action)
         is ListenAction.Content -> reduceContent(state, action)
+        is ListenAction.Voices -> reduceVoices(state, action)
         ListenAction.ErrorDismissed -> state.copy(error = null)
     }
 
@@ -34,4 +35,10 @@ private fun reduceContent(state: ListenState, action: ListenAction.Content): Lis
         is ListenAction.Content.ContentReady -> state.copy(languageTag = action.languageTag)
 
         ListenAction.Content.ContentUnavailable -> state.copy(error = ListenError.ContentUnavailable)
+    }
+
+private fun reduceVoices(state: ListenState, action: ListenAction.Voices): ListenState =
+    when (action) {
+        is ListenAction.Voices.VoiceSelected ->
+            state.copy(voiceState = state.voiceState.copy(selectedVoice = action.voice))
     }
