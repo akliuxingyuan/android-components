@@ -41,4 +41,8 @@ private fun reduceVoices(state: ListenState, action: ListenAction.Voices): Liste
     when (action) {
         is ListenAction.Voices.VoiceSelected ->
             state.copy(voiceState = state.voiceState.copy(selectedVoice = action.voice))
+        is ListenAction.Voices.AvailableVoicesLoaded ->
+            state.copy(voiceState = state.voiceState.copy(availableVoices = action.voices))
+
+        ListenAction.Voices.NoOfflineVoicesAvailable -> state.copy(error = ListenError.NoOfflineVoice)
     }

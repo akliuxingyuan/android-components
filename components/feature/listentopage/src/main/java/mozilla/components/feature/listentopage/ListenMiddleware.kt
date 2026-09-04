@@ -4,10 +4,13 @@
 
 package mozilla.components.feature.listentopage
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mozilla.components.feature.listentopage.content.ContentProvider
+import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 
@@ -19,7 +22,9 @@ import mozilla.components.lib.state.Store
  */
 class ListenMiddleware(
     private val contentProvider: ContentProvider,
+    private val synthesizer: SpeechSynthesizer,
     private val scope: CoroutineScope,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Middleware<ListenState, ListenAction> {
 
     private var contentJob: Job? = null
@@ -36,9 +41,11 @@ class ListenMiddleware(
 
             ListenAction.Session.StopRequested -> contentJob?.cancel()
 
-            is ListenAction.Content.ContentReady,
+            is ListenAction.Content.ContentReady -> store.requestVoices(action.languageTag)
             ListenAction.Content.ContentUnavailable,
             is ListenAction.Voices.VoiceSelected,
+            is ListenAction.Voices.AvailableVoicesLoaded,
+            ListenAction.Voices.NoOfflineVoicesAvailable,
             ListenAction.ErrorDismissed -> Unit
         }
     }
@@ -67,4 +74,17 @@ class ListenMiddleware(
                 .onFailure { store.dispatch(ListenAction.Content.ContentUnavailable) }
         }
     }
+
+    private fun ListenStore.requestVoices(langTag: String) =
+        scope.launch(ioDispatcher) {
+            val voices = synthesizer.loadAvailableVoices(langTag)
+
+            dispatch(
+                if (voices.isEmpty()) {
+                    ListenAction.Voices.NoOfflineVoicesAvailable
+                } else {
+                    ListenAction.Voices.AvailableVoicesLoaded(voices)
+                }
+            )
+        }
 }

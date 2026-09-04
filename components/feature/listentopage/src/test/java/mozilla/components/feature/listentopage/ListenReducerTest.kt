@@ -92,6 +92,62 @@ class ListenReducerTest {
     }
 
     @Test
+    fun `test that selecting a voice records it`() {
+        val state = listenReducer(ListenState(), ListenAction.Voices.VoiceSelected(Voice(id = "en-us-female")))
+
+        assertEquals(Voice(id = "en-us-female"), state.voiceState.selectedVoice)
+    }
+
+    @Test
+    fun `test that loaded voices are recorded`() {
+        val voices = listOf(Voice(id = "en-us-female"), Voice(id = "en-us-male"))
+
+        val state = listenReducer(ListenState(), ListenAction.Voices.AvailableVoicesLoaded(voices))
+
+        assertEquals(voices, state.voiceState.availableVoices)
+    }
+
+    @Test
+    fun `test that loading voices again replaces the voices of the previous language`() {
+        val loaded = listenReducer(ListenState(), ListenAction.Voices.AvailableVoicesLoaded(listOf(Voice("de-de"))))
+
+        val state = listenReducer(loaded, ListenAction.Voices.AvailableVoicesLoaded(listOf(Voice("en-us"))))
+
+        assertEquals(listOf(Voice("en-us")), state.voiceState.availableVoices)
+    }
+
+    @Test
+    fun `test that loading voices leaves the selected voice alone`() {
+        val selected = listenReducer(fullState, ListenAction.Voices.VoiceSelected(Voice(id = "en-us-female")))
+
+        val state = listenReducer(selected, ListenAction.Voices.AvailableVoicesLoaded(listOf(Voice("en-us-male"))))
+
+        assertEquals(Voice(id = "en-us-female"), state.voiceState.selectedVoice)
+    }
+
+    @Test
+    fun `test that having no offline voice is reported as an error`() {
+        val state = listenReducer(ListenState(), ListenAction.Voices.NoOfflineVoicesAvailable)
+
+        assertEquals(ListenError.NoOfflineVoice, state.error)
+    }
+
+    @Test
+    fun `test that having no offline voice leaves the article alone`() {
+        val state = listenReducer(fullState.copy(error = null), ListenAction.Voices.NoOfflineVoicesAvailable)
+
+        assertEquals(fullState.copy(error = ListenError.NoOfflineVoice), state)
+    }
+
+    @Test
+    fun `test that a session has no voices by default`() {
+        val initial = ListenState()
+
+        assertEquals(emptyList<Voice>(), initial.voiceState.availableVoices)
+        assertNull(initial.voiceState.selectedVoice)
+    }
+
+    @Test
     fun `test that a session has no tab, no error and the player mode by default`() {
         val initial = ListenState()
 
