@@ -6,11 +6,13 @@ package mozilla.components.service.pocket.recommendations
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.concept.fetch.Client
 import mozilla.components.service.pocket.ContentRecommendationsRequestConfig
 import mozilla.components.service.pocket.PocketStory.ContentRecommendation
 import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsEndpoint
 import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsProvider
+import mozilla.components.service.pocket.recommendations.api.MerinoContentRecommendationsProvider
 import mozilla.components.service.pocket.stories.api.PocketResponse
 
 /**
@@ -20,11 +22,13 @@ import mozilla.components.service.pocket.stories.api.PocketResponse
  *   leaks.
  * @param client The HTTP [Client] to use for network requests.
  * @param config Configuration for content recommendations request.
+ * @param crashReporter Optional [CrashReporting] instance used for recording caught exceptions.
  */
 internal class ContentRecommendationsUseCases(
     private val appContext: Context,
     private val client: Client,
     private val config: ContentRecommendationsRequestConfig,
+    private val crashReporter: CrashReporting? = null,
 ) {
 
     /** Get the list of available content recommendations. */
@@ -114,5 +118,10 @@ internal class ContentRecommendationsUseCases(
     internal fun getContentRecommendationsProvider(
         client: Client,
         config: ContentRecommendationsRequestConfig,
-    ): ContentRecommendationsProvider = ContentRecommendationsEndpoint.newInstance(client, config)
+    ): ContentRecommendationsProvider =
+        if (config.useMerinoClient) {
+            MerinoContentRecommendationsProvider(config = config, crashReporter = crashReporter)
+        } else {
+            ContentRecommendationsEndpoint.newInstance(client, config)
+        }
 }

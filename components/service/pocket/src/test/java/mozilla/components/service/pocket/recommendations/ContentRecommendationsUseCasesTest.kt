@@ -5,12 +5,15 @@
 package mozilla.components.service.pocket.recommendations
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlin.test.assertIs
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.fetch.Client
 import mozilla.components.service.pocket.ContentRecommendationsRequestConfig
 import mozilla.components.service.pocket.PocketStory.ContentRecommendation
 import mozilla.components.service.pocket.helpers.PocketTestResources
+import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsEndpoint
 import mozilla.components.service.pocket.recommendations.api.ContentRecommendationsProvider
+import mozilla.components.service.pocket.recommendations.api.MerinoContentRecommendationsProvider
 import mozilla.components.service.pocket.stories.api.PocketResponse
 import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
@@ -97,6 +100,26 @@ class ContentRecommendationsUseCasesTest {
 
             verify(repository).updateContentRecommendationsImpressions(recommendationsShown)
         }
+
+    @Test
+    fun `GIVEN the Merino client is disabled WHEN the content recommendations provider is retrieved THEN return the endpoint`() {
+        val config = ContentRecommendationsRequestConfig(useMerinoClient = false)
+        val useCases = ContentRecommendationsUseCases(appContext = testContext, client = client, config = config)
+
+        val provider = useCases.getContentRecommendationsProvider(client, config)
+
+        assertIs<ContentRecommendationsEndpoint>(provider)
+    }
+
+    @Test
+    fun `GIVEN the Merino client is enabled WHEN the content recommendations provider is retrieved THEN return the Merino provider`() {
+        val config = ContentRecommendationsRequestConfig(useMerinoClient = true)
+        val useCases = ContentRecommendationsUseCases(appContext = testContext, client = client, config = config)
+
+        val provider = useCases.getContentRecommendationsProvider(client, config)
+
+        assertIs<MerinoContentRecommendationsProvider>(provider)
+    }
 
     private fun getSuccessContentRecommendationsResponse() =
         PocketResponse.wrap(PocketTestResources.contentRecommendationsResponse)

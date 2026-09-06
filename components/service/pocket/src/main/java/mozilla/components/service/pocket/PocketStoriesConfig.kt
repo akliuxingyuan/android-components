@@ -55,6 +55,7 @@ class PocketStoriesConfig(
  * @property count Optional number of recommendations to return.
  * @property topics Optional list to specify the preferred topics to return for the content recommendations.
  * @property userAgent Optional user agent to send with the content recommendations request.
+ * @property useMerinoClient Whether to fetch the content recommendations with the Merino client.
  */
 data class ContentRecommendationsRequestConfig(
     val locale: Locale = Locale.getDefault(),
@@ -62,4 +63,5 @@ data class ContentRecommendationsRequestConfig(
     val count: Int = DEFAULT_CONTENT_RECOMMENDATIONS_COUNT,
     val topics: List<String> = listOf(),
     val userAgent: String = "",
+    val useMerinoClient: Boolean = false,
 )
