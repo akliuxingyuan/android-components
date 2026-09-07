@@ -7,6 +7,7 @@ package mozilla.components.feature.listentopage.fakes
 import java.io.File
 import mozilla.components.feature.listentopage.Voice
 import mozilla.components.feature.listentopage.playback.AudioFileCache
+import mozilla.components.feature.listentopage.playback.PlaybackController
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
 
 /**
@@ -60,5 +61,32 @@ class FakeAudioFileCache : AudioFileCache {
 
     override suspend fun clear() {
         cleared = true
+    }
+}
+
+/**
+ * A fake implementation of [PlaybackController] for use in tests and Compose previews.
+ *
+ * It records what it was asked to play rather than starting a media session.
+ *
+ * @property played Every file it was asked to play, in order.
+ * @property released Whether [release] has been called.
+ */
+class FakePlaybackController : PlaybackController {
+    val played = mutableListOf<File>()
+    var released = false
+
+    override suspend fun play(file: File) {
+        played.add(file)
+    }
+
+    override suspend fun pause() = Unit
+
+    override suspend fun resume() = Unit
+
+    override suspend fun seekTo(positionMs: Long) = Unit
+
+    override suspend fun release() {
+        released = true
     }
 }

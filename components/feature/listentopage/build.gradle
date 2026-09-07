@@ -23,12 +23,14 @@ dependencies {
     implementation libs.androidx.compose.material3
     implementation libs.androidx.compose.ui
     implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.core
 
     implementation libs.androidx.media3.session
     implementation libs.androidx.media3.exoplayer
 
     implementation project(':components:lib-state')
     implementation project(':components:compose-base')
+    implementation project(':components:support-base')
 
     testImplementation project(':components:support-test')
 
