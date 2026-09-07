@@ -5,10 +5,12 @@
 package mozilla.components.compose.menu.ui.utils
 
 import mozilla.components.compose.base.text.Text
+import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItem
 import mozilla.components.compose.menu.data.MenuItemActionButton
 import mozilla.components.compose.menu.data.MenuItemBadge
 import mozilla.components.compose.menu.data.MenuItemSummary
+import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemIconRes
 import mozilla.components.compose.menu.ui.MenuItemState
@@ -18,7 +20,7 @@ import mozilla.components.ui.icons.R as iconsR
 /** [MenuItem]s to show in the main section of the menu composable preview. */
 internal val mainSectionMenuItemsPreviewData =
     listOf(
-        MenuItem(
+        StandardMenuItem(
             title = Text.String("VPN"),
             contentDescription = Text.String("VPN"),
             summary =
@@ -37,19 +39,19 @@ internal val mainSectionMenuItemsPreviewData =
                 ),
             onClickEvent = object : MenuEvent {},
         ),
-        MenuItem(
+        StandardMenuItem(
             title = Text.String("Bookmark page"),
             contentDescription = Text.String("Bookmark page"),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_bookmark_24),
             onClickEvent = object : MenuEvent {},
         ),
-        MenuItem(
+        StandardMenuItem(
             title = Text.String("Find in page"),
             contentDescription = Text.String("Find in page"),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_find_in_page_24),
             onClickEvent = object : MenuEvent {},
         ),
-        MenuItem(
+        StandardMenuItem(
             title = Text.String("Desktop site"),
             contentDescription = Text.String("Desktop site"),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_device_desktop_fill_24),
@@ -60,5 +62,14 @@ internal val mainSectionMenuItemsPreviewData =
                 ),
             onClickEvent = object : MenuEvent {},
             state = ACTIVE,
+        ),
+        ExpandableMenuItem(
+            title = Text.String("Extensions"),
+            contentDescription = Text.String("Extensions"),
+            subMenuItems = emptyList(),
+            onClickEvent = object : MenuEvent {},
+            summary = MenuItemSummary(Text.String("Summary")),
+            icon = MenuItemIconRes(iconsR.drawable.mozac_ic_extension_24),
+            actionButtonText = Text.String("22"),
         ),
     )

@@ -17,7 +17,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItem
+import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.utils.MenuListItemsParameterProvider
 
@@ -43,20 +45,39 @@ internal fun ListMenuItemsGroup(
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25),
     ) {
         items.forEach {
-            MenuListItem(
-                title = it.title,
-                contentDescription = it.contentDescription,
-                modifier = Modifier,
-                role = it.role,
-                summary = it.summary,
-                icon = it.icon,
-                showNewIndicator = it.showNewIndicator,
-                badge = it.badge,
-                actionButton = it.actionButton,
-                state = it.state,
-                onClickEvent = it.onClickEvent,
-                onClick = onClick,
-            )
+            if (it is StandardMenuItem) {
+                MenuListItem(
+                    title = it.title,
+                    contentDescription = it.contentDescription,
+                    modifier = Modifier,
+                    role = it.role,
+                    summary = it.summary,
+                    icon = it.icon,
+                    showNewIndicator = it.showNewIndicator,
+                    badge = it.badge,
+                    actionButton = it.actionButton,
+                    state = it.state,
+                    onClickEvent = it.onClickEvent,
+                    onClick = onClick,
+                )
+            } else if (it is ExpandableMenuItem) {
+                ExpandableHeaderItem(
+                    title = it.title,
+                    contentDescription = it.contentDescription,
+                    subMenuItems = it.subMenuItems,
+                    modifier = Modifier,
+                    hideOnExpand = it.hideOnExpand,
+                    onClickEvent = it.onClickEvent,
+                    onClick = onClick,
+                    role = it.role,
+                    summary = it.summary,
+                    icon = it.icon,
+                    showNewIndicator = it.showNewIndicator,
+                    badge = it.badge,
+                    actionButtonText = it.actionButtonText,
+                    state = it.state,
+                )
+            }
         }
     }
 }

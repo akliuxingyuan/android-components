@@ -17,7 +17,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuItemsGroup
-import mozilla.components.compose.menu.data.PresentationMode.Row
+import mozilla.components.compose.menu.data.PresentationMode
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.store.MenuState
 import mozilla.components.compose.menu.store.MenuStore
@@ -46,7 +46,7 @@ fun Menu(
             verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
         ) {
             items(store.state.menuGroups) {
-                if (it.presentationMode == Row) {
+                if (it.presentationMode == PresentationMode.Row) {
                     ListMenuItemsGroup(it.items, onInteraction)
                 }
             }
