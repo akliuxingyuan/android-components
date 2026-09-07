@@ -4,50 +4,60 @@
 
 package mozilla.components.compose.menu
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.menu.data.MenuItemsGroup
+import mozilla.components.compose.menu.data.PresentationMode.Row
+import mozilla.components.compose.menu.store.MenuEvent
+import mozilla.components.compose.menu.store.MenuState
+import mozilla.components.compose.menu.store.MenuStore
+import mozilla.components.compose.menu.ui.ListMenuItemsGroup
+import mozilla.components.compose.menu.ui.utils.MenuPreviewParameterProvider
 
 /**
- * Themed container laying out the entries of a menu vertically.
+ * A vertically scrollable container for menu items.
  *
+ * @param store The [MenuStore] backing this menu.
  * @param modifier [Modifier] to be applied to the menu container.
- * @param content The entries of this menu, laid out vertically in the order they are declared.
  */
 @Composable
 fun Menu(
+    store: MenuStore,
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceBright,
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Column(
-            modifier = modifier.padding(vertical = AcornTheme.layout.space.static100),
-            content = content,
-        )
+        val onInteraction: (MenuEvent) -> Unit = remember(store) { { store.dispatch(it) } }
+
+        LazyColumn(
+            modifier = Modifier.padding(AcornTheme.layout.space.static100),
+            verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
+        ) {
+            items(store.state.menuGroups) {
+                if (it.presentationMode == Row) {
+                    ListMenuItemsGroup(it.items, onInteraction)
+                }
+            }
+        }
     }
 }
 
 @PreviewLightDark
 @Composable
-private fun MenuPreview() {
+private fun MenuPreview(@PreviewParameter(MenuPreviewParameterProvider::class) menuGroups: List<MenuItemsGroup>) {
     AcornTheme {
-        Menu {
-            Text(
-                modifier = Modifier.padding(all = AcornTheme.layout.space.static200),
-                text = "Menu entry",
-                style = AcornTheme.typography.body1,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
+        Menu(store = MenuStore(MenuState(menuGroups)))
     }
 }

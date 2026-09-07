@@ -4,8 +4,8 @@
 
 package mozilla.components.compose.menu.ui
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -45,6 +45,10 @@ import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.information
 import mozilla.components.compose.menu.R
+import mozilla.components.compose.menu.data.MenuItemActionButton
+import mozilla.components.compose.menu.data.MenuItemBadge
+import mozilla.components.compose.menu.data.MenuItemSummary
+import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState.ACTIVE
 import mozilla.components.compose.menu.ui.MenuItemState.DEFAULT
 import mozilla.components.compose.menu.ui.MenuItemState.DISABLED
@@ -57,6 +61,8 @@ import mozilla.components.ui.icons.R as iconsR
  * @param title The title of the menu item.
  * @param contentDescription The content description of the menu item.
  * @param modifier The modifier to apply to the menu item.
+ * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
+ * @param onClick The callback to invoke when the menu item is clicked.
  * @param role The [Role] of the menu item.
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
@@ -70,18 +76,19 @@ internal fun MenuListItem(
     title: Text,
     contentDescription: Text,
     modifier: Modifier = Modifier,
+    onClickEvent: MenuEvent,
+    onClick: (MenuEvent) -> Unit,
     role: Role = Button,
-    summary: MenuListItemSummary? = null,
+    summary: MenuItemSummary? = null,
     icon: MenuItemIcon? = null,
     showNewIndicator: Boolean = false,
-    badge: MenuListItemBadge? = null,
-    actionButton: MenuListItemActionButton? = null,
+    badge: MenuItemBadge? = null,
+    actionButton: MenuItemActionButton? = null,
     state: MenuItemState = DEFAULT,
 ) {
     Row(
         modifier =
             modifier
-                .clip(shape = MaterialTheme.shapes.extraLarge)
                 .background(MaterialTheme.colorScheme.surfaceBright)
                 .minimumInteractiveComponentSize()
                 .height(IntrinsicSize.Min),
@@ -98,7 +105,8 @@ internal fun MenuListItem(
                     .semantics(mergeDescendants = true) {
                         this.contentDescription = contentDescriptionValue
                         this.role = role
-                    },
+                    }
+                    .clickable(enabled = state != DISABLED) { onClick(onClickEvent) },
             verticalAlignment = CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static200),
         ) {
@@ -111,12 +119,15 @@ internal fun MenuListItem(
             MenuListItemBadge(badge, state)
         }
 
-        MenuListItemActionButton(actionButton)
+        MenuListItemActionButton(actionButton, onClick)
     }
 }
 
 @Composable
-private fun MenuListItemActionButton(actionButton: MenuListItemActionButton?) {
+private fun MenuListItemActionButton(
+    actionButton: MenuItemActionButton?,
+    onClick: (MenuEvent) -> Unit,
+) {
     if (actionButton != null) {
         if (actionButton.showDivider) {
             VerticalDivider(
@@ -126,7 +137,7 @@ private fun MenuListItemActionButton(actionButton: MenuListItemActionButton?) {
         }
 
         IconButton(
-            onClick = {},
+            onClick = { onClick(actionButton.onClickEvent) },
             contentDescription = actionButton.contentDescription.value,
             modifier = Modifier.minimumInteractiveComponentSize(),
         ) {
@@ -141,7 +152,7 @@ private fun MenuListItemActionButton(actionButton: MenuListItemActionButton?) {
 
 @Composable
 private fun MenuListItemBadge(
-    badge: MenuListItemBadge?,
+    badge: MenuItemBadge?,
     state: MenuItemState,
 ) {
     if (badge != null) {
@@ -179,7 +190,7 @@ private fun MenuListItemNewIndicator(
 private fun RowScope.MenuListItemText(
     title: Text,
     state: MenuItemState,
-    summary: MenuListItemSummary?,
+    summary: MenuItemSummary?,
 ) {
     Column(modifier = Modifier.weight(1f)) {
         Text(
@@ -224,43 +235,6 @@ private fun MenuListItemIcon(
     }
 }
 
-/**
- * Configuration of the summary text to shown in a [MenuListItem].
- *
- * @param text The text to show.
- * @param state The [MenuItemState] of this summary.
- */
-internal data class MenuListItemSummary(
-    val text: Text,
-    val state: MenuItemState = DEFAULT,
-)
-
-/**
- * Configuration of a badge to shown in a [MenuListItem].
- *
- * @param text The text to show.
- * @param state The [MenuItemState] of this badge.
- */
-internal data class MenuListItemBadge(
-    val text: Text,
-    val state: MenuItemState = DEFAULT,
-)
-
-/**
- * Configuration of an action button to shown in a [MenuListItem].
- *
- * @param icon The icon to show.
- * @param contentDescription The content description of this button.
- * @param showDivider Whether to show a divider before this button.
- * @param state The [MenuItemState] of this action button.
- */
-internal data class MenuListItemActionButton(
-    @DrawableRes val icon: Int,
-    val contentDescription: Text,
-    val showDivider: Boolean = false,
-    val state: MenuItemState = DEFAULT,
-)
-
 @PreviewLightDark
 @Composable
 private fun MenuListItemPreview() {
@@ -269,15 +243,17 @@ private fun MenuListItemPreview() {
             title = Text.String("Title"),
             contentDescription = Text.String(""),
             modifier = Modifier.fillMaxWidth(),
-            role = Button,
-            summary = MenuListItemSummary(Text.String("Summary")),
+            onClickEvent = object : MenuEvent {},
+            onClick = {},
+            summary = MenuItemSummary(Text.String("Summary")),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
-            badge = MenuListItemBadge(Text.String("Badge")),
+            badge = MenuItemBadge(Text.String("Badge")),
             actionButton =
-                MenuListItemActionButton(
+                MenuItemActionButton(
                     icon = iconsR.drawable.mozac_ic_chevron_right_24,
                     contentDescription = Text.String(""),
+                    onClickEvent = object : MenuEvent {},
                     showDivider = true,
                 ),
         )
@@ -292,15 +268,17 @@ private fun ActiveListItemPreview() {
             title = Text.String("Title"),
             contentDescription = Text.String(""),
             modifier = Modifier.fillMaxWidth(),
-            role = Button,
-            summary = MenuListItemSummary(Text.String("Summary"), ACTIVE),
+            onClickEvent = object : MenuEvent {},
+            onClick = {},
+            summary = MenuItemSummary(Text.String("Summary"), ACTIVE),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
-            badge = MenuListItemBadge(Text.String("Badge"), ACTIVE),
+            badge = MenuItemBadge(Text.String("Badge"), ACTIVE),
             actionButton =
-                MenuListItemActionButton(
+                MenuItemActionButton(
                     icon = iconsR.drawable.mozac_ic_chevron_right_24,
                     contentDescription = Text.String(""),
+                    onClickEvent = object : MenuEvent {},
                     showDivider = true,
                     state = ACTIVE,
                 ),
@@ -317,15 +295,17 @@ private fun DisabledMenuListItemPreview() {
             title = Text.String("Title"),
             contentDescription = Text.String(""),
             modifier = Modifier.fillMaxWidth(),
-            role = Button,
-            summary = MenuListItemSummary(Text.String("Summary"), DISABLED),
+            onClickEvent = object : MenuEvent {},
+            onClick = {},
+            summary = MenuItemSummary(Text.String("Summary"), DISABLED),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
-            badge = MenuListItemBadge(Text.String("Badge"), DISABLED),
+            badge = MenuItemBadge(Text.String("Badge"), DISABLED),
             actionButton =
-                MenuListItemActionButton(
+                MenuItemActionButton(
                     icon = iconsR.drawable.mozac_ic_chevron_right_24,
                     contentDescription = Text.String(""),
+                    onClickEvent = object : MenuEvent {},
                     showDivider = true,
                     state = DISABLED,
                 ),
@@ -342,15 +322,17 @@ private fun WarningMenuListItemPreview() {
             title = Text.String("Title"),
             contentDescription = Text.String(""),
             modifier = Modifier.fillMaxWidth(),
-            role = Button,
-            summary = MenuListItemSummary(Text.String("Summary"), WARNING),
+            onClickEvent = object : MenuEvent {},
+            onClick = {},
+            summary = MenuItemSummary(Text.String("Summary"), WARNING),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
-            badge = MenuListItemBadge(Text.String("Badge"), WARNING),
+            badge = MenuItemBadge(Text.String("Badge"), WARNING),
             actionButton =
-                MenuListItemActionButton(
+                MenuItemActionButton(
                     icon = iconsR.drawable.mozac_ic_chevron_right_24,
                     contentDescription = Text.String(""),
+                    onClickEvent = object : MenuEvent {},
                     showDivider = true,
                     state = WARNING,
                 ),
@@ -366,7 +348,8 @@ private fun TitleOnlyMenuListItemPreview() {
         MenuListItem(
             title = Text.String("Title"),
             contentDescription = Text.String(""),
-            role = Button,
+            onClickEvent = object : MenuEvent {},
+            onClick = {},
             modifier = Modifier.fillMaxWidth(),
         )
     }
