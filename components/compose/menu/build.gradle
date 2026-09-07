@@ -18,8 +18,10 @@ android {
 
 dependencies {
     implementation project(':components:compose-base')
+    implementation project(':components:ui-icons')
 
     implementation platform(libs.androidx.compose.bom)
+    implementation libs.accompanist.drawablepainter
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.material3
     implementation libs.androidx.compose.ui
