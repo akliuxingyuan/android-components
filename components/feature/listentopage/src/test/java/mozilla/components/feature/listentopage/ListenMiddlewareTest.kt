@@ -12,9 +12,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentProvider
+import mozilla.components.feature.listentopage.fakes.FakeSpeechSynthesizer
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,21 +75,16 @@ class ListenMiddlewareTest {
 
     @Test
     fun `test that the voices of the article language are loaded once the article is ready`() = runTest {
-        var requestedLangTag: String? = null
         val voices = listOf(Voice(id = "de-de-female"), Voice(id = "de-de-male"))
+        val synthesizer = FakeSpeechSynthesizer(voices = voices)
         val store =
-            storeWith(
-                synthesizer = { langTag ->
-                    requestedLangTag = langTag
-                    voices
-                }
-            ) {
+            storeWith(synthesizer = synthesizer) {
                 Result.success(Content(text = "Article text", languageTag = "de-DE"))
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
-        assertEquals("de-DE", requestedLangTag)
+        assertEquals(listOf("de-DE"), synthesizer.voiceRequests)
         assertEquals(voices, store.state.voiceState.availableVoices)
         assertNull(store.state.error)
     }
@@ -97,7 +92,7 @@ class ListenMiddlewareTest {
     @Test
     fun `test that an article language with no offline voice is reported as an error`() = runTest {
         val store =
-            storeWith(synthesizer = { emptyList() }) {
+            storeWith(synthesizer = FakeSpeechSynthesizer(voices = emptyList())) {
                 Result.success(Content(text = "Article text", languageTag = "ja-JP"))
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
@@ -109,25 +104,17 @@ class ListenMiddlewareTest {
 
     @Test
     fun `test that no voices are loaded when the article could not be extracted`() = runTest {
-        var voicesRequested = false
-        val store =
-            storeWith(
-                synthesizer = {
-                    voicesRequested = true
-                    emptyList()
-                }
-            ) {
-                Result.failure(RuntimeException("Content failed"))
-            }
+        val synthesizer = FakeSpeechSynthesizer()
+        val store = storeWith(synthesizer = synthesizer) { Result.failure(RuntimeException("Content failed")) }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
-        assertFalse(voicesRequested)
+        assertTrue(synthesizer.voiceRequests.isEmpty())
         assertEquals(ListenError.ContentUnavailable, store.state.error)
     }
 
     private fun TestScope.storeWith(
-        synthesizer: SpeechSynthesizer = SpeechSynthesizer { listOf(Voice(id = "voice-1")) },
+        synthesizer: SpeechSynthesizer = FakeSpeechSynthesizer(),
         contentProvider: ContentProvider,
     ) =
         ListenStore(
