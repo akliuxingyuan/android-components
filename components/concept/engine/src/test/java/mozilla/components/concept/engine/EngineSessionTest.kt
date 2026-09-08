@@ -1044,6 +1044,12 @@ open class DummyEngineSession : EngineSession() {
         onException: (Throwable) -> Unit,
     ) {}
 
+    override fun addSignatureToPdf(
+        text: String,
+        onResult: () -> Unit,
+        onException: (Throwable) -> Unit,
+    ) {}
+
     override fun sendGleanBrokenSiteReport(
         details: JSONObject?,
         description: String?,

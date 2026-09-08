@@ -910,6 +910,22 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
     abstract fun checkForPdfViewer(onResult: (Boolean) -> Unit, onException: (Throwable) -> Unit)
 
     /**
+     * Can be used to add a signature to a PDF, when the [EngineSession] is showing a PDF.
+     *
+     * The PDF viewer itself will place the signature and control placement.
+     *
+     * @param text The signature the user typed.
+     * @param onResult Callback invoked once the engine's PDF viewer has been given the signature.
+     * @param onException Callback invoked if the signature could not be handed to a PDF viewer, which includes the
+     *   session not displaying a PDF at all.
+     */
+    abstract fun addSignatureToPdf(
+        text: String,
+        onResult: () -> Unit,
+        onException: (Throwable) -> Unit,
+    )
+
+    /**
      * Send the broken site report using Glean.
      *
      * @param details The {@link JSONObject} returned by getBrokenSiteReport.
