@@ -820,7 +820,25 @@ projects:
     path: components/feature/automotive
     publish: true
     upstream_dependencies:
+    - components:browser-errorpages
+    - components:browser-state
+    - components:concept-awesomebar
+    - components:concept-base
+    - components:concept-engine
+    - components:concept-fetch
+    - components:concept-storage
+    - components:concept-storage-bookmarks
+    - components:feature-media
+    - components:lib-publicsuffixlist
+    - components:lib-state
+    - components:service-nimbus
+    - components:support-base
+    - components:support-ktx
+    - components:support-locale
+    - components:support-test
+    - components:support-utils
     - components:tooling-lint
+    - components:ui-icons
   components:feature-awesomebar:
     description: Component connecting a concept-toolbar with a concept-awesomebar.
     path: components/feature/awesomebar
