@@ -10,6 +10,8 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Turns an audio file into something the player accepts. Bug 2064873 adds the title and site metadata here. */
 internal fun File.toMediaItem(): MediaItem = MediaItem.fromUri(Uri.fromFile(this))
@@ -21,10 +23,11 @@ internal fun File.toMediaItem(): MediaItem = MediaItem.fromUri(Uri.fromFile(this
  * terminal, so nothing can swap the underlying player out from under a listening session. Constructing this class
  * therefore acquires a resource: whoever builds it must release it.
  *
- * [ExoPlayer] is not thread safe, so every call must happen on the thread the instance was constructed on.
+ * [ExoPlayer] is not thread safe, and it takes its looper from the thread that builds it. [ListenMediaSessionService]
+ * builds this in `onCreate`, so the player lives on the main thread.
  *
- * [ListenMediaSessionService] owns the instance that plays a session, and callers command it through
- * [ListenPlaybackController] rather than through this class.
+ * That service owns the instance that plays a session, and callers command it through [ListenPlaybackController] rather
+ * than through this class.
  *
  * @param context Used to build the player.
  */
@@ -49,13 +52,14 @@ class ListenPlayer(context: Context) {
             }
 
     /** Plays [file], replacing anything already playing. */
-    fun play(file: File) {
-        exoPlayer.setMediaItem(file.toMediaItem())
-        exoPlayer.prepare()
-        exoPlayer.play()
-    }
+    suspend fun play(file: File) =
+        withContext(Dispatchers.Main) {
+            exoPlayer.setMediaItem(file.toMediaItem())
+            exoPlayer.prepare()
+            exoPlayer.play()
+        }
 
-    /** Releases the player. This instance cannot be used afterwards. */
+    /** Releases the player, from the main thread. This instance cannot be used afterwards. */
     fun release() {
         exoPlayer.release()
     }

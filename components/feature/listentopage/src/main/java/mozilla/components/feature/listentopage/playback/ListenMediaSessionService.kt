@@ -17,7 +17,7 @@ import androidx.media3.session.MediaSessionService
  * through the session. That is why [ListenPlaybackController] is the only way in: driving the player directly loses
  * both the notification and the background audio, and it fails silently.
  */
-class ListenMediaSessionService : MediaSessionService() {
+internal class ListenMediaSessionService : MediaSessionService() {
 
     private var listenPlayer: ListenPlayer? = null
     private var mediaSession: MediaSession? = null

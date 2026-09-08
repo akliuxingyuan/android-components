@@ -32,7 +32,8 @@ interface AudioFileCache {
  *   `Context.cacheDir` reads the disk, so doing it eagerly trips StrictMode on the main thread.
  * @param ioDispatcher The dispatcher the disk access runs on.
  */
-class DirectoryAudioFileCache(
+class DirectoryAudioFileCache
+internal constructor(
     directoryProvider: () -> File,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AudioFileCache {
