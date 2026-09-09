@@ -44,12 +44,13 @@ internal fun ListMenuItemsGroup(
             },
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25),
     ) {
-        items.forEach {
+        items.forEachIndexed { index, it ->
             if (it is StandardMenuItem) {
                 MenuListItem(
                     title = it.title,
                     contentDescription = it.contentDescription,
                     modifier = Modifier,
+                    index = index,
                     role = it.role,
                     summary = it.summary,
                     icon = it.icon,

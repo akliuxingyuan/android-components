@@ -24,6 +24,7 @@ sealed class MenuItem {
     abstract val showNewIndicator: Boolean
     abstract val badge: MenuItemBadge?
     abstract val state: MenuItemState
+    abstract val onLongClickEvent: MenuEvent?
 }
 
 /**
@@ -41,6 +42,7 @@ sealed class MenuItem {
  * @param icon An optional icon of the menu item.
  * @param showNewIndicator Whether to show a new indicator.
  * @param badge An optional badge to show.
+ * @param onLongClickEvent [MenuEvent] to dispatch when the menu item is long-clicked.
  * @param actionButtonText An optional text to show in the expanded button indicator.
  * @param state The state of this menu item.
  */
@@ -55,6 +57,7 @@ data class ExpandableMenuItem(
     override val icon: MenuItemIcon? = null,
     override val showNewIndicator: Boolean = false,
     override val badge: MenuItemBadge? = null,
+    override val onLongClickEvent: MenuEvent? = null,
     val actionButtonText: Text? = null,
     override val state: MenuItemState = DEFAULT,
 ) : MenuItem()
@@ -70,6 +73,7 @@ data class ExpandableMenuItem(
  * @param icon An optional icon of the menu item.
  * @param showNewIndicator Whether to show a new indicator.
  * @param badge An optional badge to show.
+ * @param onLongClickEvent [MenuEvent] to dispatch when the menu item is long-clicked.
  * @param actionButton An optional action button to show.
  * @param state The state of this menu item.
  */
@@ -82,6 +86,7 @@ data class StandardMenuItem(
     override val icon: MenuItemIcon? = null,
     override val showNewIndicator: Boolean = false,
     override val badge: MenuItemBadge? = null,
+    override val onLongClickEvent: MenuEvent? = null,
     val actionButton: MenuItemActionButton? = null,
     override val state: MenuItemState = DEFAULT,
 ) : MenuItem()

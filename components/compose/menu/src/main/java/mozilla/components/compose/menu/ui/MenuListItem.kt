@@ -15,15 +15,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.CollectionItemInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.Role.Companion.Button
+import androidx.compose.ui.semantics.collectionItemInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -48,6 +49,7 @@ import mozilla.components.ui.icons.R as iconsR
  * @param title The title of the menu item.
  * @param contentDescription The content description of the menu item.
  * @param modifier The modifier to apply to the menu item.
+ * @param index The optional index of this item in the list.
  * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
  * @param onClick The callback to invoke when the menu item is clicked.
  * @param role The [Role] of the menu item.
@@ -63,6 +65,7 @@ internal fun MenuListItem(
     title: Text,
     contentDescription: Text,
     modifier: Modifier = Modifier,
+    index: Int? = null,
     onClickEvent: MenuEvent,
     onClick: (MenuEvent) -> Unit,
     role: Role = Button,
@@ -90,6 +93,15 @@ internal fun MenuListItem(
                         vertical = AcornTheme.layout.space.static100,
                     )
                     .semantics(mergeDescendants = true) {
+                        index?.let {
+                            this.collectionItemInfo =
+                                CollectionItemInfo(
+                                    rowIndex = it,
+                                    rowSpan = 1,
+                                    columnIndex = 0,
+                                    columnSpan = 1,
+                                )
+                        }
                         this.contentDescription = contentDescriptionValue
                         this.role = role
                     }
@@ -144,6 +156,7 @@ private fun MenuListItemPreview() {
         MenuListItem(
             title = Text.String("Title"),
             contentDescription = Text.String(""),
+            index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
             onClick = {},
@@ -169,6 +182,7 @@ private fun ActiveListItemPreview() {
         MenuListItem(
             title = Text.String("Title"),
             contentDescription = Text.String(""),
+            index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
             onClick = {},
@@ -196,6 +210,7 @@ private fun DisabledMenuListItemPreview() {
         MenuListItem(
             title = Text.String("Title"),
             contentDescription = Text.String(""),
+            index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
             onClick = {},
@@ -223,6 +238,7 @@ private fun WarningMenuListItemPreview() {
         MenuListItem(
             title = Text.String("Title"),
             contentDescription = Text.String(""),
+            index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
             onClick = {},
@@ -250,6 +266,7 @@ private fun TitleOnlyMenuListItemPreview() {
         MenuListItem(
             title = Text.String("Title"),
             contentDescription = Text.String(""),
+            index = 0,
             onClickEvent = object : MenuEvent {},
             onClick = {},
             modifier = Modifier.fillMaxWidth(),

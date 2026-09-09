@@ -4,15 +4,35 @@
 
 package mozilla.components.compose.menu.data
 
-/**
- * Group of menu items to be shown in a [Menu].
- *
- * @property id A unique identifier for this group.
- * @property presentationMode How the items in this group should be shown.
- * @property items The items to show in this group.
- */
-data class MenuItemsGroup(
-    val id: String,
-    val presentationMode: PresentationMode,
-    val items: List<MenuItem>,
-)
+/** Group of menu items to be shown in a [Menu]. */
+sealed class MenuItemsGroup {
+    abstract val id: String
+    abstract val items: List<MenuItem>
+    abstract val isSticky: Boolean
+
+    /**
+     * A group of menu items shown as a vertical list.
+     *
+     * @property id A unique identifier for this group.
+     * @property items The items to show in this group.
+     * @property isSticky Whether this group should be sticky at the top or bottom of the menu.
+     */
+    data class Row(
+        override val id: String,
+        override val items: List<MenuItem>,
+        override val isSticky: Boolean = false,
+    ) : MenuItemsGroup()
+
+    /**
+     * A group of menu items shown as a grid.
+     *
+     * @property id A unique identifier for this group.
+     * @property items The items to show in this group.
+     * @property isSticky Whether this group should be sticky at the top or bottom of the menu.
+     */
+    data class Grid(
+        override val id: String,
+        override val items: List<MenuItem>,
+        override val isSticky: Boolean = false,
+    ) : MenuItemsGroup()
+}
