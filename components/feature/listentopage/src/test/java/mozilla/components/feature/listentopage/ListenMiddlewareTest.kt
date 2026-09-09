@@ -18,6 +18,7 @@ import mozilla.components.feature.listentopage.fakes.FakePlaybackController
 import mozilla.components.feature.listentopage.fakes.FakeSpeechSynthesizer
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.PlaybackController
+import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesisException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
 import org.junit.Assert.assertEquals
@@ -189,6 +190,42 @@ class ListenMiddlewareTest {
         assertTrue(playback.played.isEmpty())
     }
 
+    // The voice list is not empty here, so the error can only have come from the synthesis path rather than from the
+    // check that reports a language with no offline voice before anything is synthesized.
+    @Test
+    fun `test that a synthesis failing for want of an offline voice reports it as an error`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { failingSynthesizer { throw NoOfflineVoiceAvailableException() } },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(ListenError.NoOfflineVoice, store.state.error)
+        assertTrue(playback.played.isEmpty())
+    }
+
+    @Test
+    fun `test that a synthesis failing for exceptions other than offline voice log is swallowed`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { failingSynthesizer { throw SpeechSynthesisException(-1) } },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertNull(store.state.error)
+        assertTrue(playback.played.isEmpty())
+    }
+
     @Test
     fun `test that stopping the session gives up the playback`() = runTest {
         val playback = FakePlaybackController()
@@ -314,6 +351,18 @@ class ListenMiddlewareTest {
 
         assertEquals(listOf("Article text."), synthesizer.requests)
     }
+
+    /** An engine that offers a voice, so that only [synthesizeToFile] can fail a test that uses it. */
+    private fun failingSynthesizer(failure: () -> Nothing) =
+        object : SpeechSynthesizer {
+            override val maxInputLength = 4000
+
+            override suspend fun synthesizeToFile(text: String): File = failure()
+
+            override fun close() = Unit
+
+            override fun loadAvailableVoices(langTag: String): List<Voice> = listOf(Voice(id = "voice-1"))
+        }
 
     private fun TestScope.storeWith(
         synthesizerProvider: () -> SpeechSynthesizer = { FakeSpeechSynthesizer() },

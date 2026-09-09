@@ -193,6 +193,34 @@ class AndroidTtsSpeechSynthesizerTest {
         assertEquals(emptyList<String>(), temporaryFolder.root.list().orEmpty().toList())
     }
 
+    // The engine only reaches for the network when it has no offline voice for the language, so both network codes are
+    // reported as a missing offline voice rather than as a generic synthesis failure.
+    @Test
+    fun `test that a network error is reported as a missing offline voice and leaves no audio behind`() = runTest {
+        val synthesizer =
+            synthesizerWith(
+                engineStatus = TextToSpeech.SUCCESS,
+                synthesisResult = TextToSpeech.ERROR_NETWORK,
+            )
+
+        synthesizer.noOfflineVoiceFailure("Article text")
+
+        assertEquals(emptyList<String>(), temporaryFolder.root.list().orEmpty().toList())
+    }
+
+    @Test
+    fun `test that a network timeout is reported as a missing offline voice and leaves no audio behind`() = runTest {
+        val synthesizer =
+            synthesizerWith(
+                engineStatus = TextToSpeech.SUCCESS,
+                synthesisResult = TextToSpeech.ERROR_NETWORK_TIMEOUT,
+            )
+
+        synthesizer.noOfflineVoiceFailure("Article text")
+
+        assertEquals(emptyList<String>(), temporaryFolder.root.list().orEmpty().toList())
+    }
+
     @Test
     fun `test that text longer than the engine accepts is rejected before anything is written`() = runTest {
         val synthesizer = synthesizerWith(engineStatus = TextToSpeech.SUCCESS)
@@ -336,6 +364,13 @@ class AndroidTtsSpeechSynthesizerTest {
         val failure = runCatching { synthesizeToFile(text) }.exceptionOrNull()
 
         assertIs<SpeechSynthesisException>(failure)
+        return failure
+    }
+
+    private suspend fun SpeechSynthesizer.noOfflineVoiceFailure(text: String): NoOfflineVoiceAvailableException {
+        val failure = runCatching { synthesizeToFile(text) }.exceptionOrNull()
+
+        assertIs<NoOfflineVoiceAvailableException>(failure)
         return failure
     }
 

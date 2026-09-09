@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import mozilla.components.feature.listentopage.content.ContentProvider
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.PlaybackController
+import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
@@ -80,7 +81,7 @@ class ListenMiddleware(
             // synthesizeAndPlay will be called from the PlaybackStarted action in Bug 2064848
             is ListenAction.Content.ContentReady -> {
                 store.requestVoices(action.languageTag)
-                synthesizeAndPlay(store.state.tabId)
+                synthesizeAndPlay(store.state.tabId, store::dispatch)
             }
 
             ListenAction.Content.ContentUnavailable,
@@ -138,8 +139,9 @@ class ListenMiddleware(
      *
      * @param tabId The tab the live session is reading. A session that has already ended may still have written its
      *   article to the field, so anything extracted for a different tab is ignored.
+     * @param dispatch Dispatch an action to the store.
      */
-    private fun synthesizeAndPlay(tabId: String?) {
+    private fun synthesizeAndPlay(tabId: String?, dispatch: (ListenAction) -> Unit) {
         val text = article?.takeIf { it.tabId == tabId }?.text ?: return
 
         playbackJob?.cancel()
@@ -150,6 +152,10 @@ class ListenMiddleware(
                 playbackController.play(file)
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: NoOfflineVoiceAvailableException) {
+                // The engine only reaches for the network when it has no offline voice for the language, so a network
+                // failure during synthesis means the same thing to the user as an empty voice list.
+                dispatch(ListenAction.Voices.NoOfflineVoicesAvailable)
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 // TODO Bug 2064849: dispatch Synthesis.SynthesisFailed so that the user sees this, rather than only
                 // logging it. That action group belongs to epic 3 and does not exist yet, so a failure is silent in

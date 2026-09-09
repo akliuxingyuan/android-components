@@ -7,6 +7,8 @@ package mozilla.components.feature.listentopage.synthesis
 import android.content.Context
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.ERROR_NETWORK
+import android.speech.tts.TextToSpeech.ERROR_NETWORK_TIMEOUT
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice as TtsVoice
 import java.io.File
@@ -59,6 +61,9 @@ interface SpeechSynthesizer {
  * @param errorCode One of the `TextToSpeech.ERROR_*` constants, or the status from a failed engine start.
  */
 class SpeechSynthesisException(val errorCode: Int) : Exception("Speech synthesis failed with error code $errorCode")
+
+/** Thrown when the speech engine fails synthesis specifically because an offline voice could not be found. */
+class NoOfflineVoiceAvailableException : Exception("Could not find offline voice while attempting speech synthesis")
 
 /**
  * [SpeechSynthesizer] backed by the platform [TextToSpeech] engine, which is the one the user chose in the system
@@ -128,7 +133,11 @@ internal class AndroidTtsSpeechSynthesizer(
             withContext(ioDispatcher) { awaitSynthesis(text, file, utteranceId) }
         } catch (e: SpeechSynthesisException) {
             audioCache.delete(file)
-            throw e
+            when (e.errorCode) {
+                ERROR_NETWORK_TIMEOUT,
+                ERROR_NETWORK -> throw NoOfflineVoiceAvailableException()
+                else -> throw e
+            }
         }
     }
 
