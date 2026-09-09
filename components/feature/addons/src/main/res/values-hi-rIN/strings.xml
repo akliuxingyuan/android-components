@@ -9,6 +9,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
   <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
   <string name="mozac_feature_addons_permissions_one_site_description">%1$s के लिए अपने डेटा को एक्सेस करें</string>
+  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
+  <string name="mozac_feature_addons_permissions_sites_in_domain_description">%1$s डोमेन वाली साइटों से जुड़ा अपना डेटा एक्सेस करें</string>
   <!--
     When an add-on requires access to more than 4 sites, for example the add-on requires access for 5 sites. We will show the first 4 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description,
     then we will show another collapsed entry saying "Access your data on another site".
@@ -29,6 +31,13 @@
     then we will show another collapsed entry saying "Access your data on other domains".
   -->
   <string name="mozac_feature_addons_permissions_extra_domains_description_plural_2">अन्य डोमेन पर अपना डेटा एक्सेस करें</string>
+  <plurals name="mozac_feature_addons_permissions_all_domain_count_description_2">
+    <!-- When an add-on requires access to domains, this entry is used to describe the total number of domains. Underneath it will be the list of all the domains. %1$d is the number of all the domains that will be shown to the user as required. -->
+    <item quantity="one">%1$d डोमेन वाली साइटों से जुड़ा अपना डेटा एक्सेस करें</item>
+    <item quantity="other">%1$d डोमेन वाली साइटों से जुड़ा अपना डेटा एक्सेस करें</item>
+  </plurals>
+  <!-- Content description for a permission item, for an installed add-on details page. %1$s will be replaced with the permission text name, %2$d will be replaced with the permission position in the list and %3$d will be replaced with the total number of permissions in the list.Taking as an example "Read and modify privacy settings" the whole text will read Read and modify privacy settings, 2 of 6. -->
+  <string name="mozac_feature_addons_permissions_content_description_item">%1$s, %3$d में से %2$d</string>
   <!-- Description for the "privacy" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_privacy_description">गोपनीयता सेटिंग पढ़ें और संशोधित करें</string>
   <!-- Description for the "<all_urls>" WebExtensions API permission. -->
@@ -49,6 +58,8 @@
   <string name="mozac_feature_addons_permissions_clipboard_write_description">क्लिपबोर्ड में डेटा दर्ज करें</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description">किसी भी पेज पर कंटेंट ब्लॉक करें</string>
+  <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description">अपनी ब्राउज़िंग हिस्ट्री देखें</string>
   <!-- Description for the "downloads" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_downloads_description">फाइलों को डाउनलोड करें और ब्राउज़र के डाउनलोड इतिहास को देखें और संशोधित करें</string>
   <!-- Description for the "downloads.open" WebExtensions API permission. -->
@@ -75,8 +86,16 @@
   <string name="mozac_feature_addons_permissions_tab_hide_description">ब्राउज़र टैब को छिपाएं और दिखाएं</string>
   <!-- Description for the "topSites" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_top_sites_description">ब्राउज़िंग इतिहास एक्सेस करें</string>
+  <!-- Description for the "trialML" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_trial_ml_description">अपने डिवाइस पर AI मॉडल डाउनलोड करें और चलाएं</string>
+  <!-- Description for the "userScripts" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_user_scripts_description">ऐसी किसी थर्ड-पार्टी स्क्रिप्ट को आपका डेटा एक्सेस करने की अनुमति दें, जिसे वेरिफ़ाई नहीं किया गया है</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">अपने डेटा को खुले टैबों में उपयोग करने के लिए डेवलपर उपकरण को विस्तृत करें</string>
+  <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_privacy_description_for_update">गोपनीयता से जुड़ी सेटिंग देखें और उनमें बदलाव करें।</string>
+  <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_all_urls_description_for_update">सभी वेबसाइटों से संबंधित अपना डेटा एक्सेस करें।</string>
   <!-- Description for the "tabs" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_tabs_description_for_update">ब्राउज़र के टैब एक्सेस करें।</string>
   <!-- Description for the "webNavigation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
@@ -93,6 +112,8 @@
   <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">क्लिपबोर्ड में डेटा इनपुट करें।</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">किसी भी पेज पर कंटेंट ब्लॉक करें।</string>
+  <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description_for_update">अपनी ब्राउज़िंग हिस्ट्री देखें।</string>
   <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_downloads_description_for_update">फ़ाइलें डाउनलोड करें और ब्राउज़र की डाउनलोड हिस्ट्री को पढ़ें और मॉडिफ़ाई करें।</string>
   <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
@@ -127,10 +148,36 @@
   <string name="mozac_feature_addons_permissions_one_site_description_for_update">%1$s का अपना डेटा एक्सेस करें।</string>
   <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
   <string name="mozac_feature_addons_permissions_sites_in_domain_description_for_update">%1$s डोमेन वाली साइटों से जुड़ा अपना डेटा एक्सेस करें।</string>
+  <!--
+    When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
+    then we will show another collapsed entry saying "Access your data on another domain.".
+  -->
+  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">किसी दूसरे डोमेन वाला अपना डेटा एक्सेस करें।</string>
+  <!--
+    When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
+    then we will show another collapsed entry saying "Access your data on other domains.".
+  -->
+  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">अन्य डोमेन वाला अपना डेटा एक्सेस करें।</string>
+  <!--
+    When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
+    then we will show another collapsed entry saying "Access your data on another site.".
+  -->
+  <string name="mozac_feature_addons_permissions_one_extra_site_description_for_update">दूसरी साइट वाला अपना डेटा एक्सेस करें।</string>
+  <!--
+    When an add-on requires access to more than 2 sites, for example the add-on requires access for 4 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
+    then we will show another collapsed entry saying "Access your data on other sites.".
+  -->
+  <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">दूसरी साइटों वाला अपना डेटा एक्सेस करें।</string>
+  <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
+  <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">जो स्क्रिप्ट वेरिफ़ाई नहीं हुई हैं, वे सुरक्षा और गोपनीयता से जुड़े जोखिम पैदा कर सकती हैं। सिर्फ़ उन्हीं एक्सटेंशन या सोर्स वाली स्क्रिप्ट चलाएं, जिन पर आप भरोसा करते हैं।</string>
+  <!-- The sentence used when the developer of an extension has explicitly stated that they do not collect any data collection. -->
+  <string name="mozac_feature_addons_permissions_none_required_data_collection_description">डेवलपर का कहना है कि इस एक्सटेंशन को डेटा इकट्ठा करने की ज़रूरत नहीं होती है।</string>
   <!-- Description for text button that expands the list of domain permissions -->
   <string name="mozac_feature_addons_permissions_show_all_sites">सभी साइटें दिखाएं</string>
   <!-- Description for text button that hides the majority of the list of domain permissions -->
   <string name="mozac_feature_addons_permissions_show_fewer_sites">कम साइटें दिखाएं</string>
+  <!-- Short description for the authenticationInfo data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_authenticationInfo_short_description">ऑथेंटिकेशन जानकारी</string>
   <!-- Short description for the bookmarksInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_bookmarksInfo_short_description">बुकमार्क</string>
   <!-- Short description for the browsingActivity data collection permission -->
@@ -141,6 +188,16 @@
   <string name="mozac_feature_addons_permissions_data_collection_healthInfo_short_description">स्वास्थ्य संबंधी जानकारी</string>
   <!-- Short description for the locationInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_locationInfo_short_description">लोकेशन</string>
+  <!-- Short description for the personallyIdentifyingInfo data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_personallyIdentifyingInfo_short_description">व्यक्तिगत पहचान वाली जानकारी</string>
+  <!-- Short description for the searchTerms data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_searchTerms_short_description">सर्च टर्म</string>
+  <!-- Short description for the technicalAndInteraction data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_technicalAndInteraction_short_description">टेक्निकल और इंटरैक्शन डेटा</string>
+  <!-- Short description for the websiteActivity data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_websiteActivity_short_description">वेबसाइट एक्टिविटी</string>
+  <!-- Short description for the websiteContent data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_websiteContent_short_description">वेबसाइट कंटेंट</string>
   <!-- Long description for the authenticationInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_authenticationInfo_long_description">ऑथेंटिकेशन वाली जानकारी को एक्सटेंशन डेवलपर के साथ शेयर करें</string>
   <!-- Long description for the bookmarksInfo data collection permission -->
@@ -159,12 +216,16 @@
   <string name="mozac_feature_addons_permissions_data_collection_personallyIdentifyingInfo_long_description">व्यक्तिगत तौर पर पहचान करने वाली जानकारी को एक्सटेंशन डेवलपर के साथ शेयर करें</string>
   <!-- Long description for the searchTerms data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_searchTerms_long_description">सर्च किए गए शब्दों को एक्सटेंशन डेवलपर के साथ शेयर करें</string>
+  <!-- Long description for the technicalAndInteraction data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_technicalAndInteraction_long_description">टेक्निकल और इंटरैक्शन से जुड़े डेटा को एक्सटेंशन डेवलपर के साथ शेयर करें</string>
   <!-- Long description for the websiteActivity data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_websiteActivity_long_description">वेबसाइट एक्टिविटी को एक्सटेंशन डेवलपर के साथ शेयर करें</string>
   <!-- Long description for the websiteContent data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_websiteContent_long_description">वेबसाइट के कंटेंट को एक्सटेंशन डेवलपर के साथ शेयर करें</string>
   <!-- The version on of add-on. -->
   <string name="mozac_feature_addons_version">संस्करण</string>
+  <!-- The author of an add-on. -->
+  <string name="mozac_feature_addons_author">ऑथर</string>
   <!-- The last date that the add-on was updated. -->
   <string name="mozac_feature_addons_last_updated">पिछला अपडेट</string>
   <!-- The developer website (Homepage) of the add-on. -->
@@ -207,6 +268,16 @@
   <string name="mozac_feature_addons_report">रिपोर्ट करें</string>
   <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_permissions_dialog_title_2">%1$s जोड़ें</string>
+  <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s अतिरिक्त सेटिंग का अनुरोध करता है</string>
+  <!-- This is the title of a dialog that asks the users to grant optional data collection permissions only. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_only_dialog_title">%1$s और भी डेटा को इकट्ठा करने का अनुरोध करता है</string>
+  <!-- Heading for the permissions section in the add-on install dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_heading_required_permissions">ज़रूरी अनुमतियां:</string>
+  <!-- Heading for the data collection permissions section in the add-on install dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_heading_required_data_collection">यह डेटा इकट्ठा करना ज़रूरी है:</string>
+  <!-- Heading for the optional settings section in the add-on install dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_heading_optional_settings">वैकल्पिक सेटिंग:</string>
   <!-- Heading for the permissions section in the optional permissions request dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_permissions">नई अनुमति‌यां:</string>
   <!-- Heading for the data collection permissions section in the optional permissions request dialog. -->
@@ -219,6 +290,8 @@
   <string name="mozac_feature_addons_permissions_dialog_deny">नामंज़ूर करें</string>
   <!-- Text link to learn more about permission requests on the add-on permissions dialog . -->
   <string name="mozac_feature_addons_permissions_dialog_learn_more">और जानें</string>
+  <!-- This is the text for the "technical and interaction" checkbox shown in the add-on permissions dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_technical_and_interaction_data">टेक्निकल और इंटरैक्शन से जुड़े डेटा को एक्सटेंशन डेवलपर के साथ शेयर करें</string>
   <!-- This is a button to cancel the add-on installation . -->
   <string name="mozac_feature_addons_permissions_dialog_cancel">रद्द करें</string>
   <!-- Accessibility content description to install add-on button. %1$s is the add-on name. -->
@@ -251,6 +324,10 @@
   <string name="mozac_feature_addons_updater_notification_short_intro">अपने मौजूदा वर्ज़न और सेटिंग को बरकरार रखने के लिए, कैंसिल करें।</string>
   <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
   <string name="mozac_feature_addons_updater_notification_heading_permissions">नई और ज़रूरी अनुमतियां: %1$s</string>
+  <!-- The heading for the data collection permission section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of permissions. -->
+  <string name="mozac_feature_addons_updater_notification_heading_data_collection_permissions">नया ज़रूरी डेटा कलेक्शन: डेवलपर का कहना है कि एक्सटेंशन %1$s इकट्ठा करेगा।</string>
+  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
+  <string name="mozac_feature_addons_updater_notification_channel_2">एक्सटेंशन अपडेट</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">समर्थित ऐड-ऑन जांचकर्ता</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->
@@ -269,6 +346,8 @@
   <string name="mozac_extension_install_progress_caption">एक्सटेंशन डाउनलोड और वेरिफ़ाई किया जा रहा है…</string>
   <!-- Error shown when extensions could not be loaded -->
   <string name="mozac_feature_addons_failed_to_load_extensions">एक्सटेंशन लोड नहीं किए जा सके। कृपया बाद में फिर से कोशिश करें।</string>
+  <!-- Error shown when unable to find a translation for an add-on field. %1$s is the locale of the user and %2$s is the default language of the add-on -->
+  <string name="mozac_feature_addons_failed_to_translate">%1$s भाषा और डिफ़ॉल्ट भाषा %2$s, दोनों के लिए अनुवाद नहीं मिला</string>
   <!-- Text shown after successfully installed an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_successfully_installed">%1$s सफलतापूर्वक स्थापित किया गया</string>
   <!-- Text shown after failing to install an add-on (when add-on type isn't supported or an unknown has errored). %1$s is the add-on name. -->
@@ -325,6 +404,8 @@
   <string name="mozac_feature_addons_installed_dialog_description_link_text">एक्सटेंशन की सेटिंग</string>
   <!-- Text shown in the dialog when add-on installation is completed. %1$s is replaced by an active link, using mozac_feature_addons_installed_dialog_description_link_text as text ("extension settings"). -->
   <string name="mozac_feature_addons_installed_dialog_description_3">%1$s में जाकर किसी भी समय अनुमतियां और डेटा संबंधी प्राथमिकताएं अपडेट करें।</string>
+  <!-- Confirmation button text for the dialog when add-on installation is completed. -->
+  <string name="mozac_feature_addons_installed_dialog_okay_button_2">ओके</string>
   <!-- "Learn more" link displayed below an add-on status message. -->
   <string name="mozac_feature_addons_status_learn_more">और जानें</string>
   <!-- Status message below an add-on in the add-ons manager when this add-on has been blocklisted. %1$s is the add-on name. -->
