@@ -15,6 +15,10 @@ class TestRustSyncManager : RustSyncManager {
     lateinit var requestedSyncParams: SyncParams
         private set
 
+    override fun disconnect() = Unit
+
+    override fun getAvailableEngines(): List<String> = emptyList()
+
     override fun sync(params: SyncParams): SyncResult {
         requestedSyncParams = params
         return requireNotNull(expectedResult) {
