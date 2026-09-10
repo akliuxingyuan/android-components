@@ -170,8 +170,12 @@
   <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">दूसरी साइटों वाला अपना डेटा एक्सेस करें।</string>
   <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
   <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">जो स्क्रिप्ट वेरिफ़ाई नहीं हुई हैं, वे सुरक्षा और गोपनीयता से जुड़े जोखिम पैदा कर सकती हैं। सिर्फ़ उन्हीं एक्सटेंशन या सोर्स वाली स्क्रिप्ट चलाएं, जिन पर आप भरोसा करते हैं।</string>
+  <!-- The sentence used when the extension has data collection permissions. %1$s is a formatted list of permissions. -->
+  <string name="mozac_feature_addons_permissions_required_data_collection_description_2">डेवलपर का कहना है कि यह एक्सटेंशन इन चीज़ों का इकट्ठा करता है: %1$s</string>
   <!-- The sentence used when the developer of an extension has explicitly stated that they do not collect any data collection. -->
   <string name="mozac_feature_addons_permissions_none_required_data_collection_description">डेवलपर का कहना है कि इस एक्सटेंशन को डेटा इकट्ठा करने की ज़रूरत नहीं होती है।</string>
+  <!-- The sentence used when the extension requests new data collection permissions. %1$s is a formatted list of permissions. -->
+  <string name="mozac_feature_addons_permissions_data_collection_optional_description">डेवलपर का कहना है कि एक्सटेंशन यह डेटा इकट्ठा करना चाहता है: %1$s</string>
   <!-- Description for text button that expands the list of domain permissions -->
   <string name="mozac_feature_addons_permissions_show_all_sites">सभी साइटें दिखाएं</string>
   <!-- Description for text button that hides the majority of the list of domain permissions -->
@@ -366,6 +370,8 @@
   <string name="mozac_feature_addons_failed_to_install_incompatible_error">%1$s इसलिए इंस्टॉल नहीं किया जा सका क्योंकि यह %2$s %3$s के साथ काम नहीं करता है।</string>
   <!-- Text shown when attempting to install a (hard) blocked add-on. %1$s is the add-on name. %2$s is the app name. -->
   <string name="mozac_feature_addons_blocklisted_2" tools:ignore="BrandUsage">%1$s Mozilla की नीतियों का उल्लंघन करता है और इसे %2$s पर इंस्टॉल नहीं किया जा सकता।</string>
+  <!-- Text shown when attempting to install an add-on that can only be install via Enterprise Policies, which is not supported on Android.  %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_admin_install_only">%1$s को इंस्टॉल नहीं किया जा सका, क्योंकि इसे केवल Enterprise की पॉलिसी इस्तेमाल करने वाले ऑर्गनाइज़ेशन ही इंस्टॉल कर सकते हैं और इसे इस प्लेटफ़ॉर्म पर सपोर्ट नहीं किया जाता है।</string>
   <!-- Text shown when attempting to install an add-on that is soft-blocked. %1$s is the add-on name. %2$s is the app name. -->
   <string name="mozac_feature_addons_soft_blocked_2">%1$s प्रतिबंधित है और इसे %2$s पर इंस्टॉल नहीं किया जा सकता है।</string>
   <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
@@ -408,6 +414,8 @@
   <string name="mozac_feature_addons_installed_dialog_okay_button_2">ओके</string>
   <!-- "Learn more" link displayed below an add-on status message. -->
   <string name="mozac_feature_addons_status_learn_more">और जानें</string>
+  <!-- "See details" link displayed below an add-on status message. -->
+  <string name="mozac_feature_addons_status_see_details">जानकारी देखें</string>
   <!-- Status message below an add-on in the add-ons manager when this add-on has been blocklisted. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_status_blocklisted_1" tools:ignore="BrandUsage">यह एक्सटेंशन Mozilla की नीतियों का उल्लंघन करने के कारण ब्लॉक कर दिया गया है और इसे बंद कर दिया गया है।</string>
   <!-- Status message below an add-on in the add-ons manager when this add-on has been soft-blocked. -->
