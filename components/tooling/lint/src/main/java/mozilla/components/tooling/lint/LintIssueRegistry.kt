@@ -40,6 +40,7 @@ class LintIssueRegistry : IssueRegistry() {
             JUnitAssertNotNullDetector.ISSUE_USE_KOTLIN_TEST_ASSERT_NOT_NULL,
             PixelSizeForDetector.ISSUE_USE_PIXEL_SIZE_FOR,
             ConstraintLayoutPerfDetector.ISSUE,
+            ConstraintLayoutInflationDetector.ISSUE,
         ) + ContextCompatDetector.ISSUES + FragmentComposeViewDetector.ISSUES
     override val vendor: Vendor =
         Vendor(

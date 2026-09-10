@@ -16,7 +16,7 @@ import com.android.tools.lint.detector.api.XmlContext
 import org.w3c.dom.Element
 
 /** The framework's ConstraintLayout and the framework views that extend it. */
-private val CONSTRAINT_LAYOUT_ELEMENTS =
+internal val CONSTRAINT_LAYOUT_ELEMENTS =
     setOf(
         "androidx.constraintlayout.widget.ConstraintLayout",
         "androidx.constraintlayout.motion.widget.MotionLayout",
@@ -65,7 +65,8 @@ private val ISSUE_EXPLANATION =
  * - it will not notice if a ConstraintLayout is in the same view hierarchy at runtime but added from a different file
  *   (e.g. via <include>)
  * - it will not notice if a ConstraintLayout is added at runtime
- * - it will not notice a view of ours that extends ConstraintLayout
+ * - it will not notice a view of ours that extends ConstraintLayout. [ConstraintLayoutInflationDetector] covers the
+ *   case of those that cost anything, which is one inflating a second ConstraintLayout into itself.
  */
 class ConstraintLayoutPerfDetector : ResourceXmlDetector() {
 
