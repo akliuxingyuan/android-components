@@ -51,6 +51,7 @@ internal class ReaderViewControlsInteractor(
     }
 
     override fun onListenClicked() {
+        view.hideControls()
         onListenClicked.invoke()
     }
 }
