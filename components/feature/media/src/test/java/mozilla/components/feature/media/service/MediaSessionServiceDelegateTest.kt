@@ -28,6 +28,8 @@ import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.concept.engine.mediasession.MediaSession
 import mozilla.components.concept.engine.mediasession.MediaSession.Metadata
 import mozilla.components.concept.engine.mediasession.MediaSession.PlaybackState
+import mozilla.components.feature.media.MediaNimbus
+import mozilla.components.feature.media.MediaNotificationImprovements
 import mozilla.components.feature.media.ext.toPlaybackState
 import mozilla.components.feature.media.facts.MediaFacts
 import mozilla.components.feature.media.notification.MediaNotification
@@ -45,6 +47,7 @@ import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.whenever
 import mozilla.components.support.utils.ext.stopForegroundCompat
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -66,6 +69,11 @@ import org.robolectric.annotation.Config
 class MediaSessionServiceDelegateTest {
 
     private val notificationId = SharedIdsHelper.getIdForTag(testContext, AbstractMediaSessionService.NOTIFICATION_TAG)
+
+    @After
+    fun tearDown() {
+        MediaNimbus.features.mediaNotificationImprovements.withCachedValue(null)
+    }
 
     @Test
     fun `WHEN the service is created THEN create a new notification scope audio focus manager`() = runTest {
@@ -599,35 +607,43 @@ class MediaSessionServiceDelegateTest {
     }
 
     @Test
-    fun `WHEN handling the first media update THEN the real position is reported`() = runTest {
-        val delegate = MediaSessionServiceDelegate(testContext, mock(), BrowserStore(), mock(), mock(), this)
-        delegate.mediaSession = mock()
-        delegate.onCreate()
-        val playbackStateCaptor = argumentCaptor<PlaybackStateCompat>()
+    fun `GIVEN improvements enabled WHEN handling the first media update THEN the real position is reported`() =
+        runTest {
+            MediaNimbus.features.mediaNotificationImprovements.withCachedValue(
+                MediaNotificationImprovements(enabled = true)
+            )
+            val delegate = MediaSessionServiceDelegate(testContext, mock(), BrowserStore(), mock(), mock(), this)
+            delegate.mediaSession = mock()
+            delegate.onCreate()
+            val playbackStateCaptor = argumentCaptor<PlaybackStateCompat>()
 
-        delegate.updateMediaSession(mediaTabWith(title = "Song", position = 30.0))
+            delegate.updateMediaSession(mediaTabWith(title = "Song", position = 30.0))
 
-        verify(delegate.mediaSession).setPlaybackState(playbackStateCaptor.capture())
-        assertEquals(30_000L, playbackStateCaptor.value.position)
-    }
+            verify(delegate.mediaSession).setPlaybackState(playbackStateCaptor.capture())
+            assertEquals(30_000L, playbackStateCaptor.value.position)
+        }
 
     @Test
-    fun `WHEN the title changes THEN report position 0 until a fresh positionState arrives`() = runTest {
-        val delegate = MediaSessionServiceDelegate(testContext, mock(), BrowserStore(), mock(), mock(), this)
-        delegate.mediaSession = mock()
-        delegate.onCreate()
-        val playbackStateCaptor = argumentCaptor<PlaybackStateCompat>()
+    fun `GIVEN improvements enabled WHEN the title changes THEN report position 0 until a fresh positionState arrives`() =
+        runTest {
+            MediaNimbus.features.mediaNotificationImprovements.withCachedValue(
+                MediaNotificationImprovements(enabled = true)
+            )
+            val delegate = MediaSessionServiceDelegate(testContext, mock(), BrowserStore(), mock(), mock(), this)
+            delegate.mediaSession = mock()
+            delegate.onCreate()
+            val playbackStateCaptor = argumentCaptor<PlaybackStateCompat>()
 
-        delegate.updateMediaSession(mediaTabWith(title = "A", position = 30.0))
-        delegate.updateMediaSession(mediaTabWith(title = "B", position = 30.0))
-        delegate.updateMediaSession(mediaTabWith(title = "B", position = 2.0))
+            delegate.updateMediaSession(mediaTabWith(title = "A", position = 30.0))
+            delegate.updateMediaSession(mediaTabWith(title = "B", position = 30.0))
+            delegate.updateMediaSession(mediaTabWith(title = "B", position = 2.0))
 
-        verify(delegate.mediaSession, times(3)).setPlaybackState(playbackStateCaptor.capture())
-        assertEquals(
-            listOf(30_000L, 0L, 2_000L),
-            playbackStateCaptor.allValues.map { it.position },
-        )
-    }
+            verify(delegate.mediaSession, times(3)).setPlaybackState(playbackStateCaptor.capture())
+            assertEquals(
+                listOf(30_000L, 0L, 2_000L),
+                playbackStateCaptor.allValues.map { it.position },
+            )
+        }
 
     private fun mediaTabWith(title: String, position: Double) =
         createTab(
