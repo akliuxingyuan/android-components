@@ -21,6 +21,12 @@ private val fullState =
         mode = ListenMode.Player,
         error = ListenError.PlaybackFailed,
         voiceState = VoiceState(availableVoices = listOf("Gonzo", "Animal", "Kermit").map { Voice(it) }),
+        playbackState =
+            PlaybackState(
+                phase = PlaybackPhase.Playing,
+                chunk = ChunkState(index = 3, durationMs = 30_000),
+                positionMs = 12_000,
+            ),
     )
 
 class ListenReducerTest {
@@ -43,6 +49,7 @@ class ListenReducerTest {
         assertEquals(ListenMode.Player, state.mode)
         assertEquals("de-DE", state.languageTag)
         assertEquals(fullState.voiceState, state.voiceState) // here
+        assertEquals(PlaybackState(), state.playbackState)
     }
 
     @Test
@@ -180,5 +187,58 @@ class ListenReducerTest {
 
         assertEquals("fr-FR", state.languageTag)
         assertEquals(VoiceState(), state.voiceState)
+    }
+
+    @Test
+    fun `test that a session is playing nothing by default`() {
+        val initial = ListenState()
+
+        assertEquals(PlaybackPhase.Idle, initial.playbackState.phase)
+        assertEquals(0, initial.playbackState.chunk.index)
+        assertEquals(0, initial.playbackState.positionMs)
+        assertNull(initial.playbackState.chunk.durationMs)
+    }
+
+    @Test
+    fun `test that what the player reports is recorded`() {
+        val reported = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 2), positionMs = 4_000)
+
+        val state = listenReducer(ListenState(), ListenAction.Playback.StateChangeObserved(reported))
+
+        assertEquals(reported, state.playbackState)
+    }
+
+    @Test
+    fun `test that what the player reports leaves the rest of the session alone`() {
+        val reported = PlaybackState(phase = PlaybackPhase.Paused, positionMs = 1_000)
+
+        val state = listenReducer(fullState, ListenAction.Playback.StateChangeObserved(reported))
+
+        assertEquals(fullState.copy(playbackState = reported), state)
+    }
+
+    @Test
+    fun `test that a failed player is reported as an error`() {
+        val state =
+            listenReducer(
+                ListenState(),
+                ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Failed)),
+            )
+
+        assertEquals(ListenError.PlaybackFailed, state.error)
+        assertEquals(PlaybackPhase.Failed, state.playbackState.phase)
+    }
+
+    // An error the user has not seen yet outlives a report that has nothing to say about it, so that a phase change
+    // arriving in between cannot take the dialog away.
+    @Test
+    fun `test that a player with nothing wrong leaves an existing error alone`() {
+        val state =
+            listenReducer(
+                fullState.copy(error = ListenError.SynthesisFailed),
+                ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Paused)),
+            )
+
+        assertEquals(ListenError.SynthesisFailed, state.error)
     }
 }

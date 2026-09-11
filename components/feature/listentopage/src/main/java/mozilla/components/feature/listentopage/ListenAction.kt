@@ -54,6 +54,16 @@ sealed interface ListenAction : Action {
         data object NoOfflineVoicesAvailable : Voices
     }
 
+    /** Actions reporting what the player is doing. */
+    sealed interface Playback : ListenAction {
+        /**
+         * The player reported a change.
+         *
+         * @property playbackState What the player is doing now.
+         */
+        data class StateChangeObserved(val playbackState: PlaybackState) : Playback
+    }
+
     /** The error that needs to be cleared it is shown. */
     data object ErrorDismissed : ListenAction
 }

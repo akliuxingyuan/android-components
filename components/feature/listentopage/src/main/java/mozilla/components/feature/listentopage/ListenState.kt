@@ -16,6 +16,7 @@ import mozilla.components.lib.state.State
  * @property languageTag The BCP 47 language of the article, used to pick a voice.
  * @property error The last error, or `null`.
  * @property voiceState State relating to narrator voice.
+ * @property playbackState State relating to the audio being played.
  */
 data class ListenState(
     val tabId: String? = null,
@@ -25,6 +26,7 @@ data class ListenState(
     val mode: ListenMode = ListenMode.Player,
     val error: ListenError? = null,
     val voiceState: VoiceState = VoiceState(),
+    val playbackState: PlaybackState = PlaybackState(),
 ) : State
 
 /** What the user asked to see. */
@@ -61,3 +63,38 @@ data class VoiceState(
 
 /** Metadata defining a narrator voice. */
 data class Voice(val id: String)
+
+/**
+ * State relating to the audio being played, as reported by the player.
+ *
+ * @property phase What the player is doing.
+ * @property chunk The chunk being played.
+ * @property positionMs How far into [chunk] the playback has got, not how far into the article. It moves in whole
+ *   seconds since that is user-facing granularity.
+ */
+data class PlaybackState(
+    val phase: PlaybackPhase = PlaybackPhase.Idle,
+    val chunk: ChunkState = ChunkState(),
+    val positionMs: Long = 0,
+)
+
+/**
+ * Current chunk state related to playback.
+ *
+ * @property index Which chunk of the article it is.
+ * @property durationMs How long it is, or `null` while the player does not know yet.
+ */
+data class ChunkState(
+    val index: Int = 0,
+    val durationMs: Long? = null,
+)
+
+/** What the player is doing. */
+enum class PlaybackPhase {
+    Idle,
+    Buffering,
+    Playing,
+    Paused,
+    Ended,
+    Failed,
+}

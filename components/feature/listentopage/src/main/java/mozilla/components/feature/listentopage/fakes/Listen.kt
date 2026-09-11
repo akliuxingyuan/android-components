@@ -5,6 +5,8 @@
 package mozilla.components.feature.listentopage.fakes
 
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
+import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.Voice
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.PlaybackController
@@ -73,10 +75,14 @@ class FakeAudioFileCache : AudioFileCache {
  *
  * @property played Every file it was asked to play, in order.
  * @property released Whether [release] has been called.
+ * @property status What to report about the playback. Set it to drive a caller's monitoring, including changes no
+ *   command of theirs asked for.
  */
 class FakePlaybackController : PlaybackController {
     val played = mutableListOf<File>()
     var released = false
+
+    override val status = MutableStateFlow(PlaybackState())
 
     override suspend fun play(file: File) {
         played.add(file)
@@ -90,5 +96,6 @@ class FakePlaybackController : PlaybackController {
 
     override suspend fun release() {
         released = true
+        status.value = PlaybackState()
     }
 }

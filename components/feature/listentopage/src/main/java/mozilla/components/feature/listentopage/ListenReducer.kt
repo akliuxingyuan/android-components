@@ -16,6 +16,7 @@ fun listenReducer(state: ListenState, action: ListenAction): ListenState =
         is ListenAction.Session -> reduceSession(state, action)
         is ListenAction.Content -> reduceContent(state, action)
         is ListenAction.Voices -> reduceVoices(state, action)
+        is ListenAction.Playback -> reducePlayback(state, action)
         ListenAction.ErrorDismissed -> state.copy(error = null)
     }
 
@@ -45,6 +46,20 @@ private fun reduceContent(state: ListenState, action: ListenAction.Content): Lis
             }
 
         ListenAction.Content.ContentUnavailable -> state.copy(error = ListenError.ContentUnavailable)
+    }
+
+private fun reducePlayback(state: ListenState, action: ListenAction.Playback): ListenState =
+    when (action) {
+        is ListenAction.Playback.StateChangeObserved ->
+            state.copy(
+                playbackState = action.playbackState,
+                error =
+                    if (action.playbackState.phase == PlaybackPhase.Failed) {
+                        ListenError.PlaybackFailed
+                    } else {
+                        state.error
+                    },
+            )
     }
 
 private fun reduceVoices(state: ListenState, action: ListenAction.Voices): ListenState =

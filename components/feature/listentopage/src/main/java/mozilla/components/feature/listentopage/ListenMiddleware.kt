@@ -54,6 +54,7 @@ class ListenMiddleware(
     private var contentJob: Job? = null
     private var voicesJob: Job? = null
     private var playbackJob: Job? = null
+    private var playbackStatusJob: Job? = null
 
     // The article the session reads out. Bug 2064848 replaces this with the chunk list.
     //
@@ -77,7 +78,10 @@ class ListenMiddleware(
         next(action)
 
         when (action) {
-            is ListenAction.Session.ListenRequested -> requestContent(store, action.tabId)
+            is ListenAction.Session.ListenRequested -> {
+                observePlayback(store)
+                requestContent(store, action.tabId)
+            }
 
             ListenAction.Session.StopRequested -> stop()
 
@@ -93,7 +97,19 @@ class ListenMiddleware(
             ListenAction.Content.ContentUnavailable,
             is ListenAction.Voices.AvailableVoicesLoaded,
             ListenAction.Voices.NoOfflineVoicesAvailable,
+            is ListenAction.Playback.StateChangeObserved,
             ListenAction.ErrorDismissed -> Unit
+        }
+    }
+
+    /**
+     * Reports what the player is doing into the store, for as long as the session lasts. Since playback can be
+     * controlled through the notification (or outside audio sources) we cannot create this state based on our commands.
+     */
+    private fun observePlayback(store: ListenStore) {
+        playbackStatusJob?.cancel()
+        playbackStatusJob = scope.launch {
+            playbackController.status.collect { store.dispatch(ListenAction.Playback.StateChangeObserved(it)) }
         }
     }
 
@@ -191,6 +207,7 @@ class ListenMiddleware(
         contentJob?.cancel()
         voicesJob?.cancel()
         playbackJob?.cancel()
+        playbackStatusJob?.cancel()
         article = null
 
         val closing = synthesizer

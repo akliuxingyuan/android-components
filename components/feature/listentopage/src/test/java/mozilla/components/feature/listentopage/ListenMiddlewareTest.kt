@@ -6,8 +6,11 @@ package mozilla.components.feature.listentopage
 
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -22,6 +25,7 @@ import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesisException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -35,6 +39,17 @@ private const val ENGINE = "com.example.tts"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ListenMiddlewareTest {
+
+    // The middleware watches the player for as long as a session lasts, so its scope cannot be the test's own: runTest
+    // waits for that scope's children and the watch never finishes on its own. These share the test's scheduler, so
+    // advanceUntilIdle still drives them, but they are nobody's child and so nothing waits on them.
+    private val middlewareScopes = mutableListOf<CoroutineScope>()
+
+    @After
+    fun tearDown() {
+        middlewareScopes.forEach { it.cancel() }
+        middlewareScopes.clear()
+    }
 
     @Test
     fun `test that the article of the requested tab is extracted and its language recorded`() = runTest {
@@ -333,7 +348,7 @@ class ListenMiddlewareTest {
 
         assertEquals(listOf("First article."), synthesizer.requests)
 
-        // Let the second extraction finish, so the test scope has nothing left running when the body returns.
+        // Let the second extraction finish, so the middleware has nothing left running when the body returns.
         secondExtraction.complete(Result.failure(RuntimeException("Extraction abandoned")))
         advanceUntilIdle()
     }
@@ -464,6 +479,105 @@ class ListenMiddlewareTest {
         assertEquals(listOf("en-US", "fr-FR"), synthesizer.voiceRequests)
     }
 
+    @Test
+    fun `test that what the player reports is recorded in the state`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(playbackController = playback) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val reported =
+            PlaybackState(
+                phase = PlaybackPhase.Playing,
+                chunk = ChunkState(index = 1, durationMs = 30_000),
+                positionMs = 4_000,
+            )
+        playback.status.value = reported
+        advanceUntilIdle()
+
+        assertEquals(reported, store.state.playbackState)
+    }
+
+    // The notification's own controls and anything taking audio focus move the player without passing through the
+    // store, so a state that followed the commands it sent would be wrong about whether audio is playing.
+    @Test
+    fun `test that a pause the store never asked for is still recorded`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(playbackController = playback) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing)
+        advanceUntilIdle()
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Paused, positionMs = 9_000)
+        advanceUntilIdle()
+
+        assertEquals(PlaybackPhase.Paused, store.state.playbackState.phase)
+        assertEquals(9_000, store.state.playbackState.positionMs)
+    }
+
+    @Test
+    fun `test that a failing player is reported as an error`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(playbackController = playback) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Failed)
+        advanceUntilIdle()
+
+        assertEquals(ListenError.PlaybackFailed, store.state.error)
+    }
+
+    @Test
+    fun `test that the player is no longer watched once the session stops`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(playbackController = playback) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Session.StopRequested)
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 4_000)
+        advanceUntilIdle()
+
+        assertEquals(PlaybackState(), store.state.playbackState)
+    }
+
+    // The player is watched from the request, not from the first thing played, because the session can fail before
+    // anything is given to the player and the sheet still has to know it is not playing.
+    @Test
+    fun `test that the player is watched again by the session after a stop`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(playbackController = playback) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Session.StopRequested)
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Session.ListenRequested(OTHER_TAB_ID, URL))
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 4_000)
+        advanceUntilIdle()
+
+        assertEquals(PlaybackPhase.Playing, store.state.playbackState.phase)
+    }
+
     /** An engine that offers a voice, so that only [synthesizeToFile] can fail a test that uses it. */
     private fun failingSynthesizer(failure: () -> Nothing) =
         object : SpeechSynthesizer {
@@ -484,8 +598,11 @@ class ListenMiddlewareTest {
         audioCache: AudioFileCache = FakeAudioFileCache(),
         settings: ListenSettings = ListenSettings.inMemory(),
         contentProvider: ContentProvider,
-    ) =
-        ListenStore(
+    ): ListenStore {
+        val middlewareScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        middlewareScopes.add(middlewareScope)
+
+        return ListenStore(
             initialState = ListenState(),
             reducer = ::listenReducer,
             middleware =
@@ -496,9 +613,10 @@ class ListenMiddlewareTest {
                         audioCache = audioCache,
                         playbackController = playbackController,
                         settings = settings,
-                        scope = this,
+                        scope = middlewareScope,
                         ioDispatcher = Dispatchers.Unconfined,
                     )
                 ),
         )
+    }
 }
