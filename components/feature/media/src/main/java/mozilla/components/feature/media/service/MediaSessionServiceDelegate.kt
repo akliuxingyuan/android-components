@@ -27,7 +27,6 @@ import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.concept.engine.mediasession.MediaSession
 import mozilla.components.concept.engine.mediasession.MediaSession.PlaybackState.PAUSED
 import mozilla.components.concept.engine.mediasession.MediaSession.PlaybackState.PLAYING
-import mozilla.components.feature.media.MediaNimbus
 import mozilla.components.feature.media.ext.MS_PER_SECOND
 import mozilla.components.feature.media.ext.getArtistOrUrl
 import mozilla.components.feature.media.ext.getNonPrivateIcon
@@ -278,38 +277,27 @@ internal class MediaSessionServiceDelegate(
     @VisibleForTesting
     internal fun updateMediaSession(sessionState: SessionState) {
         val mss = sessionState.mediaSessionState
-        val improvementsEnabled = MediaNimbus.features.mediaNotificationImprovements.value().enabled
 
+        val newTitle = mss?.metadata?.title
+        val currentPositionState = mss?.positionState
+        if (hasTrackedMedia && newTitle != lastTitle) {
+            stalePositionState = currentPositionState
+        }
+        hasTrackedMedia = true
+        lastTitle = newTitle
         val resetPosition: Boolean =
-            if (improvementsEnabled) {
-                val newTitle = mss?.metadata?.title
-                val currentPositionState = mss?.positionState
-                if (hasTrackedMedia && newTitle != lastTitle) {
-                    stalePositionState = currentPositionState
-                }
-                hasTrackedMedia = true
-                lastTitle = newTitle
-                if (stalePositionState != null && currentPositionState == stalePositionState) {
-                    true
-                } else {
-                    stalePositionState = null
-                    false
-                }
+            if (stalePositionState != null && currentPositionState == stalePositionState) {
+                true
             } else {
+                stalePositionState = null
                 false
             }
 
         mediaSession.setPlaybackState(mss?.toPlaybackState(resetPosition))
         mediaSession.isActive = true
-        val durationMs =
-            if (improvementsEnabled) {
-                val duration =
-                    mss?.positionState?.duration?.takeIf { it > 0 } ?: mss?.elementMetadata?.duration?.takeIf { it > 0 }
-
-                duration?.times(MS_PER_SECOND)?.toLong() ?: -1L
-            } else {
-                -1L
-            }
+        val duration =
+            mss?.positionState?.duration?.takeIf { it > 0 } ?: mss?.elementMetadata?.duration?.takeIf { it > 0 }
+        val durationMs = duration?.times(MS_PER_SECOND)?.toLong() ?: -1L
         notificationScope?.launch {
             mediaSession.setMetadata(
                 MediaMetadataCompat.Builder()
