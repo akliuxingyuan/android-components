@@ -228,6 +228,9 @@ open class FxaAccountManager(
                         }
                         syncManager?.now(reason, debounce, customEngineSubset)
                     }
+
+                    // refresh profile on explicit "sync now" action
+                    refreshProfile(ignoreCache = true)
                 }
                 else -> logger.info("Ignoring syncNow request, not in the right state: $s")
             }
