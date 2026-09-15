@@ -5,13 +5,21 @@
 package mozilla.components.lib.crash
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class UncaughtExceptionCrashTest {
+
+    @Test
+    fun `UncaughtExceptionCrash wraps exception`() {
+        val exception = RuntimeException("Kaput")
+
+        val crash = Crash.UncaughtExceptionCrash(0, exception, arrayListOf())
+
+        assertEquals(exception, crash.throwable)
+    }
 
     @Test
     fun `to and from bundle`() {
@@ -21,10 +29,6 @@ class UncaughtExceptionCrashTest {
         val bundle = crash.toBundle()
         val otherCrash = Crash.UncaughtExceptionCrash.fromBundle(bundle)
 
-        assertEquals(crash.uuid, otherCrash.uuid)
-        assertEquals(crash.timestamp, otherCrash.timestamp)
-        assertEquals(crash.breadcrumbs, otherCrash.breadcrumbs)
-        assertEquals(crash.throwable.message, otherCrash.throwable.message)
-        assertArrayEquals(crash.throwable.stackTrace, otherCrash.throwable.stackTrace)
+        assertEquals(crash, otherCrash)
     }
 }

@@ -8,12 +8,13 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.annotation.StringDef
+import java.io.Serializable
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import mozilla.components.concept.base.crash.Breadcrumb
-import mozilla.components.lib.crash.db.CrashReporterUnableToRestoreException
 import mozilla.components.lib.crash.runtimetagproviders.ExperimentData
 import mozilla.components.support.utils.ext.getParcelableArrayListCompat
+import mozilla.components.support.utils.ext.getSerializableCompat
 import org.json.JSONArray
 
 // Intent extra used to store crash data under when passing crashes in Intent objects
@@ -168,7 +169,7 @@ sealed class Crash {
         override fun toBundle() =
             Bundle().apply {
                 putString(INTENT_UUID, uuid)
-                putByteArray(INTENT_EXCEPTION, throwable.serialize())
+                putSerializable(INTENT_EXCEPTION, throwable as Serializable)
                 putLong(INTENT_CRASH_TIMESTAMP, timestamp)
                 putParcelableArrayList(INTENT_BREADCRUMBS, breadcrumbs)
                 putSerializable(INTENT_RUNTIME_TAGS, HashMap(runtimeTags))
@@ -176,12 +177,14 @@ sealed class Crash {
 
         companion object {
             @Suppress("UNCHECKED_CAST", "DEPRECATION")
-            internal fun fromBundle(bundle: Bundle): UncaughtExceptionCrash {
-                return UncaughtExceptionCrash(
+            internal fun fromBundle(bundle: Bundle) =
+                UncaughtExceptionCrash(
                     uuid = bundle.getString(INTENT_UUID) as String,
                     throwable =
-                        bundle.getByteArray(INTENT_EXCEPTION)?.deserializeThrowable()
-                            ?: CrashReporterUnableToRestoreException("Unable to restore throwable from bundle"),
+                        bundle.getSerializableCompat(
+                            INTENT_EXCEPTION,
+                            Throwable::class.java,
+                        ) as Throwable,
                     breadcrumbs =
                         bundle.getParcelableArrayListCompat(
                             INTENT_BREADCRUMBS,
@@ -191,7 +194,6 @@ sealed class Crash {
                     runtimeTags =
                         bundle.getSerializable(INTENT_RUNTIME_TAGS) as? HashMap<String, String> ?: hashMapOf(),
                 )
-            }
         }
     }
 
