@@ -9,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,6 +22,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CollectionItemInfo
 import androidx.compose.ui.semantics.Role
@@ -33,6 +36,7 @@ import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemActionButton
 import mozilla.components.compose.menu.data.MenuItemBadge
 import mozilla.components.compose.menu.data.MenuItemSummary
@@ -47,11 +51,11 @@ import mozilla.components.ui.icons.R as iconsR
  * A menu item shown as a row in a vertical list.
  *
  * @param title The title of the menu item.
- * @param contentDescription The content description of the menu item.
  * @param modifier The modifier to apply to the menu item.
  * @param index The optional index of this item in the list.
  * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
  * @param onClick The callback to invoke when the menu item is clicked.
+ * @param contentDescription An optional content description for the menu item.
  * @param role The [Role] of the menu item.
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
@@ -63,11 +67,11 @@ import mozilla.components.ui.icons.R as iconsR
 @Composable
 internal fun MenuListItem(
     title: Text,
-    contentDescription: Text,
     modifier: Modifier = Modifier,
     index: Int? = null,
     onClickEvent: MenuEvent,
     onClick: (MenuEvent) -> Unit,
+    contentDescription: Text?,
     role: Role = Button,
     summary: MenuItemSummary? = null,
     icon: MenuItemIcon? = null,
@@ -77,21 +81,21 @@ internal fun MenuListItem(
     state: MenuItemState = DEFAULT,
 ) {
     Row(
-        modifier =
-            modifier
-                .background(MaterialTheme.colorScheme.surfaceBright)
-                .minimumInteractiveComponentSize()
-                .height(IntrinsicSize.Min),
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceBright).height(IntrinsicSize.Min),
         verticalAlignment = CenterVertically,
     ) {
-        val contentDescriptionValue = contentDescription.value
+        val contentDescriptionValue = contentDescription?.value
         Row(
             modifier =
                 Modifier.weight(1f)
-                    .padding(
-                        horizontal = AcornTheme.layout.space.static200,
-                        vertical = AcornTheme.layout.space.static100,
+                    .defaultMinSize(
+                        minHeight =
+                            when (summary) {
+                                null -> dimensionResource(R.dimen.mozac_menu_item_min_height)
+                                else -> dimensionResource(R.dimen.mozac_menu_item_with_summary_min_height)
+                            }
                     )
+                    .fillMaxHeight()
                     .semantics(mergeDescendants = true) {
                         index?.let {
                             this.collectionItemInfo =
@@ -102,10 +106,14 @@ internal fun MenuListItem(
                                     columnSpan = 1,
                                 )
                         }
-                        this.contentDescription = contentDescriptionValue
+                        contentDescriptionValue?.let { this.contentDescription = it }
                         this.role = role
                     }
-                    .clickable(enabled = state != DISABLED) { onClick(onClickEvent) },
+                    .clickable(enabled = state != DISABLED) { onClick(onClickEvent) }
+                    .padding(
+                        horizontal = AcornTheme.layout.space.static200,
+                        vertical = AcornTheme.layout.space.static100,
+                    ),
             verticalAlignment = CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static200),
         ) {

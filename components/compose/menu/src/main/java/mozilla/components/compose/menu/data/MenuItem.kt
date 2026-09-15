@@ -16,7 +16,7 @@ import mozilla.components.compose.menu.ui.MenuItemState.DEFAULT
 /** Parent of all items that can be shown in a menu. */
 sealed class MenuItem {
     abstract val title: Text
-    abstract val contentDescription: Text
+    abstract val contentDescription: Text?
     abstract val onClickEvent: MenuEvent
     abstract val role: Role
     abstract val summary: MenuItemSummary?
@@ -66,8 +66,8 @@ data class ExpandableMenuItem(
  * Configuration of a standard menu item.
  *
  * @param title The title of the menu item.
- * @param contentDescription The content description of the menu item.
  * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
+ * @param contentDescription Optional custom content description for the menu item.
  * @param role The [Role] of the menu item.
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
@@ -79,8 +79,8 @@ data class ExpandableMenuItem(
  */
 data class StandardMenuItem(
     override val title: Text,
-    override val contentDescription: Text,
     override val onClickEvent: MenuEvent,
+    override val contentDescription: Text? = null,
     override val role: Role = Button,
     override val summary: MenuItemSummary? = null,
     override val icon: MenuItemIcon? = null,
