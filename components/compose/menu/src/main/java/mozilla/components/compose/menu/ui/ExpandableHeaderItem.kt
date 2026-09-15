@@ -138,7 +138,7 @@ fun ExpandableHeaderItem(
 
                 MenuListItemNewIndicator(showNewIndicator, state)
 
-                MenuListItemBadge(badge, state)
+                MenuListItemBadge(badge)
 
                 ChevronBadge(actionButtonText?.value, isExpanded)
             }

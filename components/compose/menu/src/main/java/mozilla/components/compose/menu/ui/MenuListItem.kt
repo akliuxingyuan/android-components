@@ -5,7 +5,6 @@
 package mozilla.components.compose.menu.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -25,14 +24,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CollectionItemInfo
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.semantics.collectionItemInfo
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.IconButton
+import mozilla.components.compose.base.modifier.debouncedClickable
+import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
@@ -107,9 +110,10 @@ internal fun MenuListItem(
                                 )
                         }
                         contentDescriptionValue?.let { this.contentDescription = it }
+                        liveRegion = LiveRegionMode.Polite
                         this.role = role
                     }
-                    .clickable(enabled = state != DISABLED) { onClick(onClickEvent) }
+                    .thenConditional(Modifier.debouncedClickable { onClick(onClickEvent) }) { state != DISABLED }
                     .padding(
                         horizontal = AcornTheme.layout.space.static200,
                         vertical = AcornTheme.layout.space.static100,
@@ -123,7 +127,7 @@ internal fun MenuListItem(
 
             MenuListItemNewIndicator(showNewIndicator, state)
 
-            MenuListItemBadge(badge, state)
+            MenuListItemBadge(badge)
         }
 
         MenuListItemActionButton(actionButton, onClick)
