@@ -1818,6 +1818,17 @@ projects:
     publish: true
     upstream_dependencies:
     - components:tooling-lint
+  components:feature-tabgroups-storage:
+    description: Component for persisting tab groups and the assignment of tabs to
+      those groups.
+    path: components/feature/tabgroups-storage
+    publish: true
+    upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:support-base
+    - components:support-utils
+    - components:tooling-lint
   components:feature-tabs:
     description: Feature implementation connecting a tabs tray implementation with
       the session and toolbar modules.
