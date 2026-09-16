@@ -65,6 +65,24 @@ class TextChunkerTest {
     }
 
     @Test
+    fun `test that chunking a chunk again cuts it at its own front`() {
+        val chunk = chunker.chunk(ENGLISH_SENTENCES.joinToString(" "), 200, "en").first()
+
+        val pieces = chunker.chunk(chunk, 50, "en")
+
+        assertTrue("Only ${pieces.size} pieces to walk", pieces.size > 1)
+        assertTrue("<${pieces.first()}> is not the front of <$chunk>", chunk.startsWith(pieces.first()))
+        assertEquals(chunk, pieces.joinToString(" "))
+    }
+
+    @Test
+    fun `test that chunking a chunk which already fits gives it back whole`() {
+        val chunk = chunker.chunk(ENGLISH_SENTENCES.joinToString(" "), 200, "en").first()
+
+        assertEquals(listOf(chunk), chunker.chunk(chunk, 200, "en"))
+    }
+
+    @Test
     fun `test that German text is cut on sentence boundaries`() =
         assertChunksHoldWholeSentences(GERMAN_SENTENCES, separator = " ", languageTag = "de", maxInputLength = 120)
 

@@ -30,6 +30,14 @@ interface TextChunker {
      */
     fun chunk(text: String, maxInputLength: Int, languageTag: String): List<String>
 
+    /**
+     * Where the first sentence of [text] with something in it ends, or the length of [text] when it has none.
+     *
+     * @param text The article text.
+     * @param languageTag BCP 47 language tag of the article, which decides where the sentences are.
+     */
+    fun firstSentenceEnd(text: String, languageTag: String): Int
+
     companion object {
         /** Creates a [TextChunker] that cuts on the sentence boundaries the platform ICU library reports. */
         fun android(): TextChunker = AndroidTextChunker()
@@ -48,6 +56,18 @@ internal class AndroidTextChunker : TextChunker {
         val locale = localeFor(languageTag)
 
         return partitionIntoChunks(sentences(text, locale), maxInputLength, locale)
+    }
+
+    override fun firstSentenceEnd(text: String, languageTag: String): Int {
+        val boundaries = BreakIterator.getSentenceInstance(localeFor(languageTag))
+        boundaries.setText(text)
+
+        var end = boundaries.next()
+        while (end != BreakIterator.DONE && text.substring(0, end).isBlank()) {
+            end = boundaries.next()
+        }
+
+        return if (end == BreakIterator.DONE) text.length else end
     }
 
     /**

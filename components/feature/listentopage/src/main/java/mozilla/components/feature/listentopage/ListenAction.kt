@@ -64,6 +64,12 @@ sealed interface ListenAction : Action {
         data class StateChangeObserved(val playbackState: PlaybackState) : Playback
     }
 
+    /** Actions reporting what the speech engine did with the article. */
+    sealed interface Synthesis : ListenAction {
+        /** The engine could not turn the article into audio. */
+        data object SynthesisFailed : Synthesis
+    }
+
     /** The error that needs to be cleared it is shown. */
     data object ErrorDismissed : ListenAction
 }

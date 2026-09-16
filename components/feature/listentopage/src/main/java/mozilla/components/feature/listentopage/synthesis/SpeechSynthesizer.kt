@@ -195,7 +195,7 @@ internal class AndroidTtsSpeechSynthesizer(
             requests.remove(utteranceId)
 
             // The engine has no way to cancel one utterance: stop() drops everything it holds. So a caller must not
-            // run two requests at once and then cancel one of them. Bug 2064849's queue owns that ordering.
+            // run two requests at once and then cancel one of them.
             //
             // Deliberately leaves the file behind: cancellation can arrive on the main thread and deleting reads the
             // disk. The abandoned file is in the cache directory and goes with the next clear().

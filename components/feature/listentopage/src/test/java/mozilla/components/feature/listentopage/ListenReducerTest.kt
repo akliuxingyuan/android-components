@@ -163,6 +163,23 @@ class ListenReducerTest {
     }
 
     @Test
+    fun `test that a failed synthesis becomes an error the session can show`() {
+        val state = listenReducer(ListenState(tabId = "tab-1"), ListenAction.Synthesis.SynthesisFailed)
+
+        assertEquals(ListenError.SynthesisFailed, state.error)
+        assertEquals("tab-1", state.tabId)
+    }
+
+    @Test
+    fun `test that a failed synthesis can be dismissed`() {
+        val failed = listenReducer(ListenState(tabId = "tab-1"), ListenAction.Synthesis.SynthesisFailed)
+
+        val dismissed = listenReducer(failed, ListenAction.ErrorDismissed)
+
+        assertNull(dismissed.error)
+    }
+
+    @Test
     fun `test that a session has no tab, no error and the player mode by default`() {
         val initial = ListenState()
 

@@ -17,6 +17,7 @@ fun listenReducer(state: ListenState, action: ListenAction): ListenState =
         is ListenAction.Content -> reduceContent(state, action)
         is ListenAction.Voices -> reduceVoices(state, action)
         is ListenAction.Playback -> reducePlayback(state, action)
+        is ListenAction.Synthesis -> reduceSynthesis(state, action)
         ListenAction.ErrorDismissed -> state.copy(error = null)
     }
 
@@ -62,10 +63,16 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
             )
     }
 
+private fun reduceSynthesis(state: ListenState, action: ListenAction.Synthesis): ListenState =
+    when (action) {
+        ListenAction.Synthesis.SynthesisFailed -> state.copy(error = ListenError.SynthesisFailed)
+    }
+
 private fun reduceVoices(state: ListenState, action: ListenAction.Voices): ListenState =
     when (action) {
         is ListenAction.Voices.VoiceSelected ->
             state.copy(voiceState = state.voiceState.copy(selectedVoice = action.voice))
+
         is ListenAction.Voices.AvailableVoicesLoaded ->
             state.copy(
                 voiceState =
