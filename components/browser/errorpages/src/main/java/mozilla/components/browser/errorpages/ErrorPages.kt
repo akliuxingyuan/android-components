@@ -148,10 +148,19 @@ object ErrorPages {
         if (archiveUrl.isEmpty()) {
             return ""
         }
+        val waybackMachineLabel = context.getString(R.string.mozac_browser_errorpages_archive_wayback_machine)
         return "&archiveUrl=${archiveUrl.urlEncode()}" +
             "&archiveCheckButtonLabel=${
                 context.getString(R.string.mozac_browser_errorpages_archive_check_button).urlEncode()
             }" +
+            "&archiveDescriptionMessage=${
+                context.getString(
+                    R.string.mozac_browser_errorpages_archive_description,
+                    context.appName,
+                    waybackMachineLabel,
+                ).urlEncode()
+            }" +
+            "&archiveDescriptionLinkLabel=${waybackMachineLabel.urlEncode()}" +
             "&archiveCheckingLabel=${
                 context.getString(R.string.mozac_browser_errorpages_archive_checking).urlEncode()
             }" +
