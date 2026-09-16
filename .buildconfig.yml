@@ -1811,6 +1811,13 @@ projects:
     - components:ui-icons
     - components:ui-tabcounter
     - components:ui-widgets
+  components:feature-tabdata-coordinator:
+    description: Component gathering tab data, such as tabs and tab groups, from its
+      various sources into a single consumable location.
+    path: components/feature/tabdata-coordinator
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:feature-tabs:
     description: Feature implementation connecting a tabs tray implementation with
       the session and toolbar modules.
