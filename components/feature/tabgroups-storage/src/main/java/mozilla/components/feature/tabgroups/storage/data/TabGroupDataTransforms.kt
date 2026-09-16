@@ -16,12 +16,17 @@ internal fun TabGroup.toStoredTabGroup(): StoredTabGroup =
         lastModified = lastModified,
     )
 
-/** Converts a [StoredTabGroup] so it can be emitted from the storage layer. */
-internal fun StoredTabGroup.toTabGroup(): TabGroup =
+/**
+ * Converts a [StoredTabGroup] so it can be emitted from the storage layer.
+ *
+ * @param tabIds The list of tab IDs that are assigned to this group.
+ */
+internal fun StoredTabGroup.toTabGroup(tabIds: List<String>): TabGroup =
     TabGroup(
         id = id,
         title = title,
         theme = theme,
         closed = closed,
         lastModified = lastModified,
+        tabIds = tabIds,
     )

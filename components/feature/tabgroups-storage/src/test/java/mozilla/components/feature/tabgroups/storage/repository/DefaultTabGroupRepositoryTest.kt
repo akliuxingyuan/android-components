@@ -65,19 +65,17 @@ class DefaultTabGroupRepositoryTest {
 
     @Test
     fun `WHEN a tab group is created with tabs THEN add the group and group assignments to the database`() = runTest {
+        val tabIds = List(size = 10) { "$it" }
         val expectedTabGroup =
             TabGroup(
                 title = "title",
                 theme = "theme",
                 lastModified = 10L,
+                tabIds = tabIds,
             )
-        val tabIds = List(size = 10) { "$it" }
         val expectedTabGroupAssignments = tabIds.associateWith { expectedTabGroup.id }
 
-        repository.createTabGroupWithTabs(
-            tabGroup = expectedTabGroup,
-            tabIds = tabIds,
-        )
+        repository.createTabGroupWithTabs(tabGroup = expectedTabGroup)
 
         advanceUntilIdle()
 
@@ -92,6 +90,7 @@ class DefaultTabGroupRepositoryTest {
                 title = "title",
                 theme = "theme",
                 lastModified = 10L,
+                tabIds = emptyList(),
             )
         repository.addNewTabGroup(expectedTabGroup)
 
@@ -111,6 +110,7 @@ class DefaultTabGroupRepositoryTest {
                 title = "title",
                 theme = "theme",
                 lastModified = 10L,
+                tabIds = emptyList(),
             )
         initializeDatabase(initialTabGroups = listOf(initialTabGroup))
         val expectedTitle = "new title"
@@ -139,6 +139,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = false,
+                    tabIds = emptyList(),
                 )
             val expectedTimestamp = 7L
             timeStamp = expectedTimestamp
@@ -167,6 +168,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val expectedTimestamp = 7L
             timeStamp = expectedTimestamp
@@ -195,6 +197,7 @@ class DefaultTabGroupRepositoryTest {
                         theme = "theme",
                         lastModified = 0L,
                         closed = false,
+                        tabIds = emptyList(),
                     )
                 }
             val alreadyClosedTabGroups =
@@ -204,6 +207,7 @@ class DefaultTabGroupRepositoryTest {
                         theme = "theme",
                         lastModified = 10L,
                         closed = true,
+                        tabIds = emptyList(),
                     )
                 }
             val expectedTimestamp = 7L
@@ -228,6 +232,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val tabId = "123"
 
@@ -250,6 +255,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val tabId = "123"
 
@@ -272,6 +278,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val tabId = "123"
             val oldTabGroupId = "456"
@@ -297,6 +304,7 @@ class DefaultTabGroupRepositoryTest {
                 theme = "theme",
                 lastModified = 0L,
                 closed = true,
+                tabIds = emptyList(),
             )
         val tabIds = List(size = 10) { "$it" }
         val expectedTabGroupAssignments = tabIds.associateWith { group.id }
@@ -323,6 +331,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val assignments =
                 List(size = 10) {
@@ -348,6 +357,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val assignment1 = "1" to group.id
             val assignment2 = "2" to group.id
@@ -375,6 +385,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val assignment1 = "1" to group.id
             val assignment2 = "2" to group.id
@@ -402,6 +413,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val group2 =
                 TabGroup(
@@ -409,6 +421,7 @@ class DefaultTabGroupRepositoryTest {
                     theme = "theme",
                     lastModified = 0L,
                     closed = true,
+                    tabIds = emptyList(),
                 )
             val assignment1 = "1" to group1.id
             val assignment2 = "2" to group1.id
@@ -437,12 +450,14 @@ class DefaultTabGroupRepositoryTest {
                     title = "title",
                     theme = "theme",
                     lastModified = 0L,
+                    tabIds = emptyList(),
                 )
             val remainingGroup =
                 TabGroup(
                     title = "title",
                     theme = "theme",
                     lastModified = 0L,
+                    tabIds = emptyList(),
                 )
             val tabGroupAssignments = List(size = 10) { "$it" to group.id }
             val remainingAssignment = "expected" to remainingGroup.id
@@ -471,6 +486,7 @@ class DefaultTabGroupRepositoryTest {
                     title = "tabGroup1",
                     theme = "theme",
                     lastModified = 10L,
+                    tabIds = emptyList(),
                 )
             val tabGroup2 =
                 TabGroup(
@@ -478,6 +494,7 @@ class DefaultTabGroupRepositoryTest {
                     title = "tabGroup2",
                     theme = "theme",
                     lastModified = 10L,
+                    tabIds = emptyList(),
                 )
             val tabGroupAssignments = List(size = 10) { "$it" to tabGroupId }
             val remainingTabGroupAssignments = List(size = 10) { "$it" to "2" }
@@ -489,7 +506,8 @@ class DefaultTabGroupRepositoryTest {
             repository.deleteTabGroupById(tabGroupId = tabGroup1.id)
 
             advanceUntilIdle()
-            assertEquals(listOf(tabGroup2), repository.tabGroupDataFlow.first().tabGroups)
+            val expectedTabGroup = tabGroup2.copy(tabIds = remainingTabGroupAssignments.map { it.first })
+            assertEquals(listOf(expectedTabGroup), repository.tabGroupDataFlow.first().tabGroups)
             assertEquals(remainingTabGroupAssignments.toMap(), repository.tabGroupDataFlow.first().tabGroupAssignments)
         }
 
@@ -497,22 +515,26 @@ class DefaultTabGroupRepositoryTest {
     fun `WHEN a tab group is ungrouped THEN the group and its assignments are removed and other groups are untouched`() =
         runTest {
             val tabGroupId = "1"
+            val tabGroupId2 = "2"
+            val remainingTabGroupAssignments = List(size = 10) { "1$it" to "2" }
             val tabGroup1 =
                 TabGroup(
                     id = tabGroupId,
                     title = "tabGroup1",
                     theme = "theme",
                     lastModified = 10L,
+                    tabIds = emptyList(),
                 )
             val tabGroup2 =
                 TabGroup(
-                    id = "2",
+                    id = tabGroupId2,
                     title = "tabGroup2",
                     theme = "theme",
                     lastModified = 10L,
+                    tabIds = remainingTabGroupAssignments.map { it.first },
                 )
             val ungroupedAssignments = List(size = 10) { "$it" to tabGroupId }
-            val remainingTabGroupAssignments = List(size = 10) { "1$it" to "2" }
+
             initializeDatabase(
                 initialTabGroups = listOf(tabGroup1, tabGroup2),
                 initialTabGroupAssignments = ungroupedAssignments + remainingTabGroupAssignments,
@@ -533,25 +555,28 @@ class DefaultTabGroupRepositoryTest {
                     title = "title",
                     theme = "theme",
                     lastModified = 10L,
+                    tabIds = emptyList(),
                 )
             val tabGroup2 =
                 TabGroup(
                     title = "title",
                     theme = "theme",
                     lastModified = 10L,
+                    tabIds = emptyList(),
                 )
             val tabGroup3 =
                 TabGroup(
                     title = "title",
                     theme = "theme",
                     lastModified = 10L,
+                    tabIds = emptyList(),
                 )
             val expectedTabGroupAssignments = List(size = 10) { "$it-group1" to tabGroup1.id }
             val tabGroupAssignments =
                 List(size = 10) { "$it-group2" to tabGroup2.id } +
                     List(size = 10) { "$it-group3" to tabGroup3.id } +
                     expectedTabGroupAssignments
-            val expectedTabGroups = listOf(tabGroup1)
+            val expectedTabGroups = listOf(tabGroup1.copy(tabIds = expectedTabGroupAssignments.map { it.first }))
             initializeDatabase(
                 initialTabGroups = listOf(tabGroup1, tabGroup2, tabGroup3),
                 initialTabGroupAssignments = tabGroupAssignments,
@@ -573,6 +598,7 @@ class DefaultTabGroupRepositoryTest {
                         title = "title $it",
                         theme = "theme",
                         lastModified = 10L,
+                        tabIds = emptyList(),
                     )
                 },
             initialTabGroupAssignments = List(size = 20) { "$it" to "Group_1" },
@@ -591,7 +617,7 @@ class DefaultTabGroupRepositoryTest {
     ) {
         initialTabGroups.forEach { group ->
             val tabIds = initialTabGroupAssignments.filter { it.second == group.id }.map { it.first }
-            repository.createTabGroupWithTabs(tabGroup = group, tabIds = tabIds)
+            repository.createTabGroupWithTabs(tabGroup = group.copy(tabIds = tabIds))
         }
     }
 }

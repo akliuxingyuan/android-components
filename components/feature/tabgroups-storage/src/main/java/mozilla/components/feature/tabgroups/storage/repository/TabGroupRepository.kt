@@ -27,7 +27,7 @@ interface TabGroupRepository {
     val tabGroupDataFlow: Flow<TabGroupData>
 
     /** Create a new tab group with tabs. */
-    suspend fun createTabGroupWithTabs(tabGroup: TabGroup, tabIds: List<String>)
+    suspend fun createTabGroupWithTabs(tabGroup: TabGroup)
 
     /** Deletes all tab group data from the repository. */
     suspend fun deleteAllTabGroupData()
@@ -128,8 +128,9 @@ class DefaultTabGroupRepository : TabGroupRepository {
     override val tabGroupDataFlow: Flow<TabGroupData>
         get() =
             database.tabGroupOperationsDao.getAllTabGroupsWithAssignments().map { tabGroupData ->
-                val groups = tabGroupData.map {
-                    it.group.toTabGroup()
+                val groups = tabGroupData.map { groupWithAssignments ->
+                    val tabIds = groupWithAssignments.assignments.map { it.id }
+                    groupWithAssignments.group.toTabGroup(tabIds = tabIds)
                 }
                 val assignments =
                     tabGroupData
@@ -144,14 +145,11 @@ class DefaultTabGroupRepository : TabGroupRepository {
                 )
             }
 
-    override suspend fun createTabGroupWithTabs(
-        tabGroup: TabGroup,
-        tabIds: List<String>,
-    ) =
+    override suspend fun createTabGroupWithTabs(tabGroup: TabGroup) =
         withContext(Dispatchers.IO) {
             database.tabGroupOperationsDao.createTabGroup(
                 tabGroup = tabGroup.toStoredTabGroup(),
-                assignments = tabIds.map { TabGroupAssignment(id = it, tabGroupId = tabGroup.id) },
+                assignments = tabGroup.tabIds.map { TabGroupAssignment(id = it, tabGroupId = tabGroup.id) },
             )
         }
 

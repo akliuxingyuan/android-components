@@ -21,6 +21,9 @@ implement. The component deliberately does not depend on `browser-state`: the em
 supplies a `TabRepository` that maps its own tab representation onto the `Tab` model here. Tab
 groups are read directly from `feature-tabgroups-storage`.
 
+`TabGroup.theme` is carried through as the raw stored string. Mapping it onto a UI theme is the
+consumer's responsibility.
+
 ### Setting up the dependency
 
 Use Gradle to download the library from [maven.mozilla.org](https://maven.mozilla.org/) ([Setup repository](../../../README.md#maven-repository)):

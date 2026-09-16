@@ -18,6 +18,7 @@ class TabGroupDataTransformsTest {
                 theme = "theme",
                 closed = false,
                 lastModified = 10L,
+                tabIds = emptyList(),
             )
         val expectedStoredTabGroup =
             StoredTabGroup(
@@ -40,6 +41,7 @@ class TabGroupDataTransformsTest {
                 closed = false,
                 lastModified = 10L,
             )
+        val expectedTabIDs = listOf("tab1", "tab2")
         val expectedTabGroup =
             TabGroup(
                 id = initialStoredTabGroup.id,
@@ -47,7 +49,8 @@ class TabGroupDataTransformsTest {
                 theme = initialStoredTabGroup.theme,
                 closed = initialStoredTabGroup.closed,
                 lastModified = initialStoredTabGroup.lastModified,
+                tabIds = expectedTabIDs,
             )
-        assertEquals(expectedTabGroup, initialStoredTabGroup.toTabGroup())
+        assertEquals(expectedTabGroup, initialStoredTabGroup.toTabGroup(tabIds = expectedTabIDs))
     }
 }

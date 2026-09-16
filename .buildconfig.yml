@@ -1817,6 +1817,11 @@ projects:
     path: components/feature/tabdata-coordinator
     publish: true
     upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:feature-tabgroups-storage
+    - components:support-base
+    - components:support-utils
     - components:tooling-lint
   components:feature-tabgroups-storage:
     description: Component for persisting tab groups and the assignment of tabs to

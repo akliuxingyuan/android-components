@@ -47,6 +47,7 @@ dependencies {
 
     testFixturesImplementation project(':components:support-utils')
     testFixturesImplementation libs.androidx.room.runtime
+    testFixturesImplementation libs.kotlinx.coroutines
 }
 
 apply from: '../../../common-config.gradle'
