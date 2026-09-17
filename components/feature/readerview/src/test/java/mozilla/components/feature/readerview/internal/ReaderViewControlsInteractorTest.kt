@@ -90,15 +90,17 @@ class ReaderViewControlsInteractorTest {
     }
 
     @Test
-    fun `onListenClicked invokes callback`() {
+    fun `onListenClicked invokes callback AND hides the controls`() {
         var callbackInvoked = false
+        val view = mock<ReaderViewControlsView>()
         val interactor =
-            ReaderViewControlsInteractor(mock(), mock()) {
+            ReaderViewControlsInteractor(view, mock()) {
                 callbackInvoked = true
             }
 
         interactor.onListenClicked()
 
         assertTrue(callbackInvoked)
+        verify(view).hideControls()
     }
 }

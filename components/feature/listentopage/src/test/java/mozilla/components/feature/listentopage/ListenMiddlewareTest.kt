@@ -21,6 +21,12 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import mozilla.components.browser.state.action.ReaderAction
+import mozilla.components.browser.state.action.TabListAction
+import mozilla.components.browser.state.state.BrowserState
+import mozilla.components.browser.state.state.ReaderState
+import mozilla.components.browser.state.state.createTab
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentProvider
 import mozilla.components.feature.listentopage.content.TextChunker
@@ -34,6 +40,7 @@ import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesisException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
+import mozilla.components.lib.state.Middleware
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -65,7 +72,9 @@ class ListenMiddlewareTest {
 
     // The middleware watches the player for as long as a session lasts, so its scope cannot be the test's own: runTest
     // waits for that scope's children and the watch never finishes on its own. These share the test's scheduler, so
-    // advanceUntilIdle still drives them, but they are nobody's child and so nothing waits on them.
+    // advanceUntilIdle still drives them, but they are nobody's child and so nothing waits on them. Not
+    // backgroundScope, which would be detached too but which advanceUntilIdle does not run: it stops as soon as no
+    // foreground work is left.
     private val middlewareScopes = mutableListOf<CoroutineScope>()
 
     @After
@@ -1088,6 +1097,92 @@ class ListenMiddlewareTest {
         assertEquals(PlaybackPhase.Playing, store.state.playbackState.phase)
     }
 
+    @Test
+    fun `test that closing the tab being listened to stops the session`() = runTest {
+        val browserStore = browserStoreWithOpenTabs()
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(browserStore = browserStore, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        browserStore.dispatch(TabListAction.RemoveTabAction(TAB_ID))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL), ListenAction.Session.StopRequested),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+    }
+
+    @Test
+    fun `test that closing another tab does not stop the session`() = runTest {
+        val browserStore = browserStoreWithOpenTabs()
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(browserStore = browserStore, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        browserStore.dispatch(TabListAction.RemoveTabAction(OTHER_TAB_ID))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL)),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+    }
+
+    // Listening outlives the reader view it was started from: only closing the tab ends the session.
+    @Test
+    fun `test that leaving reader mode does not stop the session`() = runTest {
+        val browserStore = browserStoreWithOpenTabs()
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(browserStore = browserStore, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        browserStore.dispatch(ReaderAction.UpdateReaderActiveAction(TAB_ID, false))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL)),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+    }
+
+    @Test
+    fun `test that closing the tab an earlier session listened to does not stop the current session`() = runTest {
+        val browserStore = browserStoreWithOpenTabs()
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(browserStore = browserStore, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Session.ListenRequested(OTHER_TAB_ID, URL))
+        advanceUntilIdle()
+
+        browserStore.dispatch(TabListAction.RemoveTabAction(TAB_ID))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                ListenAction.Session.ListenRequested(TAB_ID, URL),
+                ListenAction.Session.ListenRequested(OTHER_TAB_ID, URL),
+            ),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+    }
+
     /** An engine that offers a voice, so that only [synthesizeToFile] can fail a test that uses it. */
     private fun failingSynthesizer(failure: () -> Nothing) =
         object : SpeechSynthesizer {
@@ -1116,12 +1211,37 @@ class ListenMiddlewareTest {
             }
         }
 
+    /**
+     * A browser with both tabs open and in reader mode, and [TAB_ID] selected, which is what the middleware sees when a
+     * session starts: listening is only offered from the reader view of the selected tab.
+     */
+    private fun browserStoreWithOpenTabs() =
+        BrowserStore(
+            BrowserState(
+                tabs =
+                    listOf(
+                        createTab(url = URL, id = TAB_ID, readerState = ReaderState(active = true)),
+                        createTab(url = URL, id = OTHER_TAB_ID, readerState = ReaderState(active = true)),
+                    ),
+                selectedTabId = TAB_ID,
+            )
+        )
+
+    /** Records every action that reaches the store into [into], and lets it through. */
+    private fun recordingMiddleware(into: MutableList<ListenAction>): Middleware<ListenState, ListenAction> =
+        { _, next, action ->
+            into.add(action)
+            next(action)
+        }
+
     private fun TestScope.storeWith(
         synthesizerProvider: () -> SpeechSynthesizer = { FakeSpeechSynthesizer() },
         playbackController: PlaybackController = FakePlaybackController(),
         audioCache: AudioFileCache = FakeAudioFileCache(),
         settings: ListenSettings = ListenSettings.inMemory(),
         chunker: TextChunker = TextChunker.android(),
+        browserStore: BrowserStore = browserStoreWithOpenTabs(),
+        recordInto: MutableList<ListenAction>? = null,
         contentProvider: ContentProvider,
     ): ListenStore {
         val middlewareScope = CoroutineScope(StandardTestDispatcher(testScheduler))
@@ -1131,8 +1251,10 @@ class ListenMiddlewareTest {
             initialState = ListenState(),
             reducer = ::listenReducer,
             middleware =
-                listOf(
+                listOfNotNull(
+                    recordInto?.let(::recordingMiddleware),
                     ListenMiddleware(
+                        browserStore = browserStore,
                         contentProvider = contentProvider,
                         synthesizerProvider = synthesizerProvider,
                         audioCache = audioCache,
@@ -1141,7 +1263,7 @@ class ListenMiddlewareTest {
                         scope = middlewareScope,
                         ioDispatcher = Dispatchers.Unconfined,
                         chunker = chunker,
-                    )
+                    ),
                 ),
         )
     }

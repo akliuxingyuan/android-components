@@ -12,11 +12,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import mozilla.components.browser.state.selector.findTab
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentProvider
 import mozilla.components.feature.listentopage.content.TextChunker
@@ -49,7 +52,9 @@ import mozilla.components.support.base.log.logger.Logger
  * @property ioDispatcher The dispatcher for the work that must not run on the thread the store dispatched on.
  * @property chunker Splits article text into the chunks.
  */
+@Suppress("LongParameterList")
 class ListenMiddleware(
+    private val browserStore: BrowserStore,
     private val contentProvider: ContentProvider,
     private val synthesizerProvider: () -> SpeechSynthesizer,
     private val audioCache: AudioFileCache,
@@ -63,6 +68,7 @@ class ListenMiddleware(
     private val logger = Logger("ListenMiddleware")
 
     private var contentJob: Job? = null
+    private var tabClosureJob: Job? = null
     private var voicesJob: Job? = null
     private var playbackStatusJob: Job? = null
 
@@ -115,6 +121,7 @@ class ListenMiddleware(
                 endSession(releasePlayback = false)
                 observePlayback(store)
                 requestContent(store, action.tabId)
+                trackTabClosure(store, action.tabId)
             }
 
             ListenAction.Session.StopRequested -> endSession(releasePlayback = true)
@@ -145,6 +152,17 @@ class ListenMiddleware(
         playbackStatusJob?.cancel()
         playbackStatusJob = scope.launch {
             playbackController.status.collect { store.dispatch(ListenAction.Playback.StateChangeObserved(it)) }
+        }
+    }
+
+    private fun trackTabClosure(store: Store<ListenState, ListenAction>, tabId: String) {
+        tabClosureJob?.cancel()
+        tabClosureJob = scope.launch {
+            browserStore.stateFlow
+                .first { it.findTab(tabId) == null }
+                .let {
+                    store.dispatch(ListenAction.Session.StopRequested)
+                }
         }
     }
 
@@ -333,6 +351,7 @@ class ListenMiddleware(
     private fun endSession(releasePlayback: Boolean) {
         contentJob?.cancel()
         voicesJob?.cancel()
+        tabClosureJob?.cancel()
         article = null
         playingChunk = 0
         lastReportWasEnd = false

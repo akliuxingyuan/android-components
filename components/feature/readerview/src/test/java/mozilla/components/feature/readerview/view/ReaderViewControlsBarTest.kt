@@ -209,7 +209,7 @@ class ReaderViewControlsBarTest {
     }
 
     @Test
-    fun `when listen-to-page flag enabled listen button is shown`() {
+    fun `WHEN listen-to-page flag enabled THEN listen button is shown`() {
         val bar = ReaderViewControlsBar(appCompatContext)
 
         bar.tryInflate(LISTEN_TO_PAGE_ENABLED)
@@ -219,13 +219,36 @@ class ReaderViewControlsBarTest {
     }
 
     @Test
-    fun `when listen-to-page flag disabled listen button is not shown`() {
+    fun `WHEN listen-to-page flag disabled THEN listen button is not shown`() {
         val bar = ReaderViewControlsBar(appCompatContext)
-
         bar.tryInflate(LISTEN_TO_PAGE_DISABLED)
         val listenButton = bar.findViewById<AppCompatButton>(readerviewR.id.mozac_feature_readerview_listen)
 
         assertFalse(listenButton.isVisible)
+    }
+
+    @Test
+    fun `GIVEN listen-to-page flag enabled WHEN listen button is clicked THEN the listener is notified`() {
+        val bar = ReaderViewControlsBar(appCompatContext)
+        val listener: ReaderViewControlsView.Listener = mock()
+        bar.listener = listener
+        bar.tryInflate(LISTEN_TO_PAGE_ENABLED)
+
+        bar.findViewById<AppCompatButton>(readerviewR.id.mozac_feature_readerview_listen).performClick()
+
+        verify(listener).onListenClicked()
+    }
+
+    @Test
+    fun `GIVEN listen-to-page flag disabled WHEN listen button is clicked THEN the listener is not notified`() {
+        val bar = ReaderViewControlsBar(appCompatContext)
+        val listener: ReaderViewControlsView.Listener = mock()
+        bar.listener = listener
+        bar.tryInflate(LISTEN_TO_PAGE_DISABLED)
+
+        bar.findViewById<AppCompatButton>(readerviewR.id.mozac_feature_readerview_listen).performClick()
+
+        verify(listener, never()).onListenClicked()
     }
 
     companion object {
