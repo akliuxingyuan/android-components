@@ -184,6 +184,10 @@ class MozillaSocorroServiceTest {
                 )
             )
 
+            val boundary = request.substringBefore("\r\n").removePrefix("--")
+            assert(request.endsWith("\r\n--$boundary--\r\n"))
+            assert(!request.contains("\r\n\r\n--$boundary--"))
+
             verify(service).report(crash)
             verify(service).sendReport(crash, null, "dump.path", "extras.path", true, true)
         } finally {

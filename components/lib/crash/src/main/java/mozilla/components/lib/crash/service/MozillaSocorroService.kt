@@ -511,7 +511,9 @@ class MozillaSocorroService(
         }
 
         fun finish() {
-            os.write(("\r\n--$boundary--\r\n").toByteArray())
+            // The close delimiter's leading CRLF is already supplied by the trailing CRLF
+            // every part writes; emitting another would land inside the last part's value.
+            os.write(("--$boundary--\r\n").toByteArray())
             os.flush()
             os.close()
         }
