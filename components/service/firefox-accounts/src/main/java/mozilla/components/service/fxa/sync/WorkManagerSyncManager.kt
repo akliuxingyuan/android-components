@@ -188,7 +188,8 @@ internal class WorkManagerSyncDispatcher(
         debounce: Boolean,
         customEngineSubset: List<SyncEngine>,
     ) {
-        logger.debug("Immediate sync requested, reason = $reason, debounce = $debounce")
+        val engines = customEngineSubset.joinToString { it.nativeName }
+        logger.debug("Immediate sync requested, reason = $reason, debounce = $debounce, custom engines = $engines")
         val delayMs =
             if (reason == SyncReason.Startup) {
                 // Startup delay is there to avoid SQLITE_BUSY crashes, since we currently do a poor job
@@ -206,8 +207,10 @@ internal class WorkManagerSyncDispatcher(
         // So if the user is requesting a "sync now" then we do not want that retry state to be
         // enforced, and we rely on the UI disabling the "sync now" button to avoid multi
         // user-requested syncs.
+        // Only a sync of every engine gets to replace a scheduled work manager sync work: a subset sync would otherwise
+        // cancel a broader sync that hasn't started yet, dropping the engines it doesn't cover.
         val policy =
-            if (reason == SyncReason.User) {
+            if (reason == SyncReason.User && customEngineSubset.isEmpty()) {
                 ExistingWorkPolicy.REPLACE
             } else {
                 ExistingWorkPolicy.KEEP
