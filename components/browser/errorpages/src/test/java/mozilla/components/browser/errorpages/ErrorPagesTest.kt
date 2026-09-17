@@ -160,8 +160,6 @@ class ErrorPagesTest {
             )
         assertTrue(archivablePage.contains("&archiveUrl=${"https://example.com/".urlEncode()}"))
         assertTrue(archivablePage.contains("&archiveCheckButtonLabel="))
-        assertTrue(archivablePage.contains("&archiveDescriptionMessage="))
-        assertTrue(archivablePage.contains("&archiveDescriptionLinkLabel="))
 
         val nonArchivablePage =
             createUrlEncodedErrorPage(

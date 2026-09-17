@@ -79,10 +79,6 @@ applicable, so templates must treat them as optional:
 - `archiveUrl` - A privacy-cleaned (scheme, host, port and path only) version of the failed URL
   to look up an archived copy for.
 - `archiveCheckButtonLabel` - Localized label for the button that triggers the lookup.
-- `archiveDescriptionMessage` - Localized sentence explaining what the button does, including the
-  name of the archive service.
-- `archiveDescriptionLinkLabel` - The name of the archive service as it appears in
-  `archiveDescriptionMessage`, so templates can turn that part of the sentence into a link.
 - `archiveCheckingLabel` - Localized label shown while the lookup is in progress.
 - `archiveNotFoundMessage` - Localized message shown when no archived copy was found.
 - `archiveSearchWebLabel` - Localized label for the link that searches the web instead.
