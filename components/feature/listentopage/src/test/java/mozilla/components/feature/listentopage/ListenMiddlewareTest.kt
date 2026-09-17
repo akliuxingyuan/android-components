@@ -370,8 +370,10 @@ class ListenMiddlewareTest {
         assertTrue(playback.played.isEmpty())
     }
 
+    // The point of the playlist. A chunk handed over in place of what is playing cannot be joined onto it, and the
+    // silence while the player tears one file down and prepares the next is what a reader hears at every boundary.
     @Test
-    fun `test that the chunk after the one that ended is played`() = runTest {
+    fun `test that the chunks after the opening are queued behind it rather than played in its place`() = runTest {
         val synthesizer = FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root)
         val playback = FakePlaybackController()
         val store =
@@ -380,13 +382,32 @@ class ListenMiddlewareTest {
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
-        val opening = playback.played.single()
 
-        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
+        val opening = playback.played.single()
+        assertTrue("nothing was queued behind the opening", playback.queued.isNotEmpty())
+        assertFalse("the opening was queued as well as played", playback.queued.contains(opening))
+    }
+
+    // The chunks the lookahead has made are queued while the opening is still playing rather than when it ends,
+    // because a player can only read ahead across a join into an item it already holds.
+    @Test
+    fun `test that the chunk after the opening is queued before the opening has finished`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
-        assertEquals(2, playback.played.size)
-        assertNotEquals(opening, playback.played.last())
+        // No report of the opening ending, and no report of it playing either: the queueing cannot be waiting on the
+        // player to say anything.
+        assertEquals(PlaybackPhase.Buffering, store.state.playbackState.phase)
+        assertTrue(playback.queued.isNotEmpty())
     }
 
     @Test
@@ -400,18 +421,19 @@ class ListenMiddlewareTest {
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
-        repeat(4) {
-            // Both are observed, because a StateFlow drops a value equal to the one before it and every chunk ends
-            // with the same report. In the app the player publishes Buffering when the next chunk is handed to it.
-            playback.status.value = PlaybackState(phase = PlaybackPhase.Playing)
-            advanceUntilIdle()
-            playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
+        // The player walks its own playlist, so a report is it saying which chunk it has reached rather than asking
+        // for the next one.
+        repeat(4) { chunk ->
+            playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = chunk))
             advanceUntilIdle()
         }
 
-        // Five files in reading order, none of them played twice.
-        assertEquals(5, playback.played.size)
-        assertEquals(playback.played.distinct(), playback.played)
+        // The queue keeps running ahead of the reader, and no chunk is ever handed over twice.
+        val handedOver = playback.played + playback.queued
+        assertTrue("the article stopped at chunk ${handedOver.size}", handedOver.size > 4)
+        assertEquals(handedOver.distinct(), handedOver)
+        assertEquals(3, store.state.playbackState.chunk.index)
+        assertNull(store.state.error)
     }
 
     @Test
@@ -454,8 +476,11 @@ class ListenMiddlewareTest {
         assertEquals(1, playback.played.size)
     }
 
+    // Handling an end report is asynchronous: refillOrEnd reads appendedThrough, then queues the work behind
+    // requestTurn, so a second report can compute the same missing chunk before the first has queued it. Enqueuing
+    // republishes the player's state, so the refill can provoke the very report it then has to ignore.
     @Test
-    fun `test that the end of a chunk reported twice moves the article on only once`() = runTest {
+    fun `test that a double report of playback ending enqueues the next chunk only once`() = runTest {
         val playback = FakePlaybackController()
         val store =
             storeWith(
@@ -468,10 +493,10 @@ class ListenMiddlewareTest {
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
 
-        // Far enough for the opening to be playing, not far enough for the chunk the lookahead started behind it to be
-        // finished, so that the move to the next chunk is still waiting its turn when the second report arrives.
+        // Far enough for the opening to be playing, not far enough for the lookahead behind it to have finished, so
+        // that the refill is still waiting its turn when the second report arrives.
         advanceTimeBy(1500.milliseconds)
-        assertEquals(1, playback.played.size)
+        val queuedBefore = playback.queued.size
 
         // The positions differ only so that the two reports are different values. A StateFlow drops a value equal to
         // the one before it, so repeating the same position would leave the second report undelivered and the test
@@ -481,11 +506,15 @@ class ListenMiddlewareTest {
         playback.status.value = PlaybackState(phase = PlaybackPhase.Ended, positionMs = 30_004)
         advanceUntilIdle()
 
-        assertEquals(2, playback.played.size)
+        // Without the guard the second report queues the same chunk the first one did, and the reader hears it twice.
+        assertTrue(playback.queued.size > queuedBefore)
+        assertEquals(playback.queued.distinct(), playback.queued)
     }
 
+    // The playlist holds as much of the article as the engine has managed, so the player running out of it is the
+    // reader waiting on the engine rather than the article being over.
     @Test
-    fun `test that the end of each chunk in turn moves the article on again`() = runTest {
+    fun `test that a player running dry mid-article is a wait rather than the end of the article`() = runTest {
         val playback = FakePlaybackController()
         val store =
             storeWith(
@@ -496,38 +525,58 @@ class ListenMiddlewareTest {
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
+        val queuedBefore = playback.queued.size
 
-        // Three ends in a row, each one reported after the chunk it belongs to started playing, which is what the
-        // player does. Playing a chunk publishes a phase of its own, so nothing here has to fake one.
-        repeat(3) {
-            playback.status.value = PlaybackState(phase = PlaybackPhase.Ended, positionMs = 30_000)
-            advanceUntilIdle()
-        }
-
-        assertEquals(4, playback.played.size)
-    }
-
-    @Test
-    fun `test that a chunk ending with the player never seen starting it still moves the article on`() = runTest {
-        val playback = FakePlaybackController()
-        val store =
-            storeWith(
-                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
-                playbackController = playback,
-            ) {
-                Result.success(Content(text = longArticle(), languageTag = "en-US"))
-            }
-        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
         advanceUntilIdle()
 
-        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended, positionMs = 30_000)
-        advanceUntilIdle()
-        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended, positionMs = 60_000)
-        advanceUntilIdle()
-
-        assertEquals(3, playback.played.size)
-        assertEquals(playback.played.distinct(), playback.played)
+        assertEquals(PlaybackPhase.Buffering, store.state.playbackState.phase)
+        assertTrue("nothing was queued for the reader to carry on with", playback.queued.size > queuedBefore)
+        assertEquals(playback.queued.distinct(), playback.queued)
         assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that running out with no chunks left is the end of the article`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = "The only sentence there is.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
+        advanceUntilIdle()
+
+        assertEquals(PlaybackPhase.Ended, store.state.playbackState.phase)
+        assertEquals(1, playback.played.size)
+        assertTrue(playback.queued.isEmpty())
+        assertEquals(0, playback.resumed)
+        assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that a player running dry is started again on the chunk queued behind it`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+        assertEquals(0, playback.resumed)
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
+        advanceUntilIdle()
+
+        assertEquals(1, playback.resumed)
     }
 
     @Test
@@ -543,21 +592,22 @@ class ListenMiddlewareTest {
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
+        // The opening plays and the one chunk that was made is queued behind it, with nothing said about the third.
         assertEquals(1, playback.played.size)
+        assertEquals(1, playback.queued.size)
         assertNull(store.state.error)
 
         // And the article still moves on, onto the chunk that was made before the failure.
-        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 1))
         advanceUntilIdle()
 
-        assertEquals(2, playback.played.size)
         assertNull(store.state.error)
     }
 
     @Test
-    fun `test that a chunk the lookahead never made is made on its own when playback reaches it`() = runTest {
-        // The lookahead fails on the chunk after the opening, so the move to it has to make it. Only it: making the
-        // whole window first would keep the reader waiting for the two chunks beyond the one they are waiting on.
+    fun `test that a chunk the lookahead never made is made on its own when the player runs dry`() = runTest {
+        // The lookahead fails on the chunk after the opening, so the player runs dry on the opening. This will cause
+        // the next chunk to be manually created
         val synthesizer =
             FakeSpeechSynthesizer(
                 audioDirectory = temporaryFolder.root,
@@ -573,11 +623,12 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
 
         assertEquals(1, playback.played.size)
+        assertTrue("the lookahead queued a chunk it never made", playback.queued.isEmpty())
 
         playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
         advanceTimeBy(1100.milliseconds)
 
-        assertEquals(2, playback.played.size)
+        assertEquals(1, playback.queued.size)
     }
 
     @Test
@@ -714,16 +765,18 @@ class ListenMiddlewareTest {
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
-        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 1))
         advanceUntilIdle()
-        val secondChunk = playback.played.last()
+        val readTo = playback.queued.last()
 
         store.dispatch(ListenAction.Session.StopRequested)
         advanceUntilIdle()
         store.dispatch(ListenAction.Session.ListenRequested(OTHER_TAB_ID, URL))
         advanceUntilIdle()
 
-        assertNotEquals(secondChunk, playback.played.last())
+        // The new session starts its own playlist rather than queueing behind where the last one had got to.
+        assertNotEquals(readTo, playback.played.last())
+        assertEquals(2, playback.played.size)
     }
 
     @Test

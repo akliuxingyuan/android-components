@@ -118,12 +118,17 @@ class FakeAudioFileCache : AudioFileCache {
  * It records what it was asked to play rather than starting a media session.
  *
  * @property played Every file it was asked to play, in order.
+ * @property queued Every file it was asked to queue behind what is playing, in order. A caller's joins are only gapless
+ *   for the chunks that reach this rather than [played], which replaces what is playing.
+ * @property resumed How many times [resume] has been called.
  * @property released Whether [release] has been called.
  * @property status What to report about the playback. Set it to drive a caller's monitoring, including changes no
  *   command of theirs asked for.
  */
 class FakePlaybackController : PlaybackController {
     val played = mutableListOf<File>()
+    val queued = mutableListOf<File>()
+    var resumed = 0
     var released = false
 
     override val status = MutableStateFlow(PlaybackState())
@@ -134,9 +139,15 @@ class FakePlaybackController : PlaybackController {
         status.value = PlaybackState(phase = PlaybackPhase.Buffering)
     }
 
+    override suspend fun enqueue(file: File) {
+        queued.add(file)
+    }
+
     override suspend fun pause() = Unit
 
-    override suspend fun resume() = Unit
+    override suspend fun resume() {
+        resumed += 1
+    }
 
     override suspend fun seekTo(positionMs: Long) = Unit
 

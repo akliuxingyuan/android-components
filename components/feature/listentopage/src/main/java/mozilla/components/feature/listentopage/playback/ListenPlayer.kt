@@ -29,6 +29,10 @@ internal fun File.toMediaItem(): MediaItem = MediaItem.fromUri(Uri.fromFile(this
  * That service owns the instance that plays a session, and callers command it through [ListenPlaybackController] rather
  * than through this class.
  *
+ * An article is one playlist rather than a run of separate tracks. [play] takes the opening, and every chunk after it
+ * is handed over by [appendChunk] while the chunk in front of it is still playing, so the player loads across the join
+ * and the article comes out as seamless audio.
+ *
  * @param context Used to build the player.
  */
 class ListenPlayer(context: Context) {
@@ -57,6 +61,12 @@ class ListenPlayer(context: Context) {
             exoPlayer.setMediaItem(file.toMediaItem())
             exoPlayer.prepare()
             exoPlayer.play()
+        }
+
+    /** Adds [file] to the end of the playlist, to be read out once the chunks already in the playlist have been. */
+    suspend fun appendChunk(file: File) =
+        withContext(Dispatchers.Main) {
+            exoPlayer.addMediaItem(file.toMediaItem())
         }
 
     /** Releases the player, from the main thread. This instance cannot be used afterwards. */

@@ -236,14 +236,48 @@ class ListenReducerTest {
 
     @Test
     fun `test that a failed player is reported as an error`() {
-        val state =
-            listenReducer(
-                ListenState(),
-                ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Failed)),
-            )
+        val state = listenReducer(ListenState(), ListenAction.Playback.PlaybackFailed)
 
         assertEquals(ListenError.PlaybackFailed, state.error)
         assertEquals(PlaybackPhase.Failed, state.playbackState.phase)
+    }
+
+    @Test
+    fun `test that the chunk the player has reached is recorded`() {
+        val chunk = ChunkState(index = 4, durationMs = 60_000)
+
+        val state = listenReducer(ListenState(), ListenAction.Playback.PlaybackStarted(chunk, positionMs = 1_000))
+
+        assertEquals(chunk, state.playbackState.chunk)
+        assertEquals(1_000, state.playbackState.positionMs)
+        assertEquals(PlaybackPhase.Playing, state.playbackState.phase)
+    }
+
+    @Test
+    fun `test that waiting on the next chunk is recorded as a wait rather than an end`() {
+        val playing = fullState.copy(playbackState = fullState.playbackState.copy(phase = PlaybackPhase.Playing))
+
+        val state = listenReducer(playing, ListenAction.Playback.PlaybackWaiting)
+
+        assertEquals(PlaybackPhase.Buffering, state.playbackState.phase)
+        assertEquals(playing.playbackState.chunk, state.playbackState.chunk)
+    }
+
+    @Test
+    fun `test that the article being read out is recorded as ended`() {
+        val readOut = fullState.copy(error = null)
+
+        val state = listenReducer(readOut, ListenAction.Playback.PlaybackEnded)
+
+        assertEquals(PlaybackPhase.Ended, state.playbackState.phase)
+        assertNull(state.error)
+    }
+
+    @Test
+    fun `test that a failed player can be dismissed`() {
+        val failed = listenReducer(ListenState(), ListenAction.Playback.PlaybackFailed)
+
+        assertNull(listenReducer(failed, ListenAction.ErrorDismissed).error)
     }
 
     // An error the user has not seen yet outlives a report that has nothing to say about it, so that a phase change

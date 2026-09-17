@@ -88,14 +88,11 @@ class ListenMiddleware(
     // What the session has made of the article, held so that the audio can be thrown away when the session ends.
     private var synthesisQueue: SynthesisQueue? = null
 
-    // Which chunk of the article is playing.
-    private var playingChunk = 0
+    // Which chunk of the article the player last reported reading out.
+    private var playingChunk = NO_CHUNK
 
-    // Whether the report before this one already said the chunk had ended.
-    //
-    // Only needed while the player is handed one chunk at a time. Bug 2064869's playlist would let its reports say
-    // which item ended, which is what this stands in for.
-    private var lastReportWasEnd = false
+    // The last chunk that was enqueued to the player.
+    private var appendedThrough = NO_CHUNK
 
     // The scope every piece of this session's synthesis runs in, so that ending the session cancels all of it at once,
     // including work that is still waiting its turn.
@@ -134,8 +131,7 @@ class ListenMiddleware(
             }
             is ListenAction.Voices.VoiceSelected -> store.state.languageTag?.let { action.voice.persistChoiceFor(it) }
 
-            is ListenAction.Playback.StateChangeObserved -> advanceAfter(action.playbackState, store::dispatch)
-
+            is ListenAction.Playback,
             ListenAction.Content.ContentUnavailable,
             is ListenAction.Voices.AvailableVoicesLoaded,
             ListenAction.Voices.NoOfflineVoicesAvailable,
@@ -151,7 +147,31 @@ class ListenMiddleware(
     private fun observePlayback(store: ListenStore) {
         playbackStatusJob?.cancel()
         playbackStatusJob = scope.launch {
-            playbackController.status.collect { store.dispatch(ListenAction.Playback.StateChangeObserved(it)) }
+            playbackController.status.collect { store.reportPlayback(it) }
+        }
+    }
+
+    /**
+     * Reports to the Store what [playback] represents in terms of the article. Will also manipulate the queue as
+     * needed, since the player does not understand the context of the queue or full article.
+     */
+    private fun ListenStore.reportPlayback(playback: PlaybackState) {
+        when (playback.phase) {
+            PlaybackPhase.Failed -> dispatch(ListenAction.Playback.PlaybackFailed)
+            PlaybackPhase.Ended -> refillOrEnd(this::dispatch)
+
+            // If the player reaches a chunk that is not playing yet, it indicates the chunk is still loading
+            PlaybackPhase.Playing if playback.chunk.index != playingChunk -> {
+                playingChunk = playback.chunk.index
+                dispatch(ListenAction.Playback.PlaybackStarted(playback.chunk, playback.positionMs))
+                synthesizing(this::dispatch) {
+                    synthesisQueue?.let {
+                        it.workAheadOf(playingChunk)
+                    }
+                }
+            }
+
+            else -> dispatch(ListenAction.Playback.StateChangeObserved(playback))
         }
     }
 
@@ -244,49 +264,58 @@ class ListenMiddleware(
      */
     private fun synthesizeAndPlay(tabId: String?, dispatch: (ListenAction) -> Unit) {
         val article = article?.takeIf { it.tabId == tabId } ?: return
+        val firstChunkIndex = 0
 
-        playingChunk = 0
-        lastReportWasEnd = false
+        playingChunk = NO_CHUNK
+        appendedThrough = NO_CHUNK
+
         synthesizing(dispatch) {
             val queue = SynthesisQueue(synthesizer(), ChunkAudio(audioCache), chunker, ioDispatcher)
             synthesisQueue = queue
 
-            playbackController.play(queue.startReading(article.text, article.languageTag))
+            val opening = queue.startReading(article.text, article.languageTag)
+            playbackController.play(opening)
+            appendedThrough = firstChunkIndex
 
-            // Runs ahead of the opening while it plays, so the chunk after it is waiting rather than started when the
-            // opening ends.
-            queue.workAheadOf(playingChunk = 0)
+            // Runs ahead of the opening while it plays, so the chunk after it is queued behind it rather than started
+            // when the opening ends. A chunk that arrives after the opening has finished cannot be joined onto it.
+            queue.workAheadOf(playingChunk = firstChunkIndex)
         }
     }
 
     /**
-     * Plays the chunk after the one that has just finished, and moves the window on to it.
+     * The end of playback indicates either that queue synthesis is lagging or the article is complete. This determines
+     * which case has been reached and reacts accordingly.
      *
-     * Which chunk is playing is counted here rather than read from the report. That index is the player's own, and
-     * until bug 2064869 gives it a playlist holding the whole article, every chunk is handed over on its own and the
-     * player's index is always zero.
+     * @param dispatch Dispatch an action to the store.
      */
-    private fun advanceAfter(playback: PlaybackState, dispatch: (ListenAction) -> Unit) {
-        val alreadyEnded = lastReportWasEnd
-        lastReportWasEnd = playback.phase == PlaybackPhase.Ended
+    private fun refillOrEnd(dispatch: (ListenAction) -> Unit) {
+        val queue = synthesisQueue ?: return
 
-        if (!lastReportWasEnd || alreadyEnded) {
+        // Exit early if there are not additional chunks to synthesize
+        val missing = appendedThrough + 1
+        if (missing >= queue.chunkCount) {
+            dispatch(ListenAction.Playback.PlaybackEnded)
             return
         }
 
-        val queue = synthesisQueue ?: return
+        dispatch(ListenAction.Playback.PlaybackWaiting)
 
         synthesizing(dispatch) {
-            val next = playingChunk + 1
+            // In case we receive a repeated report of playback ending we check to see if the next chunk has already
+            // been queued
+            if (appendedThrough >= missing) {
+                return@synthesizing
+            }
 
-            // Normally made already, because the window runs ahead of what is playing. Making it here is the fallback
-            // for a device slow enough that synthesis fell behind, where a gap beats ending the article early. No
-            // chunk at all means the article has been read to its end.
-            val file = queue.audioFor(next) ?: return@synthesizing
-            playingChunk = next
-            playbackController.play(file)
+            val file = queue.audioFor(missing) ?: return@synthesizing
+            playbackController.enqueue(file)
+            appendedThrough = missing
 
-            queue.workAheadOf(next)
+            // Restart the player once there is synthesized content
+            playbackController.resume()
+
+            queue.workAheadOf(missing)
         }
     }
 
@@ -304,6 +333,15 @@ class ListenMiddleware(
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Could not work ahead on the article", e)
+        }
+
+        // now that the window has been synthesized, enqueue what was successfully synthesized with the player
+        while (appendedThrough + 1 < chunkCount) {
+            val next = appendedThrough + 1
+            val file = fileFor(next) ?: return
+
+            playbackController.enqueue(file)
+            appendedThrough = next
         }
     }
 
@@ -353,8 +391,8 @@ class ListenMiddleware(
         voicesJob?.cancel()
         tabClosureJob?.cancel()
         article = null
-        playingChunk = 0
-        lastReportWasEnd = false
+        playingChunk = NO_CHUNK
+        appendedThrough = NO_CHUNK
 
         val ending = sessionScope
         val emptying = synthesisQueue
@@ -393,6 +431,8 @@ class ListenMiddleware(
         }
     }
 }
+
+private const val NO_CHUNK = -1
 
 /** The article of one listening session, the tab it was extracted from, and the language it is being read as. */
 private class Article(val tabId: String, val text: String, val languageTag: String)

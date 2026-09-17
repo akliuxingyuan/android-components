@@ -69,8 +69,8 @@ data class Voice(val id: String)
  *
  * @property phase What the player is doing.
  * @property chunk The chunk being played.
- * @property positionMs How far into [chunk] the playback has got, not how far into the article. It moves in whole
- *   seconds since that is user-facing granularity.
+ * @property positionMs How far into the article the playback has got, counting the chunks read before [chunk] rather
+ *   than starting again at each one. It moves in whole seconds since that is user-facing granularity.
  */
 data class PlaybackState(
     val phase: PlaybackPhase = PlaybackPhase.Idle,
@@ -81,7 +81,8 @@ data class PlaybackState(
 /**
  * Current chunk state related to playback.
  *
- * @property index Which chunk of the article it is.
+ * @property index Which chunk of the article it is. The player holds the article as one playlist in reading order, so
+ *   the item it is on is the chunk it is on.
  * @property durationMs How long it is, or `null` while the player does not know yet.
  */
 data class ChunkState(

@@ -43,13 +43,16 @@ interface PlaybackController {
     /** Plays [file], replacing anything already playing. */
     suspend fun play(file: File)
 
+    /** Adds [file] to the end of the playlist, to be read out once what is already queued has been. */
+    suspend fun enqueue(file: File)
+
     /** Pauses playback, keeping the position. */
     suspend fun pause()
 
     /** Resumes playback from the position it was paused at. */
     suspend fun resume()
 
-    /** Moves playback to [positionMs] in the current audio. */
+    /** Moves playback to [positionMs] in the current file being played. */
     suspend fun seekTo(positionMs: Long)
 
     /** Gives up the playback, which takes the notification away. A later call starts it again. */
@@ -103,6 +106,8 @@ class ListenPlaybackController(
         it.prepare()
         it.play()
     }
+
+    override suspend fun enqueue(file: File) = onController { it.addMediaItem(file.toMediaItem()) }
 
     override suspend fun pause() = onController { it.pause() }
 
