@@ -61,36 +61,48 @@ class GeckoEngineViewTest {
     }
 
     @Test
-    fun captureThumbnail() {
+    fun captureThumbnail() =
+        assertCaptureForwardsGeckoResult(
+            geckoViewCapture = { capturePixels() },
+            engineViewCapture = { captureThumbnail(it) },
+        )
+
+    @Test
+    fun captureFullPage() =
+        assertCaptureForwardsGeckoResult(
+            geckoViewCapture = { captureFullPage() },
+            engineViewCapture = { captureFullPage(it) },
+        )
+
+    private fun assertCaptureForwardsGeckoResult(
+        geckoViewCapture: NestedGeckoView.() -> GeckoResult<Bitmap>?,
+        engineViewCapture: GeckoEngineView.(onFinish: (Bitmap?) -> Unit) -> Unit,
+    ) {
         val engineView = GeckoEngineView(context)
         val mockGeckoView = mock<NestedGeckoView>()
-        var thumbnail: Bitmap? = null
+        var captured: Bitmap? = null
 
         var geckoResult = GeckoResult<Bitmap>()
-        whenever(mockGeckoView.capturePixels()).thenReturn(geckoResult)
+        whenever(mockGeckoView.geckoViewCapture()).thenReturn(geckoResult)
         engineView.geckoView = mockGeckoView
 
         // Test GeckoResult resolves successfuly
-        engineView.captureThumbnail {
-            thumbnail = it
-        }
-        verify(mockGeckoView).capturePixels()
+        engineView.engineViewCapture { captured = it }
+        verify(mockGeckoView).geckoViewCapture()
         geckoResult.complete(mock())
         shadowOf(getMainLooper()).idle()
 
-        assertNotNull(thumbnail)
+        assertNotNull(captured)
 
         geckoResult = GeckoResult()
-        whenever(mockGeckoView.capturePixels()).thenReturn(geckoResult)
+        whenever(mockGeckoView.geckoViewCapture()).thenReturn(geckoResult)
 
         // Test GeckoResult resolves in error
-        engineView.captureThumbnail {
-            thumbnail = it
-        }
+        engineView.engineViewCapture { captured = it }
         geckoResult.completeExceptionally(mock())
         shadowOf(getMainLooper()).idle()
 
-        assertNull(thumbnail)
+        assertNull(captured)
     }
 
     @Test

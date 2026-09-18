@@ -224,6 +224,20 @@ constructor(
         )
     }
 
+    override fun captureFullPage(onFinish: (Bitmap?) -> Unit) {
+        val geckoResult = geckoView.captureFullPage()
+        geckoResult.then(
+            { bitmap ->
+                onFinish(bitmap)
+                GeckoResult()
+            },
+            {
+                onFinish(null)
+                GeckoResult<Void>()
+            },
+        )
+    }
+
     override fun clearSelection() {
         currentSelection?.clearSelection()
     }
