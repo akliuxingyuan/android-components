@@ -207,12 +207,14 @@ class MozillaSocorroService(
         formDataWriter.sendAnnotation(Annotation.DistributionID, distributionId)
 
         var additionalDumps: FormDataWriter.AdditionalMinidumps? = null
+        var extrasFileKeys = setOf<String>()
 
         crash.extrasFilePath?.let {
             val regex = "$FILE_REGEX$EXTRAS_FILE_EXT".toRegex()
             if (regex.matchEntire(it.substringAfterLast("/")) != null) {
                 val extrasFile = File(it)
                 val extrasMap = readExtrasFromFile(extrasFile)
+                extrasFileKeys = extrasMap.keys
                 for (key in extrasMap.keys) {
                     formDataWriter.sendPart(key, extrasMap[key])
                 }
@@ -220,6 +222,14 @@ class MozillaSocorroService(
                 extrasFile.delete()
             }
         }
+
+        val sendIfMissing = { a: Annotation, value: () -> String ->
+            if (!extrasFileKeys.contains(a.toString())) {
+                formDataWriter.sendAnnotation(a, value())
+            }
+        }
+
+        sendIfMissing(Annotation.CrashEventID) { crash.uuid }
 
         val throwable = crash.javaThrowable?.withStacktraceIfMissing()
         throwable?.also {
@@ -249,25 +259,11 @@ class MozillaSocorroService(
         formDataWriter.sendAnnotation(Annotation.StartupTime, crash.startTime)
         formDataWriter.sendAnnotation(Annotation.CrashTime, crash.crashTime)
         formDataWriter.sendAnnotation(Annotation.Android_PackageName, applicationContext.packageName)
-        formDataWriter.sendAnnotation(Annotation.Android_Manufacturer, Build.MANUFACTURER)
-        formDataWriter.sendAnnotation(Annotation.Android_Model, Build.MODEL)
-        formDataWriter.sendAnnotation(Annotation.Android_Board, Build.BOARD)
-        formDataWriter.sendAnnotation(Annotation.Android_Brand, Build.BRAND)
-        formDataWriter.sendAnnotation(Annotation.Android_Device, Build.DEVICE)
-        formDataWriter.sendAnnotation(Annotation.Android_Display, Build.DISPLAY)
-        formDataWriter.sendAnnotation(Annotation.Android_Fingerprint, Build.FINGERPRINT)
-        formDataWriter.sendAnnotation(Annotation.Android_Hardware, Build.HARDWARE)
-        formDataWriter.sendAnnotation(
-            Annotation.Android_Version,
-            "${Build.VERSION.SDK_INT} (${Build.VERSION.CODENAME})",
-        )
+        formDataWriter.sendPlatformAnnotations()
 
-        if (Build.SUPPORTED_ABIS.isNotEmpty()) {
-            formDataWriter.sendAnnotation(Annotation.Android_CPU_ABI, Build.SUPPORTED_ABIS[0])
-            if (Build.SUPPORTED_ABIS.size >= 2) {
-                formDataWriter.sendAnnotation(Annotation.Android_CPU_ABI2, Build.SUPPORTED_ABIS[1])
-            }
-        }
+        sendIfMissing(Annotation.OS) { "Android" }
+        sendIfMissing(Annotation.OSVersion) { "${Build.VERSION.SDK_INT}" }
+        sendIfMissing(Annotation.CPUArchitecture) { Crash.CPU_ARCH }
 
         formDataWriter.finish()
     }
@@ -395,6 +391,28 @@ class MozillaSocorroService(
                 )
             } catch (e: PackageManager.NameNotFoundException) {
                 logger.error("Error getting package info", e)
+            }
+        }
+
+        fun sendPlatformAnnotations() {
+            sendAnnotation(Annotation.Android_Manufacturer, Build.MANUFACTURER)
+            sendAnnotation(Annotation.Android_Model, Build.MODEL)
+            sendAnnotation(Annotation.Android_Board, Build.BOARD)
+            sendAnnotation(Annotation.Android_Brand, Build.BRAND)
+            sendAnnotation(Annotation.Android_Device, Build.DEVICE)
+            sendAnnotation(Annotation.Android_Display, Build.DISPLAY)
+            sendAnnotation(Annotation.Android_Fingerprint, Build.FINGERPRINT)
+            sendAnnotation(Annotation.Android_Hardware, Build.HARDWARE)
+            sendAnnotation(
+                Annotation.Android_Version,
+                "${Build.VERSION.SDK_INT} (${Build.VERSION.CODENAME})",
+            )
+
+            if (Build.SUPPORTED_ABIS.isNotEmpty()) {
+                sendAnnotation(Annotation.Android_CPU_ABI, Build.SUPPORTED_ABIS[0])
+                if (Build.SUPPORTED_ABIS.size >= 2) {
+                    sendAnnotation(Annotation.Android_CPU_ABI2, Build.SUPPORTED_ABIS[1])
+                }
             }
         }
 
