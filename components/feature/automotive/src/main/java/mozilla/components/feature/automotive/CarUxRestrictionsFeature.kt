@@ -11,6 +11,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,9 @@ class CarUxRestrictionsFeature(
 
     private var car: Car? = null
     private var manager: CarUxRestrictionsManager? = null
+    private val restrictionsListener by lazy {
+        CarUxRestrictionsManager.OnUxRestrictionsChangedListener { onUxRestrictionsChanged(it) }
+    }
 
     /**
      * Starts observing the car's UX restrictions.
@@ -83,7 +87,7 @@ class CarUxRestrictionsFeature(
         stopPausingMedia()
 
         try {
-            manager?.unregisterListener()
+            manager?.unregisterListenerForUiContext(restrictionsListener)
             car?.disconnect()
         } catch (e: Exception) {
             logger.warn("Could not disconnect from the car service", e)
@@ -110,9 +114,13 @@ class CarUxRestrictionsFeature(
             val manager = car.getCarManager(Car.CAR_UX_RESTRICTION_SERVICE) as? CarUxRestrictionsManager ?: return
             this.manager = manager
 
-            manager.registerListener { restrictions -> onUxRestrictionsChanged(restrictions) }
+            manager.registerListenerForUiContext(
+                applicationContext,
+                ContextCompat.getMainExecutor(applicationContext),
+                restrictionsListener,
+            )
             // The app can be started while already driving, so seed the state instead of waiting for the first change.
-            onUxRestrictionsChanged(manager.currentCarUxRestrictions)
+            onUxRestrictionsChanged(manager.getCurrentCarUxRestrictions(applicationContext))
         } catch (e: Exception) {
             logger.warn("Could not observe the car's UX restrictions", e)
         }
