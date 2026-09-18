@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.ReaderAction
 import mozilla.components.browser.state.action.TabListAction
 import mozilla.components.browser.state.state.BrowserState
@@ -56,6 +57,7 @@ import org.junit.runner.RunWith
 private const val TAB_ID = "tab-1"
 private const val OTHER_TAB_ID = "tab-2"
 private const val URL = "https://example.org/article"
+private const val READER_URL = "moz-extension://readerview/readerview.html?url=$URL&id=reader-1"
 private const val ENGINE = "com.example.tts"
 
 /** A chunker that finds nothing to read in anything, which the real one does only for text with no words in it. */
@@ -1425,6 +1427,80 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
 
         browserStore.dispatch(ReaderAction.UpdateReaderActiveAction(TAB_ID, false))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL)),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+    }
+
+    @Test
+    fun `test that navigating the tab being listened to stops the session`() = runTest {
+        val browserStore = browserStoreWithOpenTabs()
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(browserStore = browserStore, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        browserStore.dispatch(ContentAction.UpdateUrlAction(TAB_ID, "https://example.org/other-article"))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL), ListenAction.Session.StopRequested),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+    }
+
+    @Test
+    fun `test that returning from reader view to the article does not stop the session`() = runTest {
+        val browserStore =
+            BrowserStore(
+                BrowserState(
+                    tabs =
+                        listOf(
+                            createTab(
+                                url = READER_URL,
+                                id = TAB_ID,
+                                readerState = ReaderState(active = true, activeUrl = URL),
+                            )
+                        ),
+                    selectedTabId = TAB_ID,
+                )
+            )
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(browserStore = browserStore, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, READER_URL))
+        advanceUntilIdle()
+
+        browserStore.dispatch(ReaderAction.ClearReaderActiveUrlAction(TAB_ID))
+        browserStore.dispatch(ContentAction.UpdateUrlAction(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ListenAction.Session.ListenRequested(TAB_ID, READER_URL)),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+    }
+
+    @Test
+    fun `test that navigating another tab does not stop the session`() = runTest {
+        val browserStore = browserStoreWithOpenTabs()
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(browserStore = browserStore, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        browserStore.dispatch(ContentAction.UpdateUrlAction(OTHER_TAB_ID, "https://example.org/other-article"))
         advanceUntilIdle()
 
         assertEquals(

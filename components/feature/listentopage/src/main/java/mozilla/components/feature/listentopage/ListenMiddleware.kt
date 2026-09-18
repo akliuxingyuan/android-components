@@ -19,6 +19,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import mozilla.components.browser.state.selector.findTab
+import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentProvider
@@ -187,9 +188,18 @@ class ListenMiddleware(
 
     private fun trackTabClosure(store: Store<ListenState, ListenAction>, tabId: String) {
         tabClosureJob?.cancel()
+
+        val startingTab = browserStore.state.findTab(tabId)
+        val startingTabUrl = startingTab?.content?.url
+        val startingTabPageUrl = startingTab?.pageUrl
+
         tabClosureJob = scope.launch {
             browserStore.stateFlow
-                .first { it.findTab(tabId) == null }
+                .first { state ->
+                    val tab = state.findTab(tabId) ?: return@first true
+                    // checks if the tab's url has been updated while listening to the tab
+                    tab.content.url != startingTabUrl && tab.pageUrl != startingTabPageUrl
+                }
                 .let {
                     store.dispatch(ListenAction.Session.StopRequested)
                 }
@@ -520,6 +530,12 @@ class ListenMiddleware(
 }
 
 private const val NO_CHUNK = -1
+
+/**
+ * The page this tab shows: in reader mode the article the reader view renders, rather than the reader view's own URL.
+ */
+private val TabSessionState.pageUrl: String
+    get() = readerState.activeUrl ?: content.url
 
 /** The article of one listening session, the tab it was extracted from, and the language it is being read as. */
 private class Article(val tabId: String, val text: String, val languageTag: String)
