@@ -111,6 +111,10 @@ class ListenMiddleware(
         next: (ListenAction) -> Unit,
         action: ListenAction,
     ) {
+        // Read before the reducer runs, because afterwards the store already holds the voice the action carries and
+        // there would be nothing left to compare it against.
+        val previousVoice = store.state.voiceState.selectedVoice
+
         next(action)
 
         when (action) {
@@ -123,13 +127,19 @@ class ListenMiddleware(
 
             ListenAction.Session.StopRequested -> endSession(releasePlayback = true)
 
-            is ListenAction.Content.ContentReady -> {
-                if (store.state.voiceState.availableVoices.isEmpty()) {
-                    store.requestVoices(action.languageTag)
+            is ListenAction.Content.ContentReady -> store.loadVoicesAndPlay(action.languageTag)
+
+            is ListenAction.Voices.VoiceSelected -> {
+                // Saved even when the voice is the one already reading, because the voice a load picks for itself is
+                // put in the store without being saved: the first tap on it is what makes the choice the user's own.
+                store.state.languageTag?.let { action.voice.persistChoiceFor(it) }
+
+                // Picking the voice already reading asks for nothing, so the audio is left alone. Making it again
+                // would throw away what has been synthesized only to restart the article in the very same voice.
+                if (action.voice != previousVoice) {
+                    store.changeVoiceTo(action.voice)
                 }
-                synthesizeAndPlay(store.state.tabId, store::dispatch)
             }
-            is ListenAction.Voices.VoiceSelected -> store.state.languageTag?.let { action.voice.persistChoiceFor(it) }
 
             is ListenAction.Playback,
             ListenAction.Content.ContentUnavailable,
@@ -228,31 +238,92 @@ class ListenMiddleware(
         dispatch(ListenAction.Content.ContentReady(languageTag = language))
     }
 
-    private fun ListenStore.requestVoices(langTag: String) {
+    /**
+     * Loads the voices of the article language, unless they are loaded already, and then reads the article out.
+     *
+     * The load and the synthesis are one job rather than two because the engine reads with the voice it was last given:
+     * starting the synthesis alongside the load reads the opening of the article in whichever voice the engine happens
+     * to default to. A language with no offline voice is not read out at all.
+     */
+    private fun ListenStore.loadVoicesAndPlay(langTag: String) {
         voicesJob?.cancel()
-        voicesJob =
-            scope.launch(ioDispatcher) {
-                val engine = synthesizer()
-                settings.clearSavedVoicesOnEngineChange(engine.enginePackageName)
-                val voices = engine.loadAvailableVoices(langTag)
-
-                dispatch(
-                    if (voices.isEmpty()) {
-                        ListenAction.Voices.NoOfflineVoicesAvailable
-                    } else {
-                        ListenAction.Voices.AvailableVoicesLoaded(voices, voices.loadSavedVoiceFor(langTag))
-                    }
-                )
+        voicesJob = scope.launch {
+            if (state.voiceState.loadState != VoiceLoadState.Loaded && !loadVoices(langTag)) {
+                return@launch
             }
+
+            synthesizeAndPlay(state.tabId, this@loadVoicesAndPlay::dispatch)
+        }
     }
 
+    /**
+     * Asks the engine which offline voices it has for [langTag] and puts them in the store.
+     *
+     * @return Whether the article can be read out, which it cannot when the language has no offline voice.
+     */
+    private suspend fun ListenStore.loadVoices(langTag: String): Boolean =
+        withContext(ioDispatcher) {
+            val engine = synthesizer()
+            settings.clearSavedVoicesOnEngineChange(engine.enginePackageName)
+            val voices = engine.loadAvailableVoices(langTag)
+
+            if (voices.isEmpty()) {
+                dispatch(ListenAction.Voices.NoOfflineVoicesAvailable)
+                false
+            } else {
+                val selected = voices.loadSavedVoiceFor(langTag)
+                engine.setVoice(selected)
+                dispatch(ListenAction.Voices.AvailableVoicesLoaded(voices, selected))
+                true
+            }
+        }
+
     private suspend fun List<Voice>.loadSavedVoiceFor(langTag: String): Voice {
-        val savedId = settings.getSelectedVoiceId(langTag)
+        val savedId = settings.getSelectedVoiceId(langTag.language)
+        // The list is presumed sorted by a useful heuristic so `first()` is best
         return firstOrNull { it.id == savedId } ?: first()
     }
 
     private fun Voice.persistChoiceFor(langTag: String) {
-        scope.launch(ioDispatcher) { settings.setSelectedVoiceId(langTag, id) }
+        scope.launch(ioDispatcher) { settings.setSelectedVoiceId(langTag.language, id) }
+    }
+
+    /**
+     * Reads the article out again in [voice], from where the playback of the one before it had got to.
+     *
+     * The audio already made is in the previous voice, so it is thrown away rather than played to its end. "Where it
+     * had got to" is a position in the chunk that was playing, so it only resumes the reader where they were while the
+     * article is one chunk: the rest of it is re-chunked at the new voice's rate, which leaves no index the position of
+     * the old chunk can be carried over to.
+     *
+     * It takes over [voicesJob] rather than running beside it, so that a load still in flight cannot finish afterwards
+     * and put the engine back on the voice it had chosen for itself.
+     */
+    private fun ListenStore.changeVoiceTo(voice: Voice) {
+        // A voice can be picked with no session running, where there is nothing to make again and binding an engine
+        // to set it on would leave that engine bound with nothing to close it.
+        if (article == null) {
+            return
+        }
+
+        voicesJob?.cancel()
+        voicesJob = scope.launch {
+            val resumeAtMs = playbackController.currentPositionMs()
+
+            // Only this article's audio goes: the playback and the engine are kept, because the new voice reads over
+            // what is playing and reads with the engine already bound.
+            val emptying = synthesisQueue
+            synthesisQueue = null
+            stopSynthesizing { emptying?.clear() }
+
+            // Joined rather than only asked for, so that the request in flight cannot be handed the new voice and
+            // write its audio in it after the audio of the old voice has been thrown away.
+            teardownJob?.join()
+
+            withContext(ioDispatcher) { synthesizer().setVoice(voice) }
+
+            synthesizeAndPlay(state.tabId, this@changeVoiceTo::dispatch, resumeAtMs)
+        }
     }
 
     /**
@@ -261,8 +332,9 @@ class ListenMiddleware(
      * @param tabId The tab the live session is reading. A session that has already ended may still have written its
      *   article to the field, so anything extracted for a different tab is ignored.
      * @param dispatch Dispatch an action to the store.
+     * @param resumeAtMs Where to move the new audio to once it plays, or `0` to play it from the start.
      */
-    private fun synthesizeAndPlay(tabId: String?, dispatch: (ListenAction) -> Unit) {
+    private fun synthesizeAndPlay(tabId: String?, dispatch: (ListenAction) -> Unit, resumeAtMs: Long = 0L) {
         val article = article?.takeIf { it.tabId == tabId } ?: return
         val firstChunkIndex = 0
 
@@ -276,6 +348,9 @@ class ListenMiddleware(
             val opening = queue.startReading(article.text, article.languageTag)
             playbackController.play(opening)
             appendedThrough = firstChunkIndex
+            if (resumeAtMs > 0) {
+                playbackController.seekTo(resumeAtMs)
+            }
 
             // Runs ahead of the opening while it plays, so the chunk after it is queued behind it rather than started
             // when the opening ends. A chunk that arrives after the opening has finished cannot be joined onto it.
@@ -391,12 +466,8 @@ class ListenMiddleware(
         voicesJob?.cancel()
         tabClosureJob?.cancel()
         article = null
-        playingChunk = NO_CHUNK
-        appendedThrough = NO_CHUNK
 
-        val ending = sessionScope
         val emptying = synthesisQueue
-        sessionScope = null
         synthesisQueue = null
 
         val closing = synthesizer.takeIf { releasePlayback }
@@ -405,15 +476,7 @@ class ListenMiddleware(
             synthesizer = null
         }
 
-        // Chained rather than replaced, so that waiting for the teardown waits for every teardown still to finish.
-        val earlier = teardownJob
-        teardownJob = scope.launch {
-            earlier?.join()
-
-            // Our cancellation asks the engine to stop but cannot un-write a file it has already produced, so nothing
-            // below may delete the audio before the request in flight has finished with it.
-            ending?.coroutineContext?.job?.cancelAndJoin()
-
+        stopSynthesizing {
             if (releasePlayback) {
                 playbackController.release()
 
@@ -430,6 +493,30 @@ class ListenMiddleware(
             }
         }
     }
+
+    /**
+     * Cancels every piece of synthesis in flight and then runs [andThen], leaving [teardownJob] to be waited on.
+     *
+     * @param andThen What to do once the synthesis has stopped. Our cancellation asks the engine to stop but cannot
+     *   un-write a file it has already produced, so throwing audio away belongs here: by the time this runs, the
+     *   request that was in flight has finished with its file.
+     */
+    private fun stopSynthesizing(andThen: suspend () -> Unit) {
+        playingChunk = NO_CHUNK
+        appendedThrough = NO_CHUNK
+
+        val ending = sessionScope
+        sessionScope = null
+
+        // Chained rather than replaced, so that waiting for the teardown waits for every teardown still to finish.
+        val earlier = teardownJob
+        teardownJob = scope.launch {
+            earlier?.join()
+            ending?.coroutineContext?.job?.cancelAndJoin()
+
+            andThen()
+        }
+    }
 }
 
 private const val NO_CHUNK = -1
@@ -440,3 +527,12 @@ private class Article(val tabId: String, val text: String, val languageTag: Stri
 /** This language tag in the form everything downstream works from, or `null` when it names no language. */
 private fun String.asLanguageTagOrNull(): String? =
     trim().replace('_', '-').takeIf { Locale.forLanguageTag(it).language.isNotEmpty() }
+
+/**
+ * The language subtag of a BCP 47 tag, or the tag itself when it is too malformed to parse.
+ *
+ * The voice list ignores the region of the article language, so the saved choice has to ignore it too: a voice picked
+ * on an "en-US" article is the one offered again on an "en-GB" one, rather than being forgotten between them.
+ */
+private val String.language: String
+    get() = Locale.forLanguageTag(this).language.ifEmpty { this }

@@ -38,16 +38,27 @@ interface SpeechSynthesizer {
     /**
      * Synthesizes [text] and returns the audio file, or throws [SpeechSynthesisException].
      *
-     * The engine reads with whatever voice it already has selected, so the voice [loadAvailableVoices] offered and the
-     * user picked is not the one the article is read in yet.
+     * It is read in the voice [setVoice] was last given.
      */
     suspend fun synthesizeToFile(text: String): File
+
+    /**
+     * Reads everything synthesized from here on in [voice], which has to be one [loadAvailableVoices] returned.
+     *
+     * The engine keeps the voice it was last given, so audio already made stays in the voice it was made with.
+     */
+    suspend fun setVoice(voice: Voice)
 
     /** Releases the engine. Nothing may be synthesized afterwards. */
     fun close()
 
-    /** Load the list of voices the engine currently has available. */
-    fun loadAvailableVoices(langTag: String): List<Voice>
+    /**
+     * Loads the offline voices the engine has for the language of [langTag], one per region and best first.
+     *
+     * The region of [langTag] is ignored, so an article in "en-US" is offered the engine's British, Australian and
+     * Indian English alongside its American English
+     */
+    suspend fun loadAvailableVoices(langTag: String): List<Voice>
 
     companion object {
         /** Construct a SpeechSynthesizer using the standard Android TTS engine. */
@@ -150,26 +161,37 @@ internal class AndroidTtsSpeechSynthesizer(
         tts.shutdown()
     }
 
+    override suspend fun setVoice(voice: Voice) {
+        if (started.await() != TextToSpeech.SUCCESS) {
+            return
+        }
+
+        runCatching { tts.voices }.getOrNull().orEmpty().firstOrNull { it.name == voice.id }?.let(tts::setVoice)
+    }
+
     /*
     We fetch offline voices by ensuring that the voice both does not require a network connection and is already
-    installed. We then match this to language tags, using ranges to construct best matches in the case of malformed
-    tags.
+    installed. We then keep every region of the article language, and offer the best voice of each.
      */
-    override fun loadAvailableVoices(langTag: String): List<Voice> {
-        val offlineVoices = runCatching {
-            tts.voices.filter { it.isAvailableOffline() }.sortedWith(voiceRanking)
+    override suspend fun loadAvailableVoices(langTag: String): List<Voice> {
+        if (started.await() != TextToSpeech.SUCCESS) {
+            return emptyList()
         }
-            .getOrDefault(listOf())
-        val ranges =
-            listOfNotNull(
-                    languageRangeOrNull(langTag), // "zh-TW" — exact first
-                    languageRangeOrNull(Locale.forLanguageTag(langTag).language), // "zh" — then any region
-                )
-                .flatten()
-        val bestMatch = Locale.filter(ranges, offlineVoices.map { it.locale }).firstOrNull()
-        return bestMatch?.let {
-            offlineVoices.filter { it.locale == bestMatch }.map { Voice(id = it.name) }
-        } ?: emptyList()
+
+        val offlineVoices = runCatching { tts.voices.filter { it.isAvailableOffline() } }.getOrDefault(listOf())
+
+        // Matched on a language range rather than by comparing the language strings, so that a tag too malformed to
+        // parse is a language nothing matches instead of a parse failure.
+        val ranges = languageRangeOrNull(Locale.forLanguageTag(langTag).language) ?: return emptyList()
+        val regions = Locale.filter(ranges, offlineVoices.map { it.locale }).toSet()
+
+        return offlineVoices
+            .filter { it.locale in regions }
+            .sortedWith(voiceRanking)
+            // The engines ship several near-identical voices per region, which would fill the list with rows the user
+            // cannot tell apart, so each region is offered only by its best.
+            .distinctBy { it.locale }
+            .map { Voice(id = it.name, locale = it.locale) }
     }
 
     /**

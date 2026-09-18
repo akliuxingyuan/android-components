@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.listentopage
 
+import java.util.Locale
 import mozilla.components.lib.state.State
 
 /**
@@ -53,16 +54,48 @@ sealed interface ListenError {
 /**
  * State relating to narrator voice.
  *
- * @property availableVoices The currently available voices.
+ * @property availableVoices The offline voices of the article language, one per region and best first. Only says
+ *   anything once [loadState] is [VoiceLoadState.Loaded], where an empty list means the language has no offline voice
+ *   at all.
  * @property selectedVoice The currently selected voice.
+ * @property loadState How far the engine has got in answering what it has for the article language.
  */
 data class VoiceState(
     val availableVoices: List<Voice> = listOf(),
     val selectedVoice: Voice? = null,
+    val loadState: VoiceLoadState = VoiceLoadState.NotLoaded,
 )
 
-/** Metadata defining a narrator voice. */
-data class Voice(val id: String)
+/**
+ * How far the engine has got in answering which voices it has for the article language.
+ *
+ * It exists so that [VoiceState.availableVoices] never carries two meanings: an empty list is a language the engine has
+ * no offline voice for, never a list nobody has asked for yet.
+ */
+enum class VoiceLoadState {
+    /** The engine has not answered yet, so [VoiceState.availableVoices] says nothing about the language. */
+    NotLoaded,
+
+    /** The engine has answered: an empty [VoiceState.availableVoices] means the language has no offline voice. */
+    Loaded,
+}
+
+/**
+ * Metadata defining a narrator voice.
+ *
+ * @property id The engine's own name for the voice, which is what it is selected and saved by.
+ * @property locale The language and region the voice reads in. The list offers one voice per region.
+ */
+data class Voice(val id: String, val locale: Locale) {
+    /**
+     * The voice as the user reads it, for example "English (United Kingdom)".
+     *
+     * Written in the display language of the device rather than in the language of the voice, so that a reader who does
+     * not know the article language can still tell which region each entry belongs to.
+     */
+    val displayName: String
+        get() = locale.getDisplayName()
+}
 
 /**
  * State relating to the audio being played, as reported by the player.

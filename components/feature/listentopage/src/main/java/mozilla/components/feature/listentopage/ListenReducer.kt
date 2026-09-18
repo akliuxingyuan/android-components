@@ -89,8 +89,18 @@ private fun reduceVoices(state: ListenState, action: ListenAction.Voices): Liste
         is ListenAction.Voices.AvailableVoicesLoaded ->
             state.copy(
                 voiceState =
-                    state.voiceState.copy(availableVoices = action.voices, selectedVoice = action.selectedVoice)
+                    state.voiceState.copy(
+                        availableVoices = action.voices,
+                        selectedVoice = action.selectedVoice,
+                        loadState = VoiceLoadState.Loaded,
+                    )
             )
 
-        ListenAction.Voices.NoOfflineVoicesAvailable -> state.copy(error = ListenError.NoOfflineVoice)
+        // The empty list is the answer, not the absence of one: the engine has been asked and has nothing offline for
+        // this language.
+        ListenAction.Voices.NoOfflineVoicesAvailable ->
+            state.copy(
+                voiceState = VoiceState(loadState = VoiceLoadState.Loaded),
+                error = ListenError.NoOfflineVoice,
+            )
     }

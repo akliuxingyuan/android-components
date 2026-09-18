@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
+import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
@@ -133,7 +134,11 @@ class ListenMiddlewareTest {
 
     @Test
     fun `test that the voices of the article language are loaded once the article is ready`() = runTest {
-        val voices = listOf(Voice(id = "de-de-female"), Voice(id = "de-de-male"))
+        val voices =
+            listOf(
+                Voice(id = "de-de-female", locale = Locale.GERMANY),
+                Voice(id = "de-de-male", locale = Locale.GERMANY),
+            )
         val synthesizer = FakeSpeechSynthesizer(voices = voices)
         val store =
             storeWith(synthesizerProvider = { synthesizer }) {
@@ -144,8 +149,59 @@ class ListenMiddlewareTest {
 
         assertEquals(listOf("de-DE"), synthesizer.voiceRequests)
         assertEquals(voices, store.state.voiceState.availableVoices)
-        assertEquals(Voice(id = "de-de-female"), store.state.voiceState.selectedVoice)
+        assertEquals(Voice(id = "de-de-female", locale = Locale.GERMANY), store.state.voiceState.selectedVoice)
+        assertEquals(VoiceLoadState.Loaded, store.state.voiceState.loadState)
         assertNull(store.state.error)
+    }
+
+    // The engine reads with the voice it was last given, so an article synthesized before the voices are known is read
+    // out in whichever voice the engine happens to default to.
+    @Test
+    fun `test that the voices are loaded before the article is synthesized`() = runTest {
+        val calls = mutableListOf<String>()
+        val synthesizer =
+            object : SpeechSynthesizer {
+                override val maxInputLength = 4000
+
+                override val enginePackageName = ENGINE
+
+                override suspend fun synthesizeToFile(text: String): File {
+                    calls.add("synthesize")
+                    return File("/audio/1.wav")
+                }
+
+                override suspend fun setVoice(voice: Voice) = Unit
+
+                override fun close() = Unit
+
+                override suspend fun loadAvailableVoices(langTag: String): List<Voice> {
+                    calls.add("loadVoices")
+                    return listOf(Voice(id = "en-us-female", locale = Locale.US))
+                }
+            }
+        val store =
+            storeWith(synthesizerProvider = { synthesizer }) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(listOf("loadVoices", "synthesize"), calls)
+    }
+
+    @Test
+    fun `test that an article in a language with no offline voice is not read out`() = runTest {
+        val synthesizer = FakeSpeechSynthesizer(voices = emptyList())
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(synthesizerProvider = { synthesizer }, playbackController = playback) {
+                Result.success(Content(text = "Article text.", languageTag = "ja-JP"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertTrue(synthesizer.requests.isEmpty())
+        assertTrue(playback.played.isEmpty())
     }
 
     @Test
@@ -159,6 +215,7 @@ class ListenMiddlewareTest {
 
         assertEquals(ListenError.NoOfflineVoice, store.state.error)
         assertTrue(store.state.voiceState.availableVoices.isEmpty())
+        assertEquals(VoiceLoadState.Loaded, store.state.voiceState.loadState)
     }
 
     @Test
@@ -285,23 +342,15 @@ class ListenMiddlewareTest {
         }
     }
 
+    // The engine offers a voice here, so the synthesis is reached and it is the synthesis that fails.
     @Test
     fun `test that a synthesis failure does not play anything`() = runTest {
         val playback = FakePlaybackController()
-        val failing =
-            object : SpeechSynthesizer {
-                override val maxInputLength = 4000
-
-                override val enginePackageName = "com.example.tts"
-
-                override suspend fun synthesizeToFile(text: String): File = throw SpeechSynthesisException(-1)
-
-                override fun close() = Unit
-
-                override fun loadAvailableVoices(langTag: String): List<Voice> = emptyList()
-            }
         val store =
-            storeWith(synthesizerProvider = { failing }, playbackController = playback) {
+            storeWith(
+                synthesizerProvider = { failingSynthesizer { throw SpeechSynthesisException(-1) } },
+                playbackController = playback,
+            ) {
                 Result.success(Content(text = "Article text.", languageTag = "en-US"))
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
@@ -320,9 +369,12 @@ class ListenMiddlewareTest {
 
                 override suspend fun synthesizeToFile(text: String): File = throw SpeechSynthesisException(-1)
 
+                override suspend fun setVoice(voice: Voice) = Unit
+
                 override fun close() = Unit
 
-                override fun loadAvailableVoices(langTag: String): List<Voice> = listOf(Voice(id = "en-us-female"))
+                override suspend fun loadAvailableVoices(langTag: String): List<Voice> =
+                    listOf(Voice(id = "en-us-female", locale = Locale.US))
             }
         val store =
             storeWith(synthesizerProvider = { failing }) {
@@ -828,9 +880,12 @@ class ListenMiddlewareTest {
                     cache.create("late").apply { writeBytes(ByteArray(64)) }
                 }
 
+            override suspend fun setVoice(voice: Voice) = Unit
+
             override fun close() = Unit
 
-            override fun loadAvailableVoices(langTag: String): List<Voice> = listOf(Voice(id = "voice-1"))
+            override suspend fun loadAvailableVoices(langTag: String): List<Voice> =
+                listOf(Voice(id = "voice-1", locale = Locale.US))
         }
 
     // The engine is an IPC binding that lives until it is shut down, and close() is terminal, so the next session has
@@ -946,9 +1001,10 @@ class ListenMiddlewareTest {
 
     @Test
     fun `test that the voice saved for the article language is the one selected`() = runTest {
-        val voices = listOf(Voice(id = "en-us-female"), Voice(id = "en-us-male"))
-        val settings = ListenSettings.inMemory(ENGINE, voiceIds = mapOf("en-US" to "en-us-male"))
-        settings.setSelectedVoiceId("en-US", "en-us-male")
+        val voices =
+            listOf(Voice(id = "en-us-female", locale = Locale.US), Voice(id = "en-us-male", locale = Locale.US))
+        val settings = ListenSettings.inMemory(ENGINE, voiceIds = mapOf("en" to "en-us-male"))
+        settings.setSelectedVoiceId("en", "en-us-male")
         val store =
             storeWith(
                 synthesizerProvider = { FakeSpeechSynthesizer(voices = voices, enginePackageName = ENGINE) },
@@ -959,14 +1015,15 @@ class ListenMiddlewareTest {
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
-        assertEquals(Voice(id = "en-us-male"), store.state.voiceState.selectedVoice) // here
+        assertEquals(Voice(id = "en-us-male", locale = Locale.US), store.state.voiceState.selectedVoice)
     }
 
     @Test
     fun `test that a saved voice the engine no longer has falls back to the best one it does`() = runTest {
-        val voices = listOf(Voice(id = "en-us-female"), Voice(id = "en-us-male"))
-        val settings = ListenSettings.inMemory(ENGINE, voiceIds = mapOf("en-US" to "en-us-uninstalled"))
-        settings.setSelectedVoiceId("en-US", "en-us-uninstalled")
+        val voices =
+            listOf(Voice(id = "en-us-female", locale = Locale.US), Voice(id = "en-us-male", locale = Locale.US))
+        val settings = ListenSettings.inMemory(ENGINE, voiceIds = mapOf("en" to "en-us-uninstalled"))
+        settings.setSelectedVoiceId("en", "en-us-uninstalled")
         val store =
             storeWith(
                 synthesizerProvider = { FakeSpeechSynthesizer(voices = voices, enginePackageName = ENGINE) },
@@ -977,7 +1034,7 @@ class ListenMiddlewareTest {
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
-        assertEquals(Voice(id = "en-us-female"), store.state.voiceState.selectedVoice)
+        assertEquals(Voice(id = "en-us-female", locale = Locale.US), store.state.voiceState.selectedVoice)
         assertNull(store.state.error)
     }
 
@@ -990,18 +1047,183 @@ class ListenMiddlewareTest {
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
-        store.dispatch(ListenAction.Voices.VoiceSelected(Voice(id = "fr-fr-male")))
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice(id = "fr-fr-male", locale = Locale.FRANCE)))
         advanceUntilIdle()
 
-        assertEquals("fr-fr-male", settings.getSelectedVoiceId("fr-FR"))
+        assertEquals("fr-fr-male", settings.getSelectedVoiceId("fr"))
+    }
+
+    // The same regions are offered whatever region the article is written in, so the choice made among them has to
+    // carry across articles too: saving it per region would forget it between one English page and the next.
+    @Test
+    fun `test that a voice picked on an article of one region is selected on an article of another`() = runTest {
+        val voices = listOf(Voice("en-us-female", Locale.US), Voice("en-gb-male", Locale.UK))
+        val store =
+            storeWith(synthesizerProvider = { FakeSpeechSynthesizer(voices = voices) }) { tabId ->
+                if (tabId == TAB_ID) {
+                    Result.success(Content(text = "Article text.", languageTag = "en-US"))
+                } else {
+                    Result.success(Content(text = "Article text.", languageTag = "en-GB"))
+                }
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice("en-gb-male", Locale.UK)))
+        advanceUntilIdle()
+
+        store.dispatch(ListenAction.Session.ListenRequested(OTHER_TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(Voice("en-gb-male", Locale.UK), store.state.voiceState.selectedVoice)
+    }
+
+    @Test
+    fun `test that the selected voice is given to the engine before the article is synthesized`() = runTest {
+        val voices =
+            listOf(Voice(id = "en-us-female", locale = Locale.US), Voice(id = "en-us-male", locale = Locale.US))
+        val synthesizer = FakeSpeechSynthesizer(voices = voices)
+        val store =
+            storeWith(synthesizerProvider = { synthesizer }) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(listOf(Voice(id = "en-us-female", locale = Locale.US)), synthesizer.voicesSet)
+
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice(id = "en-us-male", locale = Locale.US)))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(Voice(id = "en-us-female", locale = Locale.US), Voice(id = "en-us-male", locale = Locale.US)),
+            synthesizer.voicesSet,
+        )
+    }
+
+    // The audio already made is in the voice before this one, so playing it to its end would keep reading the article
+    // in the voice the user has just turned down.
+    @Test
+    fun `test that picking a voice throws the audio of the previous one away and makes it again`() = runTest {
+        val audioCache = FakeAudioFileCache()
+        val synthesizer =
+            FakeSpeechSynthesizer(voices = listOf(Voice("en-us-female", Locale.US), Voice("en-us-male", Locale.US)))
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { synthesizer },
+                playbackController = playback,
+                audioCache = audioCache,
+            ) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(emptyList<File>(), audioCache.deleted)
+
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice(id = "en-us-male", locale = Locale.US)))
+        advanceUntilIdle()
+
+        // Deleted chunk by chunk rather than by emptying the cache, because the playback carries on into the new voice
+        // and still holds the file it is reading.
+        assertEquals(listOf(File("/audio/1.wav")), audioCache.deleted)
+        assertEquals(listOf("Article text.", "Article text."), synthesizer.requests)
+        assertEquals(listOf(File("/audio/1.wav"), File("/audio/2.wav")), playback.played)
+    }
+
+    // Re-tapping the voice the article is already being read in is reachable from the popup, which checks the selected
+    // voice rather than disabling it.
+    @Test
+    fun `test that picking the voice already reading leaves the audio alone`() = runTest {
+        val audioCache = FakeAudioFileCache()
+        val voices = listOf(Voice("en-us-female", Locale.US), Voice("en-gb-male", Locale.UK))
+        val synthesizer = FakeSpeechSynthesizer(voices = voices)
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { synthesizer },
+                playbackController = playback,
+                audioCache = audioCache,
+            ) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice("en-us-female", Locale.US)))
+        advanceUntilIdle()
+
+        assertEquals(emptyList<File>(), audioCache.deleted)
+        assertEquals(listOf("Article text."), synthesizer.requests)
+        assertEquals(listOf(File("/audio/1.wav")), playback.played)
+    }
+
+    // The tap is still what turns the voice a load picked for itself into a choice the user has made, so it is saved
+    // even though nothing is synthesized again.
+    @Test
+    fun `test that picking the voice already reading still saves it`() = runTest {
+        val settings = ListenSettings.inMemory()
+        val voices = listOf(Voice("en-us-female", Locale.US), Voice("en-gb-male", Locale.UK))
+        val store =
+            storeWith(synthesizerProvider = { FakeSpeechSynthesizer(voices = voices) }, settings = settings) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertNull(settings.getSelectedVoiceId("en"))
+
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice("en-us-female", Locale.US)))
+        advanceUntilIdle()
+
+        assertEquals("en-us-female", settings.getSelectedVoiceId("en"))
+    }
+
+    @Test
+    fun `test that picking a voice resumes from where the article had got to`() = runTest {
+        val playback = FakePlaybackController(positionMs = 12_000L)
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(voices = listOf(Voice("a", Locale.US), Voice("b", Locale.UK)))
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(emptyList<Long>(), playback.seekedTo)
+
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice(id = "b", locale = Locale.UK)))
+        advanceUntilIdle()
+
+        assertEquals(listOf(12_000L), playback.seekedTo)
+    }
+
+    // Reachable from the debug drawer, where the voice list is not tied to a running session. Binding an engine there
+    // would leave it bound for the life of the process, because only a session closes one.
+    @Test
+    fun `test that picking a voice with no session running builds no engine`() = runTest {
+        var built = 0
+        val store =
+            storeWith(synthesizerProvider = { FakeSpeechSynthesizer().also { built++ } }) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Voices.VoiceSelected(Voice(id = "en-us-male", locale = Locale.US)))
+        advanceUntilIdle()
+
+        assertEquals(0, built)
     }
 
     @Test
     fun `test that switching the speech engine drops the voice saved for the article language`() = runTest {
-        val voices = listOf(Voice(id = "en-us-female"), Voice(id = "en-us-male"))
+        val voices =
+            listOf(Voice(id = "en-us-female", locale = Locale.US), Voice(id = "en-us-male", locale = Locale.US))
         val settings = ListenSettings.inMemory()
         settings.clearSavedVoicesOnEngineChange("com.example.tts")
-        settings.setSelectedVoiceId("en-US", "en-us-male")
+        settings.setSelectedVoiceId("en", "en-us-male")
         val store =
             storeWith(
                 synthesizerProvider = {
@@ -1013,8 +1235,8 @@ class ListenMiddlewareTest {
             }
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
-        assertEquals(Voice(id = "en-us-female"), store.state.voiceState.selectedVoice)
-        assertNull(settings.getSelectedVoiceId("en-US"))
+        assertEquals(Voice(id = "en-us-female", locale = Locale.US), store.state.voiceState.selectedVoice)
+        assertNull(settings.getSelectedVoiceId("en"))
     }
 
     @Test
@@ -1245,9 +1467,12 @@ class ListenMiddlewareTest {
 
             override suspend fun synthesizeToFile(text: String): File = failure()
 
+            override suspend fun setVoice(voice: Voice) = Unit
+
             override fun close() = Unit
 
-            override fun loadAvailableVoices(langTag: String): List<Voice> = listOf(Voice(id = "voice-1"))
+            override suspend fun loadAvailableVoices(langTag: String): List<Voice> =
+                listOf(Voice(id = "voice-1", locale = Locale.US))
         }
 
     private fun longArticle() = (1..400).joinToString(" ") { "Sentence $it is right here." }

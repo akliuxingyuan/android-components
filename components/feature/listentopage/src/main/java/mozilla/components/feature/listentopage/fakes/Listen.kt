@@ -7,6 +7,7 @@ package mozilla.components.feature.listentopage.fakes
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.Locale
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -42,10 +43,11 @@ private const val FAKE_ENGINE_ERROR = -1
  * @property voiceRequests The language tag of every voice lookup, in the order it arrived.
  * @property closed Whether [close] has been called.
  * @property enginePackageName The engine to report
+ * @property voicesSet Every voice the engine was told to read with, in order.
  */
 class FakeSpeechSynthesizer(
     override val maxInputLength: Int = 4000,
-    private val voices: List<Voice> = listOf(Voice(id = "voice-1")),
+    private val voices: List<Voice> = listOf(Voice(id = "voice-1", locale = Locale.US)),
     override val enginePackageName: String = "com.example.tts",
     private val audioDirectory: File? = null,
     private val audioDuration: Duration = 5.seconds,
@@ -57,6 +59,7 @@ class FakeSpeechSynthesizer(
     val files = mutableListOf<File>()
     val voiceRequests = mutableListOf<String>()
     var closed = false
+    val voicesSet = mutableListOf<Voice>()
 
     override suspend fun synthesizeToFile(text: String): File {
         requests.add(text)
@@ -79,11 +82,15 @@ class FakeSpeechSynthesizer(
         }
     }
 
+    override suspend fun setVoice(voice: Voice) {
+        voicesSet.add(voice)
+    }
+
     override fun close() {
         closed = true
     }
 
-    override fun loadAvailableVoices(langTag: String): List<Voice> {
+    override suspend fun loadAvailableVoices(langTag: String): List<Voice> {
         voiceRequests.add(langTag)
         return voices
     }
@@ -124,11 +131,14 @@ class FakeAudioFileCache : AudioFileCache {
  * @property released Whether [release] has been called.
  * @property status What to report about the playback. Set it to drive a caller's monitoring, including changes no
  *   command of theirs asked for.
+ * @property positionMs The position to report as reached.
+ * @property seekedTo Every position it was asked to move to, in order.
  */
-class FakePlaybackController : PlaybackController {
+class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
     val played = mutableListOf<File>()
     val queued = mutableListOf<File>()
     var resumed = 0
+    val seekedTo = mutableListOf<Long>()
     var released = false
 
     override val status = MutableStateFlow(PlaybackState())
@@ -149,12 +159,16 @@ class FakePlaybackController : PlaybackController {
         resumed += 1
     }
 
-    override suspend fun seekTo(positionMs: Long) = Unit
+    override suspend fun seekTo(positionMs: Long) {
+        seekedTo.add(positionMs)
+    }
 
     override suspend fun release() {
         released = true
         status.value = PlaybackState()
     }
+
+    override suspend fun currentPositionMs(): Long = positionMs
 }
 
 /** A WAV file of [duration]'s worth of silence, in the format the platform engine was measured producing. */
