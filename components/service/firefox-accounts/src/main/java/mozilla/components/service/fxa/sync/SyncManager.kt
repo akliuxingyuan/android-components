@@ -5,6 +5,7 @@
 package mozilla.components.service.fxa.sync
 
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.work.WorkInfo
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
@@ -123,7 +124,7 @@ internal abstract class SyncManager(private val syncConfig: SyncConfig) {
     open val logger = Logger("SyncManager")
 
     // A SyncDispatcher instance bound to an account and a set of syncable stores.
-    @VisibleForTesting internal var syncDispatcher: SyncDispatcher? = null
+    @VisibleForTesting(otherwise = PROTECTED) internal var syncDispatcher: SyncDispatcher? = null
 
     private val syncStatusObserverRegistry = ObserverRegistry<SyncStatusObserver>()
 
@@ -151,6 +152,14 @@ internal abstract class SyncManager(private val syncConfig: SyncConfig) {
     }
 
     /**
+     * Configures and initializes sync, persisting that sync is connected on this device.
+     *
+     * @param params The [ConnectParams] describing how sync should be connected.
+     * @return [ConnectResult.Success] once sync is connected, or [ConnectResult.Failure] if connect did not succeed
+     */
+    abstract suspend fun connect(params: ConnectParams): ConnectResult
+
+    /**
      * Request an immediate synchronization of all configured stores.
      *
      * @param reason A [SyncReason] indicating why this sync is being requested.
@@ -161,13 +170,14 @@ internal abstract class SyncManager(private val syncConfig: SyncConfig) {
         reason: SyncReason,
         debounce: Boolean = false,
         customEngineSubset: List<SyncEngine> = listOf(),
-    ) =
+    ) {
         synchronized(this) {
             if (syncDispatcher == null) {
                 logger.info("Sync is not enabled. Ignoring 'sync now' request.")
             }
             syncDispatcher?.syncNow(reason, debounce, customEngineSubset)
         }
+    }
 
     internal fun setEngineEnabled(engine: SyncEngine, enabled: Boolean) {
         syncDispatcher?.setEngineEnabled(engine, enabled)
@@ -219,6 +229,17 @@ internal abstract class SyncManager(private val syncConfig: SyncConfig) {
         dispatcherUpdated(dispatcher)
         dispatcher.initialize()
         return dispatcher
+    }
+
+    /**
+     * Checks that when [requestedEngines] is not empty, it should be a subset of the supported engines.
+     *
+     * Throws an [IllegalStateException] if the requested engines are not a subset of the supported engines.
+     */
+    protected fun checkSupportedEngines(requestedEngines: Set<SyncEngine>) {
+        check(requestedEngines.isEmpty() || syncConfig.supportedEngines.containsAll(requestedEngines)) {
+            "Custom engines for sync must be a subset of supported engines."
+        }
     }
 
     private class PassThroughSyncStatusObserver(private val passThroughRegistry: ObserverRegistry<SyncStatusObserver>) :

@@ -142,6 +142,40 @@ internal class WorkManagerSyncManager(
         }
     }
 
+    override suspend fun connect(params: ConnectParams): ConnectResult {
+        if (params.initiateSync) checkSupportedEngines(params.engines)
+
+        return withContext(coroutineContext) {
+            logger.info("connect - setting up sync")
+
+            val account = accountManager.connectedAccount()
+            val result =
+                when {
+                    account == null -> ConnectResult.Failure.NeedsAuthentication
+                    !account.hasScope(SCOPE_SYNC) -> ConnectResult.Failure.NeedsSyncAuthorization
+                    else -> connectSync(params)
+                }
+            logger.info("connect - result = $result")
+            result
+        }
+    }
+
+    private suspend fun connectSync(params: ConnectParams): ConnectResult.Success {
+        syncStateStorageProvider.get().storeSyncConnected(connected = true)
+
+        // Call start only if we don't already have a sync dispatcher
+        if (syncDispatcher == null) start()
+        if (params.initiateSync) {
+            now(
+                reason = params.reason,
+                debounce = false,
+                customEngineSubset = params.engines.toList(),
+            )
+        }
+
+        return ConnectResult.Success
+    }
+
     override fun createDispatcher(supportedEngines: Set<SyncEngine>): SyncDispatcher {
         return WorkManagerSyncDispatcher(
             context = context,
