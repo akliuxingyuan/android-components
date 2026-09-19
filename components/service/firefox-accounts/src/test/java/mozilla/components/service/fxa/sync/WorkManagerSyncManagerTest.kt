@@ -9,27 +9,52 @@ import androidx.work.Configuration
 import androidx.work.WorkInfo
 import androidx.work.WorkerParameters
 import androidx.work.impl.utils.taskexecutor.TaskExecutor
+import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import mozilla.components.concept.sync.AccessTokenInfo
+import mozilla.components.concept.sync.OAuthScopedKey
 import mozilla.components.concept.sync.SyncConfig
 import mozilla.components.concept.sync.SyncEngine
+import mozilla.components.service.fxa.TestOAuthAccount
+import mozilla.components.service.fxa.manager.FxaAccountManager
+import mozilla.components.service.fxa.manager.GlobalAccountManager
+import mozilla.components.service.fxa.manager.SCOPE_SYNC
 import mozilla.components.service.fxa.sync.WorkManagerSyncWorker.Companion.SYNC_STAGGER_BUFFER_MS
 import mozilla.components.service.fxa.sync.WorkManagerSyncWorker.Companion.engineSyncTimestamp
+import mozilla.components.service.fxa.sync.helpers.TestSyncStateStorage
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import mozilla.components.support.test.whenever
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 
+@OptIn(ExperimentalCoroutinesApi::class) // TestScope.runCurrent
 @RunWith(AndroidJUnit4::class)
 class WorkManagerSyncManagerTest {
     private lateinit var mockParam: WorkerParameters
     private lateinit var mockTags: Set<String>
     private lateinit var mockTaskExecutor: TaskExecutor
+
+    private val defaultSyncConfig =
+        SyncConfig(
+            supportedEngines = setOf(SyncEngine.Tabs),
+            periodicSyncConfig = null,
+            syncDecouplingEnabled = false,
+        )
+    private val syncConfigWithDecoupling =
+        SyncConfig(supportedEngines = setOf(SyncEngine.Tabs), periodicSyncConfig = null, syncDecouplingEnabled = true)
     private val testDispatcher = StandardTestDispatcher()
+    private val accountManager = mock<FxaAccountManager>()
 
     @Before
     fun setUp() {
@@ -40,10 +65,17 @@ class WorkManagerSyncManagerTest {
         `when`(mockTaskExecutor.serialTaskExecutor).thenReturn(mock())
         `when`(mockParam.tags).thenReturn(mockTags)
 
+        GlobalAccountManager.setInstance(accountManager)
+
         WorkManagerTestInitHelper.initializeTestWorkManager(
             testContext,
-            Configuration.Builder().build(),
+            Configuration.Builder().setExecutor(SynchronousExecutor()).build(),
         )
+    }
+
+    @After
+    fun tearDown() {
+        WorkManagerTestInitHelper.closeWorkDatabase()
     }
 
     @Test
@@ -94,7 +126,7 @@ class WorkManagerSyncManagerTest {
     @Test
     fun `WHEN workerStateChanged receives null state THEN nothing happens`() {
         val observer = FakeSyncStatusObserver()
-        val syncManager = createSyncManager(observer)
+        val syncManager = createSyncManager()
 
         syncManager.syncDispatcher?.workersStateChanged(null)
 
@@ -124,14 +156,157 @@ class WorkManagerSyncManagerTest {
         assertFalse(syncManager.isSyncActive())
     }
 
-    private fun createSyncManager(observer: FakeSyncStatusObserver): WorkManagerSyncManager =
+    @Test
+    fun `GIVEN sync decoupling is off, and an authenticated account exists, THEN connection state reports connected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+            val syncManager = createSyncManager(syncConfig = defaultSyncConfig)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Connected, syncManager.syncConnectionState.value)
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is off, and no authenticated account exists, THEN connection state reports disconnected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(null)
+            val syncManager = createSyncManager(syncConfig = defaultSyncConfig)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Disconnected, syncManager.syncConnectionState.value)
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is off, an authenticated account exists, and sync was disconnected, THEN the connection state still reports connected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+
+            val syncStateStorage = TestSyncStateStorage()
+            syncStateStorage.storeSyncConnected(connected = false)
+            val syncManager = createSyncManager(syncConfig = defaultSyncConfig, syncStateStorage = syncStateStorage)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertEquals(
+                SyncConnectionState.Connected,
+                syncManager.syncConnectionState.value,
+                "Sync should be connected without sync decoupling when there is an authenticated account",
+            )
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, and no authenticated account exists, THEN connection state reports disconnected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.connectedAccount()).thenReturn(null)
+
+            val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Disconnected, syncManager.syncConnectionState.value)
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, an authenticated account exists, and sync state was never set, THEN connection state reports connected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+            val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Connected, syncManager.syncConnectionState.value)
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, an authenticated account exists, and sync was disconnected, THEN connection state reports disconnected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+
+            val syncStateStorage = TestSyncStateStorage()
+            syncStateStorage.storeSyncConnected(connected = false)
+            val syncManager =
+                createSyncManager(syncConfig = syncConfigWithDecoupling, syncStateStorage = syncStateStorage)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Disconnected, syncManager.syncConnectionState.value)
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, an authenticated account exists, and sync was connected, THEN connection state reports connected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+
+            val syncStateStorage = TestSyncStateStorage()
+            syncStateStorage.storeSyncConnected(connected = true)
+            val syncManager =
+                createSyncManager(syncConfig = syncConfigWithDecoupling, syncStateStorage = syncStateStorage)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Connected, syncManager.syncConnectionState.value)
+        }
+
+    @Test
+    fun `GIVEN the manager has not been initialized, THEN connection state reports uninitialized`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+
+            val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling)
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Uninitialized, syncManager.syncConnectionState.value)
+        }
+
+    private fun createSyncManager(
+        observer: FakeSyncStatusObserver = FakeSyncStatusObserver(),
+        syncStateStorage: SyncStateStorage = TestSyncStateStorage(),
+        syncConfig: SyncConfig = defaultSyncConfig,
+        syncStateStorageProvider: SyncStateStorage.Provider = SyncStateStorage.Provider { syncStateStorage },
+    ): WorkManagerSyncManager =
         WorkManagerSyncManager(
                 context = testContext,
-                syncConfig = SyncConfig(supportedEngines = setOf(SyncEngine.Tabs), periodicSyncConfig = null),
+                syncConfig = syncConfig,
+                rustSyncManager = TestRustSyncManager(),
+                syncStateStorageProvider = syncStateStorageProvider,
                 coroutineContext = testDispatcher,
             )
             .apply {
                 registerSyncStatusObserver(observer)
                 start()
             }
+
+    private class TestAccount(initialScopes: Set<String> = setOf(SCOPE_SYNC)) : TestOAuthAccount() {
+        private val grantedScopes: MutableSet<String> = initialScopes.toMutableSet()
+
+        override fun hasScope(scope: String): Boolean = scope in grantedScopes
+
+        override suspend fun getAccessToken(singleScope: String): AccessTokenInfo {
+            return AccessTokenInfo(
+                scope = SCOPE_SYNC,
+                token = "token",
+                key =
+                    OAuthScopedKey(
+                        kty = "kty",
+                        scope = SCOPE_SYNC,
+                        kid = "kid",
+                        k = "k",
+                    ),
+                expiresAt = 15L,
+            )
+        }
+
+        override suspend fun getTokenServerEndpointURL(): String {
+            return "token server url"
+        }
+    }
 }

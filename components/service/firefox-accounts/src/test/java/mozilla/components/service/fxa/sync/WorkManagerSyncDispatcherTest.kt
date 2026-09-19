@@ -77,6 +77,7 @@ class WorkManagerSyncDispatcherTest {
             )
         )
 
+        GlobalAccountManager.setRustSyncManager(testRustSyncManager)
         GlobalAccountManager.syncIoDispatcher = testCoroutineDispatcher
         setUpSyncEngineStores()
 
@@ -277,9 +278,7 @@ class WorkManagerSyncDispatcherTest {
         WorkManagerSyncDispatcher(
             context = testContext,
             supportedEngines = supportedSyncEngines,
-            syncConfig = syncConfig,
             coroutineContext = testCoroutineDispatcher,
-            rustSyncManager = testRustSyncManager,
         )
 
     companion object {

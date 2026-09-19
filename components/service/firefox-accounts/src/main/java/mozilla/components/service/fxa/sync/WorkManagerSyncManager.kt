@@ -29,6 +29,9 @@ import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.appservices.fxaclient.FxaException
@@ -75,11 +78,21 @@ private const val SYNC_WORKER_BACKOFF_DELAY_MINUTES = 3L
 internal class WorkManagerSyncManager(
     private val context: Context,
     private val syncConfig: SyncConfig,
+    private val syncStateStorageProvider: SyncStateStorage.Provider,
+    private val rustSyncManager: RustSyncManager = DefaultRustSyncManager,
+    private val accountManager: FxaAccountManager = GlobalAccountManager.requireAccountManager(),
     private val coroutineContext: CoroutineContext,
 ) : SyncManager(syncConfig) {
     override val logger = Logger("BgSyncManager")
 
+    private val coroutineScope = CoroutineScope(coroutineContext + SupervisorJob())
+
+    override val syncConnectionState: StateFlow<SyncConnectionState>
+        field = MutableStateFlow<SyncConnectionState>(SyncConnectionState.Uninitialized)
+
     init {
+        GlobalAccountManager.setRustSyncManager(rustSyncManager)
+
         WorkersLiveDataObserver.init(context)
 
         if (syncConfig.periodicSyncConfig == null) {
@@ -89,13 +102,51 @@ internal class WorkManagerSyncManager(
         }
     }
 
+    override fun initialize() {
+        coroutineScope.launch {
+            updateSyncConnectionState()
+        }
+    }
+
+    /**
+     * Note: For now, we are updating sync connection state based on changes in the sync state storage (when sync
+     * decoupling is enabled), and one-time when sync decoupling is not enabled.
+     *
+     * in [Bug 2071009](https://bugzilla.mozilla.org/show_bug.cgi?id=2071009), we will add logic to update sync
+     * connection state based on changes in the account state for both sync-decoupling and non-sync-decoupling paths
+     */
+    private suspend fun updateSyncConnectionState() {
+        when {
+            syncConfig.syncDecouplingEnabled ->
+                syncStateStorageProvider.get().syncConnectedFlow.collect { syncConnected: Boolean? ->
+                    // A `null` stored state means sync was never explicitly connected or disconnected, in which case we
+                    // assume it is connected: the user may be coming from a version where sync was always on.
+                    syncConnectionState.update { resolveConnectionState(syncConnected = syncConnected ?: true) }
+                }
+
+            else -> syncConnectionState.value = resolveConnectionState(syncConnected = true)
+        }
+    }
+
+    /**
+     * Resolves the current [SyncConnectionState].
+     *
+     * @param syncConnected Whether sync is connected.
+     * @return [SyncConnectionState.Disconnected] if there's no authenticated account, or sync is explicitly
+     *   disconnected
+     */
+    private fun resolveConnectionState(syncConnected: Boolean): SyncConnectionState {
+        return when {
+            accountManager.authenticatedAccount() == null || syncConnected.not() -> SyncConnectionState.Disconnected
+            else -> SyncConnectionState.Connected
+        }
+    }
+
     override fun createDispatcher(supportedEngines: Set<SyncEngine>): SyncDispatcher {
         return WorkManagerSyncDispatcher(
             context = context,
             supportedEngines = supportedEngines,
-            syncConfig = syncConfig,
             coroutineContext = coroutineContext,
-            rustSyncManager = DefaultRustSyncManager,
         )
     }
 
@@ -145,9 +196,7 @@ internal object WorkersLiveDataObserver {
 internal class WorkManagerSyncDispatcher(
     private val context: Context,
     private val supportedEngines: Set<SyncEngine>,
-    private val syncConfig: SyncConfig,
     private val coroutineContext: CoroutineContext,
-    rustSyncManager: RustSyncManager,
 ) : SyncDispatcher, Observable<SyncStatusObserver> by ObserverRegistry(), Closeable {
     private val logger = Logger("WMSyncDispatcher")
     private val coroutineScope = CoroutineScope(coroutineContext + SupervisorJob())
@@ -158,8 +207,6 @@ internal class WorkManagerSyncDispatcher(
         // Stop any currently active periodic syncing. Consumers of this class are responsible for
         // starting periodic syncing via [startPeriodicSync] if they need it.
         stopPeriodicSync()
-
-        GlobalAccountManager.setRustSyncManager(rustSyncManager)
     }
 
     override fun initialize() {
