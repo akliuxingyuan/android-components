@@ -79,6 +79,7 @@ internal class WorkManagerSyncManager(
     private val context: Context,
     private val syncConfig: SyncConfig,
     private val syncStateStorageProvider: SyncStateStorage.Provider,
+    private val syncEnginesStorage: SyncEnginesStorage = SyncEnginesStorage(context),
     private val rustSyncManager: RustSyncManager = DefaultRustSyncManager,
     private val accountManager: FxaAccountManager = GlobalAccountManager.requireAccountManager(),
     private val coroutineContext: CoroutineContext,
@@ -157,6 +158,16 @@ internal class WorkManagerSyncManager(
                 }
             logger.info("connect - result = $result")
             result
+        }
+    }
+
+    override suspend fun disconnect() {
+        withContext(coroutineContext) {
+            logger.info("disconnect - disabling sync")
+            stop()
+            rustSyncManager.disconnect()
+            syncStateStorageProvider.get().reset()
+            syncEnginesStorage.clear()
         }
     }
 
@@ -314,6 +325,7 @@ internal class WorkManagerSyncDispatcher(
         coroutineScope.cancel()
         unregisterObservers()
         stopPeriodicSync()
+        stopImmediateSync()
     }
 
     /** Periodic background syncing is mainly intended to reduce workload when we sync during application startup. */
@@ -336,6 +348,12 @@ internal class WorkManagerSyncDispatcher(
     override fun stopPeriodicSync() {
         logger.debug("Cancelling periodic syncing")
         WorkManager.getInstance(context).cancelUniqueWork(SyncWorkerName.Periodic.name)
+    }
+
+    /** Disables any immediate sync jobs running. */
+    private fun stopImmediateSync() {
+        logger.debug("Cancelling immediate syncing")
+        WorkManager.getInstance(context).cancelUniqueWork(SyncWorkerName.Immediate.name)
     }
 
     private fun periodicSyncWorkRequest(unit: TimeUnit, period: Long, initialDelay: Long): PeriodicWorkRequest {

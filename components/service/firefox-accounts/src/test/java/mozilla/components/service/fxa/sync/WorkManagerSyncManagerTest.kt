@@ -17,20 +17,29 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import mozilla.appservices.sync15.DeviceType
+import mozilla.appservices.syncmanager.DeviceSettings
+import mozilla.appservices.syncmanager.ServiceStatus
+import mozilla.appservices.syncmanager.SyncResult
 import mozilla.components.concept.sync.AccessTokenInfo
 import mozilla.components.concept.sync.OAuthScopedKey
 import mozilla.components.concept.sync.PeriodicSyncConfig
 import mozilla.components.concept.sync.SyncConfig
 import mozilla.components.concept.sync.SyncEngine
+import mozilla.components.concept.sync.SyncableStore
+import mozilla.components.service.fxa.FxaDeviceSettingsCache
 import mozilla.components.service.fxa.TestOAuthAccount
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.service.fxa.manager.GlobalAccountManager
 import mozilla.components.service.fxa.manager.SCOPE_SYNC
+import mozilla.components.service.fxa.manager.SyncEnginesStorage
 import mozilla.components.service.fxa.sync.WorkManagerSyncWorker.Companion.SYNC_STAGGER_BUFFER_MS
 import mozilla.components.service.fxa.sync.WorkManagerSyncWorker.Companion.engineSyncTimestamp
 import mozilla.components.service.fxa.sync.helpers.TestSyncStateStorage
@@ -57,7 +66,11 @@ class WorkManagerSyncManagerTest {
             syncDecouplingEnabled = false,
         )
     private val syncConfigWithDecoupling =
-        SyncConfig(supportedEngines = setOf(SyncEngine.Tabs), periodicSyncConfig = null, syncDecouplingEnabled = true)
+        SyncConfig(
+            supportedEngines = setOf(SyncEngine.Tabs),
+            periodicSyncConfig = PeriodicSyncConfig(),
+            syncDecouplingEnabled = true,
+        )
     private val testDispatcher = StandardTestDispatcher()
     private val accountManager = mock<FxaAccountManager>()
 
@@ -464,24 +477,220 @@ class WorkManagerSyncManagerTest {
             assertTrue(periodicWork.isEmpty(), "Expected no periodic sync work")
         }
 
+    @Test
+    fun `GIVEN sync decoupling is on, WHEN disconnect is called, THEN rust sync manager is disconnected`() =
+        runTest(testDispatcher) {
+            val testRustSyncManager = TestRustSyncManager()
+            val syncManager =
+                createSyncManager(syncConfig = syncConfigWithDecoupling, testRustSyncManager = testRustSyncManager)
+            syncManager.connect(ConnectParams(initiateSync = false))
+
+            assertTrue(
+                testRustSyncManager.isConnected,
+                "Rust sync manager should be connected before we call disconnect",
+            )
+
+            syncManager.disconnect()
+
+            assertFalse(testRustSyncManager.isConnected, "Rust sync manager should be disconnected")
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, and sync is previously connected, WHEN disconnect is called, THEN all sync work is cancelled`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+            val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling, start = true)
+            syncManager.initialize()
+            syncManager.connect(ConnectParams(initiateSync = true))
+            runCurrent()
+
+            syncManager.disconnect()
+            runCurrent()
+
+            val syncWorkInfos =
+                WorkManager.getInstance(testContext)
+                    .getWorkInfos(WorkQuery.Builder.fromTags(listOf(SyncWorkerTag.Common.name)).build())
+                    .get()
+
+            assertFalse(syncWorkInfos.isEmpty(), "Expected some sync work")
+
+            val notCancelled = syncWorkInfos.filter { it.state != WorkInfo.State.CANCELLED }
+            assertEquals(emptyList(), notCancelled, "Expected no uncancelled sync work")
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, and sync is previously connected, WHEN disconnect is called, THEN sync engines storage is cleared`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+
+            val syncEnginesStorage = SyncEnginesStorage(testContext)
+            val syncManager =
+                createSyncManager(
+                    syncEnginesStorage = syncEnginesStorage,
+                    syncConfig = syncConfigWithDecoupling,
+                    start = true,
+                )
+            syncManager.initialize()
+            syncManager.connect(ConnectParams(initiateSync = true))
+            syncManager.setEngineEnabled(engine = SyncEngine.Tabs, enabled = true)
+            runCurrent()
+
+            syncManager.disconnect()
+
+            val engines = syncEnginesStorage.getStatus()
+            assertTrue(engines.isEmpty(), "Expected no sync engines after disconnect. Got: $engines")
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, and sync is previously connected, WHEN disconnect is called, THEN sync storage is reset`() =
+        runTest(testDispatcher) {
+            val account = TestAccount()
+            whenever(accountManager.authenticatedAccount()).thenReturn(account)
+            whenever(accountManager.connectedAccount()).thenReturn(account)
+
+            val testRustSyncManager =
+                TestRustSyncManager().apply {
+                    expectSuccessfulSync()
+                }
+            val syncStateStorage = TestSyncStateStorage()
+            val syncConfig = syncConfigWithDecoupling
+            val syncManager =
+                createSyncManager(
+                    syncConfig = syncConfig,
+                    syncStateStorage = syncStateStorage,
+                    testRustSyncManager = testRustSyncManager,
+                    start = false,
+                )
+
+            syncManager.connect(ConnectParams(initiateSync = true))
+
+            runSyncWorkers(tags = listOf(SyncWorkerTag.Common.name))
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            syncManager.disconnect()
+
+            assertNull(
+                syncStateStorage.persistedSyncState,
+                "Sync storage persisted sync state should be null after disconnect",
+            )
+            assertNull(syncStateStorage.lastSynced, "Sync storage last synced should be null after disconnect")
+            assertFalse(
+                syncStateStorage.syncConnected!!,
+                "Sync storage sync connected should be false after disconnect",
+            )
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, and sync is previously connected, WHEN disconnect is called, THEN connection state reports disconnected`() =
+        runTest(testDispatcher) {
+            val account = TestAccount(initialScopes = setOf(SCOPE_SYNC))
+            whenever(accountManager.authenticatedAccount()).thenReturn(account)
+            whenever(accountManager.connectedAccount()).thenReturn(account)
+
+            // initialize and connect sync
+            val syncManager =
+                createSyncManager(
+                    syncConfig = syncConfigWithDecoupling,
+                    start = false,
+                )
+            syncManager.initialize()
+            runCurrent()
+
+            // start observing after initialization
+            val syncConnectionStates = mutableListOf<SyncConnectionState>()
+            backgroundScope.launch {
+                syncManager.syncConnectionState.collect { syncConnectionStates.add(it) }
+            }
+
+            syncManager.connect(ConnectParams(initiateSync = false))
+            runCurrent()
+
+            syncManager.disconnect()
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    SyncConnectionState.Connected,
+                    SyncConnectionState.Disconnected,
+                ),
+                syncConnectionStates,
+                "Sync should first be connected, and then disconnected",
+            )
+        }
+
+    /** Sets up the rust sync manager to report a successful sync of [SyncEngine.Tabs]. */
+    private fun TestRustSyncManager.expectSuccessfulSync() {
+        expectedResult =
+            SyncResult(
+                status = ServiceStatus.OK,
+                successful = listOf(SyncEngine.Tabs.nativeName),
+                failures = emptyMap(),
+                persistedState = "{\"foo\": \"bar\"}",
+                declined = null,
+                nextSyncAllowedAt = null,
+                telemetryJson = null,
+            )
+    }
+
+    /** Meets the constraints of every queued sync worker, so that the work is allowed to run. */
+    private fun runSyncWorkers(tags: List<String>) {
+        val driver = WorkManagerTestInitHelper.getTestDriver(testContext) ?: return
+        WorkManager.getInstance(testContext).getWorkInfos(WorkQuery.Builder.fromTags(tags).build()).get().forEach {
+            driver.setAllConstraintsMet(it.id)
+        }
+    }
+
     private fun createSyncManager(
         observer: FakeSyncStatusObserver = FakeSyncStatusObserver(),
         syncStateStorage: SyncStateStorage = TestSyncStateStorage(),
+        syncEnginesStorage: SyncEnginesStorage = SyncEnginesStorage(testContext),
+        testRustSyncManager: RustSyncManager = TestRustSyncManager(),
         syncConfig: SyncConfig = defaultSyncConfig,
         syncStateStorageProvider: SyncStateStorage.Provider = SyncStateStorage.Provider { syncStateStorage },
         start: Boolean = true,
-    ): WorkManagerSyncManager =
-        WorkManagerSyncManager(
+    ): WorkManagerSyncManager {
+        GlobalAccountManager.syncIoDispatcher = testDispatcher
+        GlobalAccountManager.setRustSyncManager(testRustSyncManager)
+        GlobalAccountManager.setSyncStateStorageProvider(syncStateStorageProvider)
+        GlobalSyncableStoreProvider.registerTestSyncStores(syncConfig)
+
+        FxaDeviceSettingsCache(testContext)
+            .setToCache(
+                DeviceSettings(
+                    fxaDeviceId = "test-device",
+                    name = "test device",
+                    kind = DeviceType.MOBILE,
+                )
+            )
+
+        return WorkManagerSyncManager(
                 context = testContext,
                 syncConfig = syncConfig,
-                rustSyncManager = TestRustSyncManager(),
+                rustSyncManager = testRustSyncManager,
                 syncStateStorageProvider = syncStateStorageProvider,
+                syncEnginesStorage = syncEnginesStorage,
                 coroutineContext = testDispatcher,
             )
             .apply {
                 registerSyncStatusObserver(observer)
                 if (start) start()
             }
+    }
+
+    private fun GlobalSyncableStoreProvider.registerTestSyncStores(syncConfig: SyncConfig) {
+        syncConfig.supportedEngines.forEach { engine ->
+            configureStore(
+                storePair =
+                    engine to
+                        lazy {
+                            object : SyncableStore {
+                                override fun registerWithSyncManager() {}
+                            }
+                        }
+            )
+        }
+    }
 
     private class TestAccount(initialScopes: Set<String> = setOf(SCOPE_SYNC)) : TestOAuthAccount() {
         private val grantedScopes: MutableSet<String> = initialScopes.toMutableSet()
