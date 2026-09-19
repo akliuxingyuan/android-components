@@ -16,6 +16,7 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -29,6 +30,8 @@ import mozilla.appservices.syncmanager.DeviceSettings
 import mozilla.appservices.syncmanager.ServiceStatus
 import mozilla.appservices.syncmanager.SyncResult
 import mozilla.components.concept.sync.AccessTokenInfo
+import mozilla.components.concept.sync.AccountObserver
+import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.OAuthScopedKey
 import mozilla.components.concept.sync.PeriodicSyncConfig
 import mozilla.components.concept.sync.SyncConfig
@@ -43,6 +46,7 @@ import mozilla.components.service.fxa.manager.SyncEnginesStorage
 import mozilla.components.service.fxa.sync.WorkManagerSyncWorker.Companion.SYNC_STAGGER_BUFFER_MS
 import mozilla.components.service.fxa.sync.WorkManagerSyncWorker.Companion.engineSyncTimestamp
 import mozilla.components.service.fxa.sync.helpers.TestSyncStateStorage
+import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.whenever
@@ -50,6 +54,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 
 @OptIn(ExperimentalCoroutinesApi::class) // TestScope.runCurrent
@@ -619,6 +624,77 @@ class WorkManagerSyncManagerTest {
             )
         }
 
+    @Test
+    fun `GIVEN sync decoupling is on, and no authenticated account exists, WHEN an account is authenticated, THEN connection state reports connected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(null)
+            val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling)
+
+            syncManager.initialize()
+            runCurrent()
+
+            val syncConnectionStates = mutableListOf<SyncConnectionState>()
+            backgroundScope.launch {
+                syncManager.syncConnectionState.collect { syncConnectionStates.add(it) }
+            }
+
+            // when the account is authenticated
+            val account = TestAccount()
+            whenever(accountManager.authenticatedAccount()).thenReturn(account)
+            registeredAccountObserver().onAuthenticated(account, AuthType.Signin)
+            runCurrent()
+
+            assertEquals(
+                listOf(SyncConnectionState.Disconnected, SyncConnectionState.Connected),
+                syncConnectionStates,
+                "Sync should first be disconnected, and then connected",
+            )
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, and an authenticated account exists, WHEN the account encounters authentication problems, THEN connection state remains connected`() =
+        runTest(testDispatcher) {
+            val account = TestAccount()
+            whenever(accountManager.authenticatedAccount()).thenReturn(account)
+            val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling)
+
+            syncManager.initialize()
+            runCurrent()
+
+            // when the account encounters authentication problems
+            whenever(accountManager.connectedAccount()).thenReturn(null)
+            registeredAccountObserver().onAuthenticationProblems()
+            runCurrent()
+
+            assertEquals(
+                SyncConnectionState.Connected,
+                syncManager.syncConnectionState.value,
+                "Sync should be connected",
+            )
+        }
+
+    @Test
+    fun `GIVEN sync decoupling is on, and an authenticated account exists, WHEN the account logs out, THEN connection state reports disconnected`() =
+        runTest(testDispatcher) {
+            whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
+            val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling)
+
+            syncManager.initialize()
+            runCurrent()
+
+            assertIs<SyncConnectionState.Connected>(
+                syncManager.syncConnectionState.value,
+                "Sync should be connected to begin with",
+            )
+
+            // when the account logs out
+            whenever(accountManager.authenticatedAccount()).thenReturn(null)
+            registeredAccountObserver().onLoggedOut()
+            runCurrent()
+
+            assertEquals(SyncConnectionState.Disconnected, syncManager.syncConnectionState.value)
+        }
+
     /** Sets up the rust sync manager to report a successful sync of [SyncEngine.Tabs]. */
     private fun TestRustSyncManager.expectSuccessfulSync() {
         expectedResult =
@@ -639,6 +715,13 @@ class WorkManagerSyncManagerTest {
         WorkManager.getInstance(testContext).getWorkInfos(WorkQuery.Builder.fromTags(tags).build()).get().forEach {
             driver.setAllConstraintsMet(it.id)
         }
+    }
+
+    /** Returns the [AccountObserver] the manager registered while initializing. */
+    private fun registeredAccountObserver(): AccountObserver {
+        val observer = argumentCaptor<AccountObserver>()
+        verify(accountManager).register(observer.capture())
+        return observer.value
     }
 
     private fun createSyncManager(

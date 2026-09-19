@@ -29,9 +29,14 @@ import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.appservices.fxaclient.FxaException
@@ -42,6 +47,10 @@ import mozilla.appservices.syncmanager.SyncEngineSelection
 import mozilla.appservices.syncmanager.SyncParams
 import mozilla.appservices.syncmanager.SyncTelemetry
 import mozilla.components.concept.storage.KeyProvider
+import mozilla.components.concept.sync.AccountObserver
+import mozilla.components.concept.sync.AuthFlowError
+import mozilla.components.concept.sync.AuthType
+import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.SyncConfig
 import mozilla.components.concept.sync.SyncEngine
 import mozilla.components.service.fxa.FxaDeviceSettingsCache
@@ -91,6 +100,8 @@ internal class WorkManagerSyncManager(
     override val syncConnectionState: StateFlow<SyncConnectionState>
         field = MutableStateFlow<SyncConnectionState>(SyncConnectionState.Uninitialized)
 
+    private val accountChangesObserver = AccountChangesObserver()
+
     init {
         GlobalAccountManager.setRustSyncManager(rustSyncManager)
 
@@ -104,29 +115,32 @@ internal class WorkManagerSyncManager(
     }
 
     override fun initialize() {
-        coroutineScope.launch {
-            updateSyncConnectionState()
-        }
+        accountManager.register(accountChangesObserver)
+
+        updateSyncConnectionState()
     }
 
     /**
-     * Note: For now, we are updating sync connection state based on changes in the sync state storage (when sync
-     * decoupling is enabled), and one-time when sync decoupling is not enabled.
-     *
-     * in [Bug 2071009](https://bugzilla.mozilla.org/show_bug.cgi?id=2071009), we will add logic to update sync
-     * connection state based on changes in the account state for both sync-decoupling and non-sync-decoupling paths
+     * Keeps [syncConnectionState] up to date with the account state, and with the stored connection preference when
+     * sync decoupling is enabled. Never returns: it collects for as long as this manager lives.
      */
-    private suspend fun updateSyncConnectionState() {
-        when {
-            syncConfig.syncDecouplingEnabled ->
-                syncStateStorageProvider.get().syncConnectedFlow.collect { syncConnected: Boolean? ->
-                    // A `null` stored state means sync was never explicitly connected or disconnected, in which case we
-                    // assume it is connected: the user may be coming from a version where sync was always on.
-                    syncConnectionState.update { resolveConnectionState(syncConnected = syncConnected ?: true) }
-                }
+    private fun updateSyncConnectionState() = coroutineScope.launch {
+        val syncConnectedFlow =
+            if (syncConfig.syncDecouplingEnabled) {
+                syncStateStorageProvider.get().syncConnectedFlow
+            } else {
+                flowOf(true)
+            }
 
-            else -> syncConnectionState.value = resolveConnectionState(syncConnected = true)
-        }
+        accountChangesObserver.accountChangedFlow
+            .onStart { emit(Unit) }
+            .combine(syncConnectedFlow) { _, syncConnected: Boolean? ->
+                // A `null` stored state means sync was never explicitly connected or disconnected, in which case we
+                // assume it is connected: the user may be coming from a version where sync was always on.
+                resolveConnectionState(syncConnected = syncConnected ?: true)
+            }
+            .distinctUntilChanged()
+            .collect { syncConnectionState.value = it }
     }
 
     /**
@@ -197,6 +211,29 @@ internal class WorkManagerSyncManager(
 
     override fun dispatcherUpdated(dispatcher: SyncDispatcher) {
         WorkersLiveDataObserver.setDispatcher(dispatcher)
+    }
+
+    /**
+     * Observes the account for changes that can connect or disconnect sync. The callbacks are used purely as triggers
+     * to cause the account manager states to be re-read.
+     */
+    private class AccountChangesObserver : AccountObserver {
+        val accountChangedFlow =
+            MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+        override fun onReady(authenticatedAccount: OAuthAccount?) = onAccountChanged()
+
+        override fun onAuthenticated(account: OAuthAccount, authType: AuthType) = onAccountChanged()
+
+        override fun onAuthenticationProblems() = onAccountChanged()
+
+        override fun onLoggedOut() = onAccountChanged()
+
+        override fun onFlowError(error: AuthFlowError) = onAccountChanged()
+
+        private fun onAccountChanged() {
+            accountChangedFlow.tryEmit(Unit)
+        }
     }
 }
 
