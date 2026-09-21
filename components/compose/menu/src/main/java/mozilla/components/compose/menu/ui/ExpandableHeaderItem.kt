@@ -16,15 +16,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +59,6 @@ private const val ANIMATION_DURATION_MS = 75
  * A menu item that can be expanded to show others or collapsed to hide them.
  *
  * @param title The title of the menu item.
- * @param contentDescription The content description of the menu item.
  * @param subMenuItems List of [StandardMenuItem] to show when this item is expanded.
  * @param modifier The modifier to apply to the menu item.
  * @param hideOnExpand Whether to automatically hide the menu item when it is expanded so that only its [subMenuItems]
@@ -69,6 +66,7 @@ private const val ANIMATION_DURATION_MS = 75
  * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
  * @param onClick The callback to invoke when the menu item is clicked.
  * @param role The [Role] of the menu item.
+ * @param contentDescription Optional custom content description for the menu item.
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
  * @param showNewIndicator Whether to show a new indicator.
@@ -79,13 +77,13 @@ private const val ANIMATION_DURATION_MS = 75
 @Composable
 fun ExpandableHeaderItem(
     title: Text,
-    contentDescription: Text,
     subMenuItems: List<StandardMenuItem>,
     modifier: Modifier = Modifier,
     hideOnExpand: Boolean = false,
     onClickEvent: MenuEvent? = null,
     onClick: (MenuEvent) -> Unit = {},
     role: Role = Button,
+    contentDescription: Text? = null,
     summary: MenuItemSummary? = null,
     icon: MenuItemIcon? = null,
     showNewIndicator: Boolean = false,
@@ -94,7 +92,7 @@ fun ExpandableHeaderItem(
     state: MenuItemState = DEFAULT,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    val contentDescriptionValue = contentDescription.value
+    val contentDescriptionValue = contentDescription?.value ?: title
     val expandedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_expanded)
     val collapsedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_collapsed)
     val statefulContentDescription =
@@ -107,11 +105,12 @@ fun ExpandableHeaderItem(
             Row(
                 modifier =
                     Modifier.background(MaterialTheme.colorScheme.surfaceBright)
-                        .minimumInteractiveComponentSize()
-                        .height(IntrinsicSize.Min)
-                        .padding(
-                            horizontal = AcornTheme.layout.space.static200,
-                            vertical = AcornTheme.layout.space.static100,
+                        .defaultMinSize(
+                            minHeight =
+                                when (summary) {
+                                    null -> dimensionResource(R.dimen.mozac_menu_item_min_height)
+                                    else -> dimensionResource(R.dimen.mozac_menu_item_with_summary_min_height)
+                                }
                         )
                         .semantics(mergeDescendants = true) {
                             this.contentDescription = statefulContentDescription
@@ -128,7 +127,11 @@ fun ExpandableHeaderItem(
                         ) {
                             isExpanded = !isExpanded
                             onClickEvent?.let { onClick(it) }
-                        },
+                        }
+                        .padding(
+                            horizontal = AcornTheme.layout.space.static200,
+                            vertical = AcornTheme.layout.space.static100,
+                        ),
                 verticalAlignment = CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static200),
             ) {
@@ -205,7 +208,7 @@ private fun MenuItemAnimation(
                         )
                 ),
     ) {
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25)) {
             content()
         }
     }

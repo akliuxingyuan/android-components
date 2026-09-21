@@ -31,13 +31,13 @@ sealed class MenuItem {
  * Configuration of menu item that can be expanded to show others or collapsed to hide them.
  *
  * @param title The title of the menu item.
- * @param contentDescription The content description of the menu item.
  * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked as a side effect. Clicking this menu item
  *   will automatically expand or collapse its [subMenuItems]
  * @param subMenuItems List of [StandardMenuItem] to show when this item is expanded.
  * @param hideOnExpand Whether to automatically hide the menu item when it is expanded so that only its [subMenuItems]
  *   will remain displayed. This also means that once expanded the list of [subMenuItems] cannot be collapsed again.
  * @param role The [Role] of the menu item.
+ * @param contentDescription Optional custom content description for the menu item.
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
  * @param showNewIndicator Whether to show a new indicator.
@@ -48,11 +48,11 @@ sealed class MenuItem {
  */
 data class ExpandableMenuItem(
     override val title: Text,
-    override val contentDescription: Text,
     override val onClickEvent: MenuEvent,
     val subMenuItems: List<StandardMenuItem>,
     val hideOnExpand: Boolean = false,
     override val role: Role = Button,
+    override val contentDescription: Text? = null,
     override val summary: MenuItemSummary? = null,
     override val icon: MenuItemIcon? = null,
     override val showNewIndicator: Boolean = false,
