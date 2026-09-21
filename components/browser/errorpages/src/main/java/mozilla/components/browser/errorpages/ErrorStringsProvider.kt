@@ -47,7 +47,10 @@ data class ArchiveDetails(
 )
 
 /** The strings shown on an error page, for the "continue to HTTP site" button. */
-data class ContinueHttpDetails(val continueHttpButton: String)
+data class ContinueHttpDetails(
+    val continueHttpButton: String,
+    val backFromHttpButton: String,
+)
 
 /**
  * Provide error strings and customize (some) error-display behavior.

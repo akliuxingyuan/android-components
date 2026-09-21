@@ -332,5 +332,8 @@ open class DefaultErrorStringsProvider : ErrorStringsProvider {
     }
 
     override fun continueHttpDetailsFor(context: Context, errorType: ErrorType, uri: String?): ContinueHttpDetails? =
-        ContinueHttpDetails(continueHttpButton = context.getString(R.string.mozac_browser_errorpages_httpsonly_button))
+        ContinueHttpDetails(
+            continueHttpButton = context.getString(R.string.mozac_browser_errorpages_httpsonly_button),
+            backFromHttpButton = context.getString(R.string.mozac_browser_errorpages_httpsonly_back),
+        )
 }

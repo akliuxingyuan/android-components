@@ -108,7 +108,8 @@ object ErrorPages {
         errorStringsProvider.continueHttpDetailsFor(context, errorType, uri)?.let { details ->
             urlEncodedErrorPage +=
                 "&showContinueHttp=${showContinueHttp.urlEncode()}" +
-                    "&continueHttpButton=${details.continueHttpButton.urlEncode()}"
+                    "&continueHttpButton=${details.continueHttpButton.urlEncode()}" +
+                    "&backFromHttpButton=${details.backFromHttpButton.urlEncode()}"
         }
 
         urlEncodedErrorPage = urlEncodedErrorPage.replace("<ul>".urlEncode(), "<ul role=\"presentation\">".urlEncode())
