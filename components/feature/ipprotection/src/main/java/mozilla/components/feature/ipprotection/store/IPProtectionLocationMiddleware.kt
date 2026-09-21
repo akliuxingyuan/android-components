@@ -45,6 +45,7 @@ class IPProtectionLocationMiddleware(
             is IPProtectionAction.EligibilityChanged,
             is IPProtectionAction.EngineStateChanged,
             is IPProtectionAction.LocationReset,
+            is IPProtectionAction.PersistedLocationUnavailable,
             is IPProtectionAction.LocationSwitchFailed,
             is IPProtectionAction.LocationUpdateFailed,
             is IPProtectionAction.ProxyActivationShown,
@@ -71,22 +72,24 @@ class IPProtectionLocationMiddleware(
         store: Store<IPProtectionState, IPProtectionAction>,
     ) = coroutineScope.launch {
         val cachedLocationCode = repository.getSelectedLocationCode()
+        val listed = action.countries.find { it.code == cachedLocationCode }
         val selectedLocation =
-            action.countries
-                .find { it.code == cachedLocationCode && it.available }
-                ?.let { Country(countryCode = it.code, available = it.available) }
+            listed?.takeIf { it.available }?.let { Country(countryCode = it.code, available = it.available) }
 
         if (selectedLocation != null) {
             // if we have found the cached selection in the update list, we should check if that's
             // the selected location, and - if it is not - update it.
             if (selectedLocation != store.state.locationState.selectedLocation) {
-                store.dispatch(IPProtectionAction.LocationChanged(location = selectedLocation))
+                store.dispatch(IPProtectionAction.LocationChanged(location = selectedLocation, userAction = false))
             }
         } else {
             // if we couldn't find the cached selection, we should clear the cached value and
             // update the selected location to the default.
+            val status = if (listed == null) CachedLocationStatus.Missing else CachedLocationStatus.Unavailable
             if (store.state.locationState.selectedLocation != Recommended) {
-                store.dispatch(IPProtectionAction.LocationReset)
+                store.dispatch(IPProtectionAction.LocationReset(cachedLocationCode, status))
+            } else if (cachedLocationCode != null) {
+                store.dispatch(IPProtectionAction.PersistedLocationUnavailable(cachedLocationCode, status))
             }
 
             repository.setSelectedLocationCode(null)
