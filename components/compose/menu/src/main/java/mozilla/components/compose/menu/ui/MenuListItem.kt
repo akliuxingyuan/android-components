@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -57,8 +58,9 @@ import mozilla.components.ui.icons.R as iconsR
  * @param modifier The modifier to apply to the menu item.
  * @param index The optional index of this item in the list.
  * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
- * @param onClick The callback to invoke when the menu item is clicked.
+ * @param onInteraction The callback to invoke when the menu item is interacted with.
  * @param contentDescription An optional content description for the menu item.
+ * @param onShownEvent An optional [MenuEvent] to dispatch when the menu item is shown.
  * @param role The [Role] of the menu item.
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
@@ -73,8 +75,9 @@ internal fun MenuListItem(
     modifier: Modifier = Modifier,
     index: Int? = null,
     onClickEvent: MenuEvent,
-    onClick: (MenuEvent) -> Unit,
+    onInteraction: (MenuEvent) -> Unit,
     contentDescription: Text?,
+    onShownEvent: MenuEvent? = null,
     role: Role = Button,
     summary: MenuItemSummary? = null,
     icon: MenuItemIcon? = null,
@@ -83,6 +86,12 @@ internal fun MenuListItem(
     actionButton: MenuItemActionButton? = null,
     state: MenuItemState = DEFAULT,
 ) {
+    LaunchedEffect(onShownEvent) {
+        onShownEvent?.let {
+            onInteraction(onShownEvent)
+        }
+    }
+
     Row(
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceBright).height(IntrinsicSize.Min),
         verticalAlignment = CenterVertically,
@@ -113,7 +122,7 @@ internal fun MenuListItem(
                         liveRegion = LiveRegionMode.Polite
                         this.role = role
                     }
-                    .thenConditional(Modifier.debouncedClickable { onClick(onClickEvent) }) { state != DISABLED }
+                    .thenConditional(Modifier.debouncedClickable { onInteraction(onClickEvent) }) { state != DISABLED }
                     .padding(
                         horizontal = AcornTheme.layout.space.static200,
                         vertical = AcornTheme.layout.space.static100,
@@ -130,7 +139,7 @@ internal fun MenuListItem(
             MenuListItemBadge(badge)
         }
 
-        MenuListItemActionButton(actionButton, onClick)
+        MenuListItemActionButton(actionButton, onInteraction)
     }
 }
 
@@ -171,7 +180,7 @@ private fun MenuListItemPreview() {
             index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
-            onClick = {},
+            onInteraction = {},
             summary = MenuItemSummary(Text.String("Summary")),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
@@ -197,7 +206,7 @@ private fun ActiveListItemPreview() {
             index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
-            onClick = {},
+            onInteraction = {},
             summary = MenuItemSummary(Text.String("Summary"), ACTIVE),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
@@ -225,7 +234,7 @@ private fun DisabledMenuListItemPreview() {
             index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
-            onClick = {},
+            onInteraction = {},
             summary = MenuItemSummary(Text.String("Summary"), DISABLED),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
@@ -253,7 +262,7 @@ private fun WarningMenuListItemPreview() {
             index = 0,
             modifier = Modifier.fillMaxWidth(),
             onClickEvent = object : MenuEvent {},
-            onClick = {},
+            onInteraction = {},
             summary = MenuItemSummary(Text.String("Summary"), WARNING),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             showNewIndicator = true,
@@ -280,7 +289,7 @@ private fun TitleOnlyMenuListItemPreview() {
             contentDescription = Text.String(""),
             index = 0,
             onClickEvent = object : MenuEvent {},
-            onClick = {},
+            onInteraction = {},
             modifier = Modifier.fillMaxWidth(),
         )
     }

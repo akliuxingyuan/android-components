@@ -64,7 +64,7 @@ private const val ANIMATION_DURATION_MS = 75
  * @param hideOnExpand Whether to automatically hide the menu item when it is expanded so that only its [subMenuItems]
  *   will remain displayed. This also means that once expanded the list of [subMenuItems] cannot be collapsed again.
  * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
- * @param onClick The callback to invoke when the menu item is clicked.
+ * @param onInteraction The callback to invoke when the menu item is interacted with.
  * @param role The [Role] of the menu item.
  * @param contentDescription Optional custom content description for the menu item.
  * @param summary An optional summary of the menu item.
@@ -81,7 +81,7 @@ fun ExpandableHeaderItem(
     modifier: Modifier = Modifier,
     hideOnExpand: Boolean = false,
     onClickEvent: MenuEvent? = null,
-    onClick: (MenuEvent) -> Unit = {},
+    onInteraction: (MenuEvent) -> Unit = {},
     role: Role = Button,
     contentDescription: Text? = null,
     summary: MenuItemSummary? = null,
@@ -126,7 +126,7 @@ fun ExpandableHeaderItem(
                             },
                     ) {
                         isExpanded = !isExpanded
-                        onClickEvent?.let { onClick(it) }
+                        onClickEvent?.let { onInteraction(it) }
                     }
                     .padding(
                         horizontal = AcornTheme.layout.space.static200,
@@ -161,7 +161,8 @@ fun ExpandableHeaderItem(
                 actionButton = it.actionButton,
                 state = it.state,
                 onClickEvent = it.onClickEvent,
-                onClick = onClick,
+                onShownEvent = it.onShownEvent,
+                onInteraction = onInteraction,
             )
         }
     }
