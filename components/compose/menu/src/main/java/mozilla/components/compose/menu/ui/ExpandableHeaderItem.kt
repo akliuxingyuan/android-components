@@ -100,51 +100,50 @@ fun ExpandableHeaderItem(
             "$contentDescriptionValue. ${if (isExpanded) expandedDescription else collapsedDescription}"
         }
 
-    Column(modifier = modifier) {
-        if (!hideOnExpand || !isExpanded) {
-            Row(
-                modifier =
-                    Modifier.background(MaterialTheme.colorScheme.surfaceBright)
-                        .defaultMinSize(
-                            minHeight =
-                                when (summary) {
-                                    null -> dimensionResource(R.dimen.mozac_menu_item_min_height)
-                                    else -> dimensionResource(R.dimen.mozac_menu_item_with_summary_min_height)
-                                }
-                        )
-                        .semantics(mergeDescendants = true) {
-                            this.contentDescription = statefulContentDescription
-                            this.role = role
-                        }
-                        .clickable(
-                            enabled = state != MenuItemState.DISABLED,
-                            onClickLabel =
-                                if (isExpanded) {
-                                    stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_collapse)
-                                } else {
-                                    stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_expand)
-                                },
-                        ) {
-                            isExpanded = !isExpanded
-                            onClickEvent?.let { onClick(it) }
-                        }
-                        .padding(
-                            horizontal = AcornTheme.layout.space.static200,
-                            vertical = AcornTheme.layout.space.static100,
-                        ),
-                verticalAlignment = CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static200),
-            ) {
-                MenuListItemIcon(icon, state)
+    if (!hideOnExpand || !isExpanded) {
+        Row(
+            modifier =
+                modifier
+                    .background(MaterialTheme.colorScheme.surfaceBright)
+                    .defaultMinSize(
+                        minHeight =
+                            when (summary) {
+                                null -> dimensionResource(R.dimen.mozac_menu_item_min_height)
+                                else -> dimensionResource(R.dimen.mozac_menu_item_with_summary_min_height)
+                            }
+                    )
+                    .semantics(mergeDescendants = true) {
+                        this.contentDescription = statefulContentDescription
+                        this.role = role
+                    }
+                    .clickable(
+                        enabled = state != MenuItemState.DISABLED,
+                        onClickLabel =
+                            if (isExpanded) {
+                                stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_collapse)
+                            } else {
+                                stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_expand)
+                            },
+                    ) {
+                        isExpanded = !isExpanded
+                        onClickEvent?.let { onClick(it) }
+                    }
+                    .padding(
+                        horizontal = AcornTheme.layout.space.static200,
+                        vertical = AcornTheme.layout.space.static100,
+                    ),
+            verticalAlignment = CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static200),
+        ) {
+            MenuListItemIcon(icon, state)
 
-                MenuListItemText(title, state, summary)
+            MenuListItemText(title, state, summary)
 
-                MenuListItemNewIndicator(showNewIndicator, state)
+            MenuListItemNewIndicator(showNewIndicator, state)
 
-                MenuListItemBadge(badge)
+            MenuListItemBadge(badge)
 
-                ChevronBadge(actionButtonText?.value, isExpanded)
-            }
+            ChevronBadge(actionButtonText?.value, isExpanded)
         }
     }
 
