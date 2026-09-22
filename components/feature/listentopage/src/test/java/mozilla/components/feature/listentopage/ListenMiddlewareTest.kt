@@ -62,6 +62,9 @@ private const val URL = "https://example.org/article"
 private const val READER_URL = "moz-extension://readerview/readerview.html?url=$URL&id=reader-1"
 private const val ENGINE = "com.example.tts"
 
+// Far enough past the window the lookahead fills that a seek there has to make the chunk itself.
+private const val SEEK_TARGET_CHUNK = 6
+
 // How long the audio the fake synthesizer writes lasts, which is what the queue measures every chunk of an article at.
 private const val FAKE_AUDIO_MS = 5_000L
 
@@ -1746,6 +1749,128 @@ class ListenMiddlewareTest {
             override suspend fun loadAvailableVoices(langTag: String): List<Voice> =
                 listOf(Voice(id = "voice-1", locale = Locale.US))
         }
+
+    @Test
+    fun `test that seeking into a chunk already queued moves the player without making anything`() = runTest {
+        val synthesizer = FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root)
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(synthesizerProvider = { synthesizer }, playbackController = playback) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val madeBefore = synthesizer.requests.size
+        val lengths = store.state.articleProgress.chunkDurationsMs
+
+        // A second into the chunk the lookahead queued behind the opening.
+        store.dispatch(ListenAction.Playback.SeekRequested(lengths[0] + 1_000))
+        advanceUntilIdle()
+
+        assertEquals(listOf(1 to 1_000L), playback.seekedToItem)
+        assertTrue("the playlist was rebuilt for audio it already held", playback.restartedAt.isEmpty())
+        assertEquals("a chunk was made again", madeBefore, synthesizer.requests.size)
+    }
+
+    @Test
+    fun `test that seeking past what is queued makes that chunk and starts the playlist on it`() = runTest {
+        val actions = mutableListOf<ListenAction>()
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+                recordInto = actions,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        // Well past the window the lookahead filled, so nothing there has been made yet.
+        val target = store.state.articleProgress.chunkDurationsMs.take(SEEK_TARGET_CHUNK).sum() + 1_000
+        store.dispatch(ListenAction.Playback.SeekRequested(target))
+        advanceUntilIdle()
+
+        assertEquals(1, playback.restartedAt.size)
+        assertEquals(1_000L, playback.restartedAt.single().second)
+        assertTrue(
+            "the player was moved inside a playlist that does not hold the chunk",
+            playback.seekedToItem.isEmpty(),
+        )
+        assertTrue(actions.contains(ListenAction.Playback.PlaybackWaiting))
+        assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that the player's first item reads as the chunk the playlist was restarted on`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val target = store.state.articleProgress.chunkDurationsMs.take(SEEK_TARGET_CHUNK).sum() + 1_000
+        store.dispatch(ListenAction.Playback.SeekRequested(target))
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 0))
+        advanceUntilIdle()
+
+        assertEquals(SEEK_TARGET_CHUNK, store.state.playbackState.chunk.index)
+    }
+
+    @Test
+    fun `test that a second seek supersedes one still waiting on its audio to be synthesized`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val lengths = store.state.articleProgress.chunkDurationsMs
+        val abandoned = lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000
+        val wanted = lengths.take(SEEK_TARGET_CHUNK + 2).sum() + 1_000
+
+        store.dispatch(ListenAction.Playback.SeekRequested(abandoned))
+        advanceTimeBy(100.milliseconds)
+        store.dispatch(ListenAction.Playback.SeekRequested(wanted))
+        advanceUntilIdle()
+
+        assertEquals("the abandoned seek took the playback over as well", 1, playback.restartedAt.size)
+
+        // Which chunk the playlist now starts on, read through a report of its first item.
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 0))
+        advanceUntilIdle()
+
+        assertEquals(SEEK_TARGET_CHUNK + 2, store.state.playbackState.chunk.index)
+    }
+
+    @Test
+    fun `test that seeking with no session running does nothing`() = runTest {
+        val playback = FakePlaybackController()
+        val store = storeWith(playbackController = playback) { Result.success(Content("Article text", "en-US")) }
+
+        store.dispatch(ListenAction.Playback.SeekRequested(30_000))
+        advanceUntilIdle()
+
+        assertTrue(playback.restartedAt.isEmpty())
+        assertTrue(playback.seekedToItem.isEmpty())
+        assertNull(store.state.error)
+    }
 
     private fun longArticle() = (1..400).joinToString(" ") { "Sentence $it is right here." }
 
