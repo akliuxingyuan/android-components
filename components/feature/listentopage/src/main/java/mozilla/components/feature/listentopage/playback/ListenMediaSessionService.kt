@@ -4,8 +4,15 @@
 
 package mozilla.components.feature.listentopage.playback
 
+import android.content.Intent
+import android.os.Build
+import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import mozilla.components.support.base.log.logger.Logger
 
 /**
  * Owns the [ListenPlayer] that reads an article out loud.
@@ -19,26 +26,72 @@ import androidx.media3.session.MediaSessionService
  */
 internal class ListenMediaSessionService : MediaSessionService() {
 
+    private val logger = Logger("ListenMediaSessionService")
+
     private var listenPlayer: ListenPlayer? = null
     private var mediaSession: MediaSession? = null
 
+    @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
 
         val player = ListenPlayer(this)
         listenPlayer = player
         mediaSession = MediaSession.Builder(this, player.exoPlayer).build()
+
+        setListener(
+            object : Listener {
+                @RequiresApi(Build.VERSION_CODES.S)
+                override fun onForegroundServiceStartNotAllowedException() {
+                    logger.warn("Refused the foreground, so playback cannot be started from the background")
+                    endPlayback()
+                }
+            }
+        )
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val started = super.onStartCommand(intent, flags, startId)
+
+        if (intent == null || intent.isNotificationDismissal()) {
+            endPlayback()
+            return START_NOT_STICKY
+        }
+
+        return started
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        endPlayback()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
+        releasePlayback()
+        super.onDestroy()
+    }
+
+    /** Pauses the reading, takes the notification away and ends the service */
+    @OptIn(UnstableApi::class)
+    private fun endPlayback() {
+        pauseAllPlayersAndStopSelf()
+        releasePlayback()
+    }
+
+    private fun releasePlayback() {
         mediaSession?.release()
         mediaSession = null
 
         listenPlayer?.release()
         listenPlayer = null
-
-        super.onDestroy()
     }
 }
+
+/**
+ * Media3 records the dismissal and stops republishing the notification, but it leaves the service running, so the
+ * service has to read the same intent to know that it should end.
+ */
+@OptIn(UnstableApi::class)
+internal fun Intent.isNotificationDismissal(): Boolean =
+    getBooleanExtra(MediaNotification.NOTIFICATION_DISMISSED_EVENT_KEY, false)
