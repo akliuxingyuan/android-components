@@ -64,6 +64,14 @@ sealed interface ListenAction : Action {
         data class StateChangeObserved(val playbackState: PlaybackState) : Playback
 
         /**
+         * How far through the article playback has got was worked out afresh.
+         *
+         * @property positionMs How far into the article.
+         * @property durationMs How long the whole article lasts.
+         */
+        data class ArticleProgressChanged(val positionMs: Long, val durationMs: Long) : Playback
+
+        /**
          * The player moved on to a chunk and is reading it out.
          *
          * @property chunk The chunk being read.

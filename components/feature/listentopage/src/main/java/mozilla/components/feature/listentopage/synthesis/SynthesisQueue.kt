@@ -11,8 +11,10 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.content.TextChunker
 import mozilla.components.feature.listentopage.playback.ChunkAudio
+import mozilla.components.feature.listentopage.playback.ProgressMapper
 import mozilla.components.feature.listentopage.playback.audioWindow
 
 /** Thrown when the article holds nothing that can be read out loud. */
@@ -139,6 +141,15 @@ internal class SynthesisQueue(
         speechRate = null
         audio.clear()
     }
+
+    fun progress(
+        previous: ArticleProgress,
+        playingChunk: Int,
+        chunkPositionMs: Long,
+        chunkEnded: Boolean,
+    ): ArticleProgress = mapper().progress(previous, playingChunk, chunkPositionMs, chunkEnded)
+
+    private fun mapper() = ProgressMapper(chunkCount, ::durationOf, ::lengthOf, speechRate)
 
     /**
      * Makes chunk [index] and measures what came back. The one place a chunk is made, so neither caller can skip it.

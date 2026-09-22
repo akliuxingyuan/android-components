@@ -34,6 +34,7 @@ private val fullState =
                 chunk = ChunkState(index = 3, durationMs = 30_000),
                 positionMs = 12_000,
             ),
+        articleProgress = ArticleProgress(positionMs = 102_000, durationMs = 600_000),
     )
 
 class ListenReducerTest {
@@ -57,6 +58,7 @@ class ListenReducerTest {
         assertEquals("de-DE", state.languageTag)
         assertEquals(fullState.voiceState, state.voiceState)
         assertEquals(PlaybackState(), state.playbackState)
+        assertEquals(ArticleProgress(), state.articleProgress)
     }
 
     @Test
@@ -259,6 +261,15 @@ class ListenReducerTest {
         assertNull(initial.playbackState.chunk.durationMs)
     }
 
+    // The bar has nothing to draw until the opening has been measured, which is a few seconds into the session.
+    @Test
+    fun `test that a session has got nowhere through its article by default`() {
+        val initial = ListenState()
+
+        assertEquals(ArticleProgress(), initial.articleProgress)
+        assertEquals(0f, initial.articleProgress.fraction, 0f)
+    }
+
     @Test
     fun `test that what the player reports is recorded`() {
         val reported = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 2), positionMs = 4_000)
@@ -275,6 +286,38 @@ class ListenReducerTest {
         val state = listenReducer(fullState, ListenAction.Playback.StateChangeObserved(reported))
 
         assertEquals(fullState.copy(playbackState = reported), state)
+    }
+
+    @Test
+    fun `test that how far through the article playback has got is recorded`() {
+        val state = listenReducer(ListenState(), ListenAction.Playback.ArticleProgressChanged(30_000, 600_000))
+
+        assertEquals(ArticleProgress(positionMs = 30_000, durationMs = 600_000), state.articleProgress)
+        assertEquals(0.05f, state.articleProgress.fraction, 0.0001f)
+    }
+
+    // A real duration shorter than the estimate it replaced shortens the whole article, and a position left outside it
+    // would hold the bar at full while there is still audio to play.
+    @Test
+    fun `test that a position outside a shortened article is pulled back inside it`() {
+        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressChanged(90_000, 60_000))
+
+        assertEquals(ArticleProgress(positionMs = 60_000, durationMs = 60_000), state.articleProgress)
+    }
+
+    @Test
+    fun `test that article progress leaves the rest of the session alone`() {
+        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressChanged(1_000, 2_000))
+
+        assertEquals(fullState.copy(articleProgress = ArticleProgress(1_000, 2_000)), state)
+    }
+
+    @Test
+    fun `test that an article of no length reads as no progress rather than as not a number`() {
+        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressChanged(0, 0))
+
+        assertEquals(ArticleProgress(), state.articleProgress)
+        assertEquals(0f, state.articleProgress.fraction, 0f)
     }
 
     @Test

@@ -167,6 +167,9 @@ class ListenMiddleware(
      * needed, since the player does not understand the context of the queue or full article.
      */
     private fun ListenStore.reportPlayback(playback: PlaybackState) {
+        // Every report moves the article on.
+        reportArticleProgress(playback)
+
         when (playback.phase) {
             PlaybackPhase.Failed -> dispatch(ListenAction.Playback.PlaybackFailed)
             PlaybackPhase.Ended -> refillOrEnd(this::dispatch)
@@ -525,6 +528,27 @@ class ListenMiddleware(
             ending?.coroutineContext?.job?.cancelAndJoin()
 
             andThen()
+        }
+    }
+
+    /**
+     * Works out how far through the whole article playback has got, and reports it when it has moved.
+     *
+     * The chunk is the one [playback] names rather than [playingChunk], so that the position and the chunk it is a
+     * position in always come from the same report.
+     */
+    private fun ListenStore.reportArticleProgress(playback: PlaybackState) {
+        val queue = synthesisQueue ?: return
+        val progress =
+            queue.progress(
+                previous = state.articleProgress,
+                playingChunk = playback.chunk.index,
+                chunkPositionMs = playback.positionMs,
+                chunkEnded = playback.phase == PlaybackPhase.Ended,
+            )
+
+        if (progress != state.articleProgress) {
+            dispatch(ListenAction.Playback.ArticleProgressChanged(progress.positionMs, progress.durationMs))
         }
     }
 }

@@ -74,6 +74,16 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
                 playbackState = state.playbackState.copy(phase = PlaybackPhase.Failed),
                 error = ListenError.PlaybackFailed,
             )
+        is ListenAction.Playback.ArticleProgressChanged -> {
+            val durationMs = action.durationMs.coerceAtLeast(0)
+            state.copy(
+                articleProgress =
+                    ArticleProgress(
+                        positionMs = action.positionMs.coerceIn(0, durationMs),
+                        durationMs = durationMs,
+                    )
+            )
+        }
     }
 
 private fun reduceSynthesis(state: ListenState, action: ListenAction.Synthesis): ListenState =

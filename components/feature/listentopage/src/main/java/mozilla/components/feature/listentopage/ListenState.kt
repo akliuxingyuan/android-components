@@ -18,6 +18,7 @@ import mozilla.components.lib.state.State
  * @property error The last error, or `null`.
  * @property voiceState State relating to narrator voice.
  * @property playbackState State relating to the audio being played.
+ * @property articleProgress How far through the whole article the playback has gotten.
  */
 data class ListenState(
     val tabId: String? = null,
@@ -28,6 +29,7 @@ data class ListenState(
     val error: ListenError? = null,
     val voiceState: VoiceState = VoiceState(),
     val playbackState: PlaybackState = PlaybackState(),
+    val articleProgress: ArticleProgress = ArticleProgress(),
 ) : State
 
 /** What the user asked to see. */
@@ -131,4 +133,19 @@ enum class PlaybackPhase {
     Paused,
     Ended,
     Failed,
+}
+
+/**
+ * How far through the whole article playback has got, worked out rather than reported.
+ *
+ * @property positionMs How far into the article, across every chunk before the one playing.
+ * @property durationMs How long the whole article lasts: measured where chunks have been made, estimated where they
+ *   have not, so it moves as the article is synthesized.
+ */
+data class ArticleProgress(
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+) {
+    val fraction: Float
+        get() = if (durationMs <= 0) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
 }

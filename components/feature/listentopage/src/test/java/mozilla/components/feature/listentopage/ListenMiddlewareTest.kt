@@ -35,6 +35,7 @@ import mozilla.components.feature.listentopage.content.TextChunker
 import mozilla.components.feature.listentopage.fakes.FakeAudioFileCache
 import mozilla.components.feature.listentopage.fakes.FakePlaybackController
 import mozilla.components.feature.listentopage.fakes.FakeSpeechSynthesizer
+import mozilla.components.feature.listentopage.playback.AUDIO_WINDOW_RADIUS
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.DirectoryAudioFileCache
 import mozilla.components.feature.listentopage.playback.PlaybackController
@@ -59,6 +60,9 @@ private const val OTHER_TAB_ID = "tab-2"
 private const val URL = "https://example.org/article"
 private const val READER_URL = "moz-extension://readerview/readerview.html?url=$URL&id=reader-1"
 private const val ENGINE = "com.example.tts"
+
+// How long the audio the fake synthesizer writes lasts, which is what the queue measures every chunk of an article at.
+private const val FAKE_AUDIO_MS = 5_000L
 
 /** A chunker that finds nothing to read in anything, which the real one does only for text with no words in it. */
 private object NothingToChunk : TextChunker {
@@ -563,6 +567,121 @@ class ListenMiddlewareTest {
         // Without the guard the second report queues the same chunk the first one did, and the reader hears it twice.
         assertTrue(playback.queued.size > queuedBefore)
         assertEquals(playback.queued.distinct(), playback.queued)
+    }
+
+    @Test
+    fun `test that the article progress covers the chunks that have not been synthesized yet`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        // The article is longer than the handful of chunks that have audio, because the rest of it is sized from its
+        // characters at the rate the opening measured at rather than counting as nothing.
+        val measuredSoFarMs = (AUDIO_WINDOW_RADIUS + 1) * FAKE_AUDIO_MS
+        assertTrue(
+            "the article is only ${store.state.articleProgress.durationMs}ms long",
+            store.state.articleProgress.durationMs > measuredSoFarMs,
+        )
+        assertEquals(0f, store.state.articleProgress.fraction, 0f)
+    }
+
+    @Test
+    fun `test that the article progress counts the chunks already played`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        // The playlist moves on to the second chunk, which the player reports as the item it is playing.
+        playback.status.value =
+            PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 1), positionMs = 1_000)
+        advanceUntilIdle()
+
+        // The first chunk in full, and a second of the one after it, even though the bar is nowhere near the end.
+        assertEquals(FAKE_AUDIO_MS + 1_000, store.state.articleProgress.positionMs)
+        assertTrue("the bar is at ${store.state.articleProgress.fraction}", store.state.articleProgress.fraction < 1f)
+    }
+
+    @Test
+    fun `test that the article progress reaches the end of the article`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = "The only sentence there is.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 2_000)
+        advanceUntilIdle()
+        val midway = store.state.articleProgress
+
+        // Short of the length of the audio, as the last position the player samples before a chunk ends always is.
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended, positionMs = FAKE_AUDIO_MS - 3)
+        advanceUntilIdle()
+        val ended = store.state.articleProgress
+
+        assertEquals(2_000, midway.positionMs)
+        assertEquals(FAKE_AUDIO_MS, midway.durationMs)
+        assertEquals(1f, ended.fraction, 0f)
+        assertEquals(ended.durationMs, ended.positionMs)
+    }
+
+    // The rate is measured from the opening's own audio, so a session whose audio cannot be measured at all has no
+    // basis for any estimate. The bar reads zero for the whole of it rather than guessing.
+    @Test
+    fun `test that the article progress stays at zero while nothing can be measured`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(synthesizerProvider = { FakeSpeechSynthesizer() }, playbackController = playback) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 4_000)
+        advanceUntilIdle()
+
+        assertEquals(ArticleProgress(), store.state.articleProgress)
+        assertEquals(0f, store.state.articleProgress.fraction, 0f)
+    }
+
+    @Test
+    fun `test that a new session starts its article from the beginning of the bar`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Ended, positionMs = FAKE_AUDIO_MS)
+        advanceUntilIdle()
+        assertTrue(store.state.articleProgress.positionMs > 0)
+
+        store.dispatch(ListenAction.Session.ListenRequested(OTHER_TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(0, store.state.articleProgress.positionMs)
     }
 
     // The playlist holds as much of the article as the engine has managed, so the player running out of it is the
