@@ -36,6 +36,7 @@ import mozilla.components.feature.listentopage.fakes.FakeAudioFileCache
 import mozilla.components.feature.listentopage.fakes.FakePlaybackController
 import mozilla.components.feature.listentopage.fakes.FakeSpeechSynthesizer
 import mozilla.components.feature.listentopage.playback.AUDIO_WINDOW_RADIUS
+import mozilla.components.feature.listentopage.playback.ArticleDisplayData
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.DirectoryAudioFileCache
 import mozilla.components.feature.listentopage.playback.PlaybackController
@@ -249,6 +250,82 @@ class ListenMiddlewareTest {
 
         assertEquals(listOf("Article text."), synthesizer.requests)
         assertEquals(listOf(File("/audio/1.wav")), playback.played)
+    }
+
+    @Test
+    fun `test that every chunk of the article says what the notification shows`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(maxInputLength = 20) },
+                playbackController = playback,
+                browserStore = browserStoreWithOpenTabs(title = "An article"),
+            ) {
+                Result.success(Content(text = "One. Two. Three is over the limit.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertTrue(playback.queued.isNotEmpty())
+        assertEquals(playback.played.size + playback.queued.size, playback.displayDataList.size)
+        assertEquals(
+            setOf(ArticleDisplayData(title = "An article", site = "example.org")),
+            playback.displayDataList.toSet(),
+        )
+    }
+
+    @Test
+    fun `test that a reader view article is named by its own site rather than the reader URL`() = runTest {
+        val playback = FakePlaybackController()
+        val readerTab =
+            createTab(
+                url = READER_URL,
+                id = TAB_ID,
+                readerState = ReaderState(active = true, activeUrl = URL),
+            )
+        val store =
+            storeWith(
+                playbackController = playback,
+                browserStore = BrowserStore(BrowserState(tabs = listOf(readerTab), selectedTabId = TAB_ID)),
+            ) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals("example.org", playback.displayDataList.first().site)
+    }
+
+    @Test
+    fun `test that a URL naming no site leaves the notification without one`() = runTest {
+        val playback = FakePlaybackController()
+        val hostless = createTab(url = "data:text/html,<p>Article</p>", id = TAB_ID)
+        val store =
+            storeWith(
+                playbackController = playback,
+                browserStore = BrowserStore(BrowserState(tabs = listOf(hostless), selectedTabId = TAB_ID)),
+            ) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertNull(playback.displayDataList.first().site)
+    }
+
+    // Reported as having no title rather than given one, so that whatever reads this knows the page itself was
+    // untitled. The notification shows the app's name in that case, and puts it on in ListenPlaybackController.
+    @Test
+    fun `test that a page with no title is reported as having none rather than given one`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(playbackController = playback) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        assertEquals(ArticleDisplayData(title = null, site = "example.org"), playback.displayDataList.first())
     }
 
     @Test
@@ -1688,12 +1765,12 @@ class ListenMiddlewareTest {
      * A browser with both tabs open and in reader mode, and [TAB_ID] selected, which is what the middleware sees when a
      * session starts: listening is only offered from the reader view of the selected tab.
      */
-    private fun browserStoreWithOpenTabs() =
+    private fun browserStoreWithOpenTabs(title: String = "") =
         BrowserStore(
             BrowserState(
                 tabs =
                     listOf(
-                        createTab(url = URL, id = TAB_ID, readerState = ReaderState(active = true)),
+                        createTab(url = URL, id = TAB_ID, title = title, readerState = ReaderState(active = true)),
                         createTab(url = URL, id = OTHER_TAB_ID, readerState = ReaderState(active = true)),
                     ),
                 selectedTabId = TAB_ID,

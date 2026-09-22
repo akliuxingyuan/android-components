@@ -34,6 +34,8 @@ dependencies {
     implementation project(':components:lib-state')
     implementation project(':components:compose-base')
     implementation project(':components:support-base')
+    implementation project(':components:support-ktx')
+    implementation project(':components:ui-icons')
 
     testImplementation project(':components:support-test')
     testImplementation project(':components:support-test-fakes')

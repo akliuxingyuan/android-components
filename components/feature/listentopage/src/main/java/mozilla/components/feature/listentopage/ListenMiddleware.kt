@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.listentopage
 
+import androidx.core.net.toUri
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,6 +25,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentProvider
 import mozilla.components.feature.listentopage.content.TextChunker
+import mozilla.components.feature.listentopage.playback.ArticleDisplayData
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.ChunkAudio
 import mozilla.components.feature.listentopage.playback.PlaybackController
@@ -35,6 +37,7 @@ import mozilla.components.feature.listentopage.synthesis.SynthesisQueue
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.support.base.log.logger.Logger
+import mozilla.components.support.ktx.kotlin.stripCommonSubdomains
 
 /**
  * [Middleware] that extracts the article a listening session reads out, synthesizes it and plays it.
@@ -247,7 +250,13 @@ class ListenMiddleware(
             return
         }
 
-        article = Article(tabId = tabId, text = content.text, languageTag = language)
+        article =
+            Article(
+                tabId = tabId,
+                text = content.text,
+                languageTag = language,
+                displayData = browserStore.state.findTab(tabId).describeArticle(),
+            )
         dispatch(ListenAction.Content.ContentReady(languageTag = language))
     }
 
@@ -359,7 +368,7 @@ class ListenMiddleware(
             synthesisQueue = queue
 
             val opening = queue.startReading(article.text, article.languageTag)
-            playbackController.play(opening)
+            playbackController.play(file = opening, articleDisplayData = article.displayData)
             appendedThrough = firstChunkIndex
             if (resumeAtMs > 0) {
                 playbackController.seekTo(resumeAtMs)
@@ -562,7 +571,19 @@ private val TabSessionState.pageUrl: String
     get() = readerState.activeUrl ?: content.url
 
 /** The article of one listening session, the tab it was extracted from, and the language it is being read as. */
-private class Article(val tabId: String, val text: String, val languageTag: String)
+private class Article(
+    val tabId: String,
+    val text: String,
+    val languageTag: String,
+    val displayData: ArticleDisplayData,
+)
+
+/** What the playback notification and the lock screen say about the article in this tab. */
+private fun TabSessionState?.describeArticle(): ArticleDisplayData =
+    ArticleDisplayData(
+        title = this?.content?.title?.takeIf { it.isNotBlank() },
+        site = this?.pageUrl?.toUri()?.host?.takeIf { it.isNotBlank() }?.stripCommonSubdomains(),
+    )
 
 /** This language tag in the form everything downstream works from, or `null` when it names no language. */
 private fun String.asLanguageTagOrNull(): String? =

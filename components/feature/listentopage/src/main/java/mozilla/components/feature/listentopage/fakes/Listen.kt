@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.Voice
+import mozilla.components.feature.listentopage.playback.ArticleDisplayData
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.PlaybackController
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesisException
@@ -127,6 +128,7 @@ class FakeAudioFileCache : AudioFileCache {
  * @property played Every file it was asked to play, in order.
  * @property queued Every file it was asked to queue behind what is playing, in order. A caller's joins are only gapless
  *   for the chunks that reach this rather than [played], which replaces what is playing.
+ * @property displayData What each file in the playlist says it is, in the order the files were handed over.
  * @property resumed How many times [resume] has been called.
  * @property released Whether [release] has been called.
  * @property status What to report about the playback. Set it to drive a caller's monitoring, including changes no
@@ -137,20 +139,28 @@ class FakeAudioFileCache : AudioFileCache {
 class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
     val played = mutableListOf<File>()
     val queued = mutableListOf<File>()
+    val displayDataList = mutableListOf<ArticleDisplayData>()
     var resumed = 0
     val seekedTo = mutableListOf<Long>()
     var released = false
 
     override val status = MutableStateFlow(PlaybackState())
 
-    override suspend fun play(file: File) {
+    // What the article now playing says it is, as the real controller keeps it.
+    private var displayData: ArticleDisplayData? = null
+
+    override suspend fun play(file: File, articleDisplayData: ArticleDisplayData) {
+        displayData = articleDisplayData
         played.add(file)
+        displayDataList.add(articleDisplayData)
 
         status.value = PlaybackState(phase = PlaybackPhase.Buffering)
     }
 
     override suspend fun enqueue(file: File) {
+        val displayData = displayData ?: return
         queued.add(file)
+        displayDataList.add(displayData)
     }
 
     override suspend fun pause() = Unit
@@ -165,6 +175,7 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
 
     override suspend fun release() {
         released = true
+        displayData = null
         status.value = PlaybackState()
     }
 

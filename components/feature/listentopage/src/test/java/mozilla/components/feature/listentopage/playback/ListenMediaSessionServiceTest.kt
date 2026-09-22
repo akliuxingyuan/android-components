@@ -7,8 +7,11 @@ package mozilla.components.feature.listentopage.playback
 import android.app.Service
 import android.content.Intent
 import android.view.KeyEvent
+import androidx.media3.common.Player
+import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaNotification
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,6 +66,26 @@ class ListenMediaSessionServiceTest {
         val dismissal = mediaButton().putExtra(MediaNotification.NOTIFICATION_DISMISSED_EVENT_KEY, true)
 
         assertTrue(dismissal.isNotificationDismissal())
+    }
+
+    @Test
+    fun `test that the notification skips by time rather than by chunk`() {
+        val controls = skipControls(testContext.resources)
+
+        assertEquals(
+            listOf(Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD),
+            controls.map { it.playerCommand },
+        )
+    }
+
+    @Test
+    fun `test that the skip controls say and show how far they move`() {
+        val controls = skipControls(testContext.resources)
+
+        assertEquals("Back 10 seconds", controls.first().displayName.toString())
+        assertEquals(CommandButton.ICON_SKIP_BACK_10, controls.first().icon)
+        assertEquals("Forward 30 seconds", controls.last().displayName.toString())
+        assertEquals(CommandButton.ICON_SKIP_FORWARD_30, controls.last().icon)
     }
 
     private fun mediaButton() =

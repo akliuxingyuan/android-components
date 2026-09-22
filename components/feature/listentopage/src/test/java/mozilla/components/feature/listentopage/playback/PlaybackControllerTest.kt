@@ -87,6 +87,20 @@ class PlaybackControllerTest {
         }
     }
 
+    @Test
+    fun `test that a page with no title is read out under the app's name`() {
+        val displayData = ArticleDisplayData(site = "example.org").withAppNameIfUntitled("Firefox Nightly")
+
+        assertEquals(ArticleDisplayData(title = "Firefox Nightly", site = "example.org"), displayData)
+    }
+
+    @Test
+    fun `test that a page with a title keeps the title`() {
+        val displayData = ArticleDisplayData(title = "An article", site = "example.org")
+
+        assertEquals(displayData, displayData.withAppNameIfUntitled("Firefox Nightly"))
+    }
+
     private fun player(
         state: Int,
         playWhenReady: Boolean = false,
