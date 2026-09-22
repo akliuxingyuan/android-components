@@ -149,7 +149,7 @@ internal class SynthesisQueue(
         chunkEnded: Boolean,
     ): ArticleProgress = mapper().progress(previous, playingChunk, chunkPositionMs, chunkEnded)
 
-    fun mapper() = ProgressMapper(chunkCount, ::durationOf, ::lengthOf, speechRate)
+    private fun mapper() = ProgressMapper(chunkCount, ::durationOf, ::lengthOf, speechRate)
 
     /**
      * Makes chunk [index] and measures what came back. The one place a chunk is made, so neither caller can skip it.

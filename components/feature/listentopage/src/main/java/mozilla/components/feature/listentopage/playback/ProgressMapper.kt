@@ -57,9 +57,6 @@ internal class ProgressMapper(
         return ArticleProgress(positionMs = positionMs, durationMs = heldLength(positionMs, previous, readToEnd))
     }
 
-    /** How long each chunk lasts. Empty if nothing has been sized. */
-    fun chunkLengthsMs(): List<Long> = (0 until chunkCount).map(::lengthOf).takeIf { it.sum() > 0 }.orEmpty()
-
     /** Which chunk holds [characterOffset], counting the characters of the chunks rather than the page's own text. */
     fun chunkAt(characterOffset: Int): Int {
         var end = 0
@@ -149,24 +146,4 @@ internal class ProgressMapper(
 
         return if (chars > 0 && seconds > 0) SpeechRate(chars / seconds) else null
     }
-}
-
-/**
- * Where [positionMs] into an article falls, given how long each of its chunks lasts.
- *
- * Taken over the lengths rather than over a [ProgressMapper] so that it can be answered from a snapshot.
- */
-internal fun List<Long>.chunkPositionAt(positionMs: Long): ChunkPosition? {
-    if (isEmpty()) return null
-
-    val target = positionMs.coerceAtLeast(0)
-    var passed = 0L
-    for ((index, chunkMs) in withIndex()) {
-        if (target < passed + chunkMs || index == lastIndex) {
-            return ChunkPosition(index, (target - passed).coerceIn(0, chunkMs))
-        }
-        passed += chunkMs
-    }
-
-    return null
 }

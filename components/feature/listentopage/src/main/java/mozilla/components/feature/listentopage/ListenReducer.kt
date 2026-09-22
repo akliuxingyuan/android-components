@@ -74,8 +74,6 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
                 playbackState = state.playbackState.copy(phase = PlaybackPhase.Failed),
                 error = ListenError.PlaybackFailed,
             )
-        is ListenAction.Playback.SeekRequested -> state
-
         is ListenAction.Playback.ArticleProgressChanged -> {
             val durationMs = action.durationMs.coerceAtLeast(0)
             state.copy(
@@ -83,7 +81,6 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
                     ArticleProgress(
                         positionMs = action.positionMs.coerceIn(0, durationMs),
                         durationMs = durationMs,
-                        chunkDurationsMs = action.chunkDurationsMs,
                     )
             )
         }

@@ -142,8 +142,6 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
     val displayDataList = mutableListOf<ArticleDisplayData>()
     var resumed = 0
     val seekedTo = mutableListOf<Long>()
-    val seekedToItem = mutableListOf<Pair<Int, Long>>()
-    val restartedAt = mutableListOf<Pair<File, Long>>()
     var released = false
 
     override val status = MutableStateFlow(PlaybackState())
@@ -173,15 +171,6 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
 
     override suspend fun seekTo(positionMs: Long) {
         seekedTo.add(positionMs)
-    }
-
-    override suspend fun seekTo(itemIndex: Int, positionMs: Long) {
-        seekedToItem.add(itemIndex to positionMs)
-    }
-
-    override suspend fun restartAt(file: File, positionMs: Long) {
-        restartedAt.add(file to positionMs)
-        played.add(file)
     }
 
     override suspend fun release() {

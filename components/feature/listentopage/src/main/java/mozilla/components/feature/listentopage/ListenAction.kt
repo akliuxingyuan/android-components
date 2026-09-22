@@ -68,13 +68,8 @@ sealed interface ListenAction : Action {
          *
          * @property positionMs How far into the article.
          * @property durationMs How long the whole article lasts.
-         * @property chunkDurationsMs How long each chunk lasts, as they stood when this was worked out.
          */
-        data class ArticleProgressChanged(
-            val positionMs: Long,
-            val durationMs: Long,
-            val chunkDurationsMs: List<Long> = emptyList(),
-        ) : Playback
+        data class ArticleProgressChanged(val positionMs: Long, val durationMs: Long) : Playback
 
         /**
          * The player moved on to a chunk and is reading it out.
@@ -83,14 +78,6 @@ sealed interface ListenAction : Action {
          * @property positionMs How far into [chunk] the player has got.
          */
         data class PlaybackStarted(val chunk: ChunkState, val positionMs: Long) : Playback
-
-        /**
-         * The reader chose a place in the article to carry on from.
-         *
-         * @property positionMs How far into the article to move to, measured against the lengths in
-         *   [ArticleProgress.chunkDurationsMs].
-         */
-        data class SeekRequested(val positionMs: Long) : Playback
 
         /** The player read out every chunk it had been given and the article has more to come. */
         data object PlaybackWaiting : Playback

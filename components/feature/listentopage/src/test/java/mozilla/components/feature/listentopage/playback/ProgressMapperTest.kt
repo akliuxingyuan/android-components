@@ -11,7 +11,6 @@ import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.synthesis.SpeechRate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -199,73 +198,5 @@ class ProgressMapperTest {
 
         assertEquals(0.5f, mapper.progress(ArticleProgress(), 0, 5_000, false).fraction, 0f)
         assertEquals(1f, mapper.progress(ArticleProgress(), 0, 0, chunkEnded = true).fraction, 0f)
-    }
-
-    @Test
-    fun `test that the lengths are measured where they can be and estimated where they cannot`() {
-        val mapper = mapper(chunkChars = listOf(100, 200, 300), measured = mapOf(1 to 5.seconds))
-
-        // Ten characters a second sizes the chunks that have not been made, and the one that has counts for what it
-        // measured rather than for the twenty seconds its characters imply.
-        assertEquals(listOf(10_000L, 5_000L, 30_000L), mapper.chunkLengthsMs())
-    }
-
-    @Test
-    fun `test that an article nothing can be sized from has no lengths at all`() {
-        val mapper = mapper(chunkChars = listOf(100, 200), rate = null)
-
-        assertEquals(emptyList<Long>(), mapper.chunkLengthsMs())
-    }
-
-    @Test
-    fun `test that one measured chunk gives the rest of the article a length without an opening rate`() {
-        val mapper = mapper(chunkChars = listOf(100, 200), measured = mapOf(0 to 10.seconds), rate = null)
-
-        // The chunk that was made implies ten characters a second, which is enough to size the one that was not.
-        assertEquals(listOf(10_000L, 20_000L), mapper.chunkLengthsMs())
-    }
-
-    @Test
-    fun `test that a position in the article resolves to the chunk holding it`() {
-        val lengths = listOf(10_000L, 20_000L, 30_000L)
-
-        assertEquals(ChunkPosition(chunkIndex = 0, positionMs = 0), lengths.chunkPositionAt(0))
-        assertEquals(ChunkPosition(chunkIndex = 0, positionMs = 9_999), lengths.chunkPositionAt(9_999))
-        assertEquals(ChunkPosition(chunkIndex = 1, positionMs = 0), lengths.chunkPositionAt(10_000))
-        assertEquals(ChunkPosition(chunkIndex = 1, positionMs = 19_999), lengths.chunkPositionAt(29_999))
-        assertEquals(ChunkPosition(chunkIndex = 2, positionMs = 0), lengths.chunkPositionAt(30_000))
-    }
-
-    @Test
-    fun `test that a position past the end of the article lands at the end of its last chunk`() {
-        val lengths = listOf(10_000L, 20_000L)
-
-        assertEquals(ChunkPosition(chunkIndex = 1, positionMs = 20_000), lengths.chunkPositionAt(1_000_000))
-    }
-
-    @Test
-    fun `test that a position before the article lands at its start`() {
-        val lengths = listOf(10_000L, 20_000L)
-
-        assertEquals(ChunkPosition(chunkIndex = 0, positionMs = 0), lengths.chunkPositionAt(-5_000))
-    }
-
-    @Test
-    fun `test that an article with no lengths has nowhere to resolve a position to`() {
-        assertNull(emptyList<Long>().chunkPositionAt(1_000))
-    }
-
-    // The lengths a reader was shown are the ones their position has to be read against, so resolving has to work off
-    // a list they can be held rldrehrtr.
-    @Test
-    fun `test that a held set of lengths resolves the same after the article has moved on`() {
-        val shown = mapper(chunkChars = listOf(100, 200, 300)).chunkLengthsMs()
-
-        // The middle chunk turns out to be far shorter than its characters implied, which pulls everything after it
-        // earlier. The lengths taken before that still answer where they did.
-        val moved = mapper(chunkChars = listOf(100, 200, 300), measured = mapOf(1 to 1.seconds)).chunkLengthsMs()
-
-        assertEquals(ChunkPosition(chunkIndex = 1, positionMs = 15_000), shown.chunkPositionAt(25_000))
-        assertEquals(ChunkPosition(chunkIndex = 2, positionMs = 14_000), moved.chunkPositionAt(25_000))
     }
 }

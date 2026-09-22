@@ -29,7 +29,6 @@ import mozilla.components.feature.listentopage.playback.ArticleDisplayData
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.ChunkAudio
 import mozilla.components.feature.listentopage.playback.PlaybackController
-import mozilla.components.feature.listentopage.playback.chunkPositionAt
 import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.NothingToReadException
@@ -99,12 +98,6 @@ class ListenMiddleware(
     // The last chunk that was enqueued to the player.
     private var appendedThrough = NO_CHUNK
 
-    // The chunk that started the most chunk most recently seeked in the player.
-    private var playlistStartChunk = 0
-
-    // Track the number of seek requests in case a new one is received while handling a previous one.
-    private var seekRequestCount = 0
-
     // The scope every piece of this session's synthesis runs in, so that ending the session cancels all of it at once,
     // including work that is still waiting its turn.
     private var sessionScope: CoroutineScope? = null
@@ -152,8 +145,6 @@ class ListenMiddleware(
                 }
             }
 
-            is ListenAction.Playback.SeekRequested -> store.seekToArticlePosition(action.positionMs)
-
             is ListenAction.Playback,
             ListenAction.Content.ContentUnavailable,
             is ListenAction.Voices.AvailableVoicesLoaded,
@@ -175,15 +166,10 @@ class ListenMiddleware(
     }
 
     /**
-     * Reports to the Store what [report] represents in terms of the article. Will also manipulate the queue as needed,
-     * since the player does not understand the context of the queue or full article.
+     * Reports to the Store what [playback] represents in terms of the article. Will also manipulate the queue as
+     * needed, since the player does not understand the context of the queue or full article.
      */
-    private fun ListenStore.reportPlayback(report: PlaybackState) {
-        // The player counts the items of its playlist, which resets after a seek since the playlist is forced to
-        // restart at the new chunk. The rest of the playback operations work off of that new chunk, so we update it in
-        // State here.
-        val playback = report.copy(chunk = report.chunk.copy(index = playlistStartChunk + report.chunk.index))
-
+    private fun ListenStore.reportPlayback(playback: PlaybackState) {
         // Every report moves the article on.
         reportArticleProgress(playback)
 
@@ -376,7 +362,6 @@ class ListenMiddleware(
 
         playingChunk = NO_CHUNK
         appendedThrough = NO_CHUNK
-        playlistStartChunk = firstChunkIndex
 
         synthesizing(dispatch) {
             val queue = SynthesisQueue(synthesizer(), ChunkAudio(audioCache), chunker, ioDispatcher)
@@ -428,49 +413,6 @@ class ListenMiddleware(
             playbackController.resume()
 
             queue.workAheadOf(missing)
-        }
-    }
-
-    /**
-     * Moves playback to [positionMs] into the article.
-     *
-     * The lengths come from the Store, rather than the queue. The Store should have data that matches the last lengths
-     * reported to the player, so this keeps them in sync even if the queue has been actively synthesizing lengths for
-     * other chunks.
-     *
-     * This checks to see whether seeked chunks are synthesized already - if not, it drops any in-flight work to
-     * prioritize synthesizing chunks the seek will require.
-     */
-    private fun ListenStore.seekToArticlePosition(positionMs: Long) {
-        val queue = synthesisQueue ?: return
-        val target = state.articleProgress.chunkDurationsMs.chunkPositionAt(positionMs) ?: return
-        val generation = ++seekRequestCount
-
-        // Check if seek is within already synthesized chunks
-        if (target.chunkIndex in playlistStartChunk..appendedThrough && queue.fileFor(target.chunkIndex) != null) {
-            scope.launch { playbackController.seekTo(target.chunkIndex - playlistStartChunk, target.positionMs) }
-            return
-        }
-
-        dispatch(ListenAction.Playback.PlaybackWaiting)
-
-        stopSynthesizing {}
-
-        synthesizing(this::dispatch) {
-            // Ensure another seek has not occurred
-            if (generation != seekRequestCount) return@synthesizing
-
-            val file = queue.audioFor(target.chunkIndex) ?: return@synthesizing
-
-            // Check again in case of repeated seeks while waiting for the above synthesis
-            if (generation != seekRequestCount) return@synthesizing
-
-            playbackController.restartAt(file, target.positionMs)
-            playlistStartChunk = target.chunkIndex
-            playingChunk = target.chunkIndex
-            appendedThrough = target.chunkIndex
-
-            queue.workAheadOf(target.chunkIndex)
         }
     }
 
@@ -606,25 +548,16 @@ class ListenMiddleware(
      */
     private fun ListenStore.reportArticleProgress(playback: PlaybackState) {
         val queue = synthesisQueue ?: return
-        val mapper = queue.mapper()
         val progress =
-            mapper
-                .progress(
-                    previous = state.articleProgress,
-                    playingChunk = playback.chunk.index,
-                    chunkPositionMs = playback.positionMs,
-                    chunkEnded = playback.phase == PlaybackPhase.Ended,
-                )
-                .copy(chunkDurationsMs = mapper.chunkLengthsMs())
+            queue.progress(
+                previous = state.articleProgress,
+                playingChunk = playback.chunk.index,
+                chunkPositionMs = playback.positionMs,
+                chunkEnded = playback.phase == PlaybackPhase.Ended,
+            )
 
         if (progress != state.articleProgress) {
-            dispatch(
-                ListenAction.Playback.ArticleProgressChanged(
-                    positionMs = progress.positionMs,
-                    durationMs = progress.durationMs,
-                    chunkDurationsMs = progress.chunkDurationsMs,
-                )
-            )
+            dispatch(ListenAction.Playback.ArticleProgressChanged(progress.positionMs, progress.durationMs))
         }
     }
 }

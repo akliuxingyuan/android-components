@@ -73,17 +73,6 @@ interface PlaybackController {
     /** Moves playback to [positionMs] in the current file being played. */
     suspend fun seekTo(positionMs: Long)
 
-    /**
-     * Moves playback to [positionMs] of the file [itemIndex] places into what is queued.
-     *
-     * The index is into the playlist rather than into the article. The playlist starts at whichever chunk the last
-     * restart or seek required.
-     */
-    suspend fun seekTo(itemIndex: Int, positionMs: Long)
-
-    /** Drops what is queued and starts again on [file] at [positionMs]. */
-    suspend fun restartAt(file: File, positionMs: Long)
-
     /** Gives up the playback, which takes the notification away. A later call starts it again. */
     suspend fun release()
 
@@ -157,17 +146,6 @@ class ListenPlaybackController(
     override suspend fun resume() = onController { it.play() }
 
     override suspend fun seekTo(positionMs: Long) = onController { it.seekTo(positionMs) }
-
-    override suspend fun seekTo(itemIndex: Int, positionMs: Long) = onController { it.seekTo(itemIndex, positionMs) }
-
-    override suspend fun restartAt(file: File, positionMs: Long) = onController {
-        // The position goes in with the item rather than as a seek afterwards, which would let the player start at
-        // the top of the chunk and be moved off it a moment later.
-        it.setMediaItem(file.toMediaItem(), positionMs)
-
-        // Prepared but not played: a player that was paused stays paused.
-        it.prepare()
-    }
 
     override suspend fun release() {
         withContext(Dispatchers.Main) {
