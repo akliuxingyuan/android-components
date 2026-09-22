@@ -61,7 +61,7 @@ class IPProtectionLocationMiddlewareTest {
                 assertEquals(null, fakeRepository.getSelectedLocationCode())
                 assertEquals(null, store.state.locationState.selectedLocation.countryCode)
 
-                store.dispatch(IPProtectionAction.LocationChanged(location))
+                store.dispatch(IPProtectionAction.LocationChanged(location, userAction = true))
                 testScheduler.advanceUntilIdle()
 
                 assertEquals(location.countryCode, fakeRepository.getSelectedLocationCode())
@@ -289,6 +289,90 @@ class IPProtectionLocationMiddlewareTest {
 
             captureMiddleware.assertNotDispatched(IPProtectionAction.LocationChanged::class)
             assertEquals(selectedCountry, store.state.locationState.selectedLocation)
+        }
+
+    @Test
+    fun `GIVEN a cached selection is still available WHEN country list updates THEN the restore is not marked as a user action`() =
+        scope.runTest {
+            val cachedLocationCode = "JP"
+            val captureMiddleware = IPProtectionTestMiddleware()
+            val store = buildStore(middleware = listOf(middleware, captureMiddleware))
+            fakeRepository.setSelectedLocationCode(cachedLocationCode)
+
+            store.dispatch(
+                IPProtectionAction.CountryListChanged(
+                    countries = listOf(IPProtectionHandler.Country(code = cachedLocationCode, available = true))
+                )
+            )
+            testScheduler.advanceUntilIdle()
+
+            captureMiddleware.assertLastAction(IPProtectionAction.LocationChanged::class) { action ->
+                assertFalse(action.userAction)
+            }
+        }
+
+    @Test
+    fun `GIVEN the cached country is gone before it was applied WHEN country list updates THEN its code is reported as missing`() =
+        scope.runTest {
+            val captureMiddleware = IPProtectionTestMiddleware()
+            val store = buildStore(middleware = listOf(middleware, captureMiddleware))
+            fakeRepository.setSelectedLocationCode("JP")
+
+            store.dispatch(
+                IPProtectionAction.CountryListChanged(
+                    countries = listOf(IPProtectionHandler.Country(code = "CA", available = true))
+                )
+            )
+            testScheduler.advanceUntilIdle()
+
+            captureMiddleware.assertLastAction(IPProtectionAction.PersistedLocationUnavailable::class) { action ->
+                assertEquals("JP", action.countryCode)
+                assertEquals(CachedLocationStatus.Missing, action.status)
+            }
+            captureMiddleware.assertNotDispatched(IPProtectionAction.LocationReset::class)
+        }
+
+    @Test
+    fun `GIVEN an applied selection disappears WHEN country list updates THEN LocationReset is dispatched instead`() =
+        scope.runTest {
+            val selected = Country(countryCode = "JP", available = true)
+            val captureMiddleware = IPProtectionTestMiddleware()
+            val store =
+                buildStore(
+                    selectedLocation = selected,
+                    locations = listOf(selected),
+                    middleware = listOf(middleware, captureMiddleware),
+                )
+            fakeRepository.setSelectedLocationCode("JP")
+
+            store.dispatch(
+                IPProtectionAction.CountryListChanged(
+                    countries = listOf(IPProtectionHandler.Country(code = "CA", available = true))
+                )
+            )
+            testScheduler.advanceUntilIdle()
+
+            captureMiddleware.assertLastAction(IPProtectionAction.LocationReset::class) { action ->
+                assertEquals("JP", action.countryCode)
+                assertEquals(CachedLocationStatus.Missing, action.status)
+            }
+            captureMiddleware.assertNotDispatched(IPProtectionAction.PersistedLocationUnavailable::class)
+        }
+
+    @Test
+    fun `GIVEN no cached selection WHEN country list updates THEN PersistedLocationUnavailable is not dispatched`() =
+        scope.runTest {
+            val captureMiddleware = IPProtectionTestMiddleware()
+            val store = buildStore(middleware = listOf(middleware, captureMiddleware))
+
+            store.dispatch(
+                IPProtectionAction.CountryListChanged(
+                    countries = listOf(IPProtectionHandler.Country(code = "CA", available = true))
+                )
+            )
+            testScheduler.advanceUntilIdle()
+
+            captureMiddleware.assertNotDispatched(IPProtectionAction.PersistedLocationUnavailable::class)
         }
 
     private fun buildStore(

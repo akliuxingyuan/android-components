@@ -762,7 +762,7 @@ class IPProtectionReducerTest {
         val resultState =
             iPProtectionReducer(
                 state = initialState,
-                action = IPProtectionAction.LocationChanged(updatedLocation),
+                action = IPProtectionAction.LocationChanged(updatedLocation, userAction = true),
             )
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
@@ -778,7 +778,7 @@ class IPProtectionReducerTest {
         val resultState =
             iPProtectionReducer(
                 state = initialState,
-                action = IPProtectionAction.LocationChanged(updatedLocation),
+                action = IPProtectionAction.LocationChanged(updatedLocation, userAction = true),
             )
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
@@ -798,7 +798,7 @@ class IPProtectionReducerTest {
         val resultState =
             iPProtectionReducer(
                 state = initialState,
-                action = IPProtectionAction.LocationChanged(updatedLocation),
+                action = IPProtectionAction.LocationChanged(updatedLocation, userAction = true),
             )
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
@@ -852,7 +852,7 @@ class IPProtectionReducerTest {
         val resultState =
             iPProtectionReducer(
                 state = initialState,
-                action = IPProtectionAction.LocationChanged(updatedLocation),
+                action = IPProtectionAction.LocationChanged(updatedLocation, userAction = true),
             )
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
@@ -872,7 +872,7 @@ class IPProtectionReducerTest {
         val resultState =
             iPProtectionReducer(
                 state = initialState,
-                action = IPProtectionAction.LocationChanged(updatedLocation),
+                action = IPProtectionAction.LocationChanged(updatedLocation, userAction = true),
             )
 
         assertEquals(updatedLocation, resultState.locationState.selectedLocation)
@@ -944,7 +944,7 @@ class IPProtectionReducerTest {
         val resultState =
             iPProtectionReducer(
                 state = initialState,
-                action = IPProtectionAction.LocationChanged(Country("JP", available = true)),
+                action = IPProtectionAction.LocationChanged(Country("JP", available = true), userAction = true),
             )
 
         assertEquals(LocationListUpdateState.Updated, resultState.locationState.updateState)
@@ -957,7 +957,7 @@ class IPProtectionReducerTest {
         val resultState =
             iPProtectionReducer(
                 state = initialState,
-                action = IPProtectionAction.LocationReset,
+                action = IPProtectionAction.LocationReset(countryCode = "JP", status = CachedLocationStatus.Missing),
             )
 
         assertEquals(LocationListUpdateState.Updated, resultState.locationState.updateState)

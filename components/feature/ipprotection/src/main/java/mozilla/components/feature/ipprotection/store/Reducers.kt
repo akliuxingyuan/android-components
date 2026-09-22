@@ -314,6 +314,8 @@ internal fun iPProtectionReducer(
                     )
             )
 
+        is IPProtectionAction.PersistedLocationUnavailable -> state
+
         is InternalAction -> internalReducer(state, action)
     }
 

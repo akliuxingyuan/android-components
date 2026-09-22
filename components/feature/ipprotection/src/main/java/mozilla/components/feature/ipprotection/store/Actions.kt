@@ -29,12 +29,35 @@ sealed class IPProtectionAction : Action {
     /**
      * Reports a newly selected location by the user from the location list.
      *
-     * @param location The selected location.
+     * @property location The selected location.
+     * @property userAction Whether the user picked the location, as opposed to the app restoring a persisted one.
      */
-    data class LocationChanged(val location: Location) : IPProtectionAction()
+    data class LocationChanged(
+        val location: Location,
+        val userAction: Boolean,
+    ) : IPProtectionAction()
 
-    /** Reports a location reset, due to the previously selected location being unavailable. */
-    object LocationReset : IPProtectionAction()
+    /**
+     * Reports a location reset, due to the previously selected location being unavailable.
+     *
+     * @property countryCode The cached country code that was not available, or null when no country code was cached.
+     * @property status What the refreshed country list reported about the cached location.
+     */
+    data class LocationReset(
+        val countryCode: String?,
+        val status: CachedLocationStatus,
+    ) : IPProtectionAction()
+
+    /**
+     * Reports that a persisted location could not be restored because it is no longer available.
+     *
+     * @property countryCode The cached country code that could not be restored.
+     * @property status What the refreshed country list reported about the cached location.
+     */
+    data class PersistedLocationUnavailable(
+        val countryCode: String,
+        val status: CachedLocationStatus,
+    ) : IPProtectionAction()
 
     /** Reports a change in whether the user is signed in to a Firefox Account. */
     data class AccountStateChanged(val state: AccountStatus) : IPProtectionAction()
@@ -133,4 +156,13 @@ enum class ActivationOperation {
 
     /** A `deactivate` request. */
     Deactivate,
+}
+
+/** What a refreshed country list reported about the cached location. */
+enum class CachedLocationStatus {
+    /** The cached country was absent from the refreshed list. */
+    Missing,
+
+    /** The cached country was in the refreshed list and not selectable. */
+    Unavailable,
 }
