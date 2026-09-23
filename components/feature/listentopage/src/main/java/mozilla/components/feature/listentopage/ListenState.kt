@@ -141,10 +141,13 @@ enum class PlaybackPhase {
  * @property positionMs How far into the article, across every chunk before the one playing.
  * @property durationMs How long the whole article lasts: measured where chunks have been made, estimated where they
  *   have not, so it moves as the article is synthesized.
+ * @property chunkDurationsMs How long each chunk lasts, in reading order. These lengths change as additional chunks are
+ *   synthesized, so this should match what was last reported to the player.
  */
 data class ArticleProgress(
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    val chunkDurationsMs: List<Long> = emptyList(),
 ) {
     val fraction: Float
         get() = if (durationMs <= 0) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
