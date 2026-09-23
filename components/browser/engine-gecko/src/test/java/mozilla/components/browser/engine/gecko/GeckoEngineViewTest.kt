@@ -14,9 +14,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import mozilla.components.browser.engine.gecko.GeckoEngineView.Companion.DARK_COVER
+import mozilla.components.browser.engine.gecko.facts.GeckoEngineViewFacts
 import mozilla.components.browser.engine.gecko.selection.GeckoSelectionActionDelegate
 import mozilla.components.concept.engine.mediaquery.PreferredColorScheme
 import mozilla.components.concept.engine.selection.SelectionActionDelegate
+import mozilla.components.support.base.Component
+import mozilla.components.support.base.facts.processor.CollectionProcessor
 import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
@@ -103,6 +106,47 @@ class GeckoEngineViewTest {
         shadowOf(getMainLooper()).idle()
 
         assertNull(captured)
+    }
+
+    @Test
+    fun `captureFullPage emits attempted and success facts`() {
+        val engineView = GeckoEngineView(context)
+        val mockGeckoView = mock<NestedGeckoView>()
+        val geckoResult = GeckoResult<Bitmap>()
+        whenever(mockGeckoView.captureFullPage()).thenReturn(geckoResult)
+        engineView.geckoView = mockGeckoView
+
+        CollectionProcessor.withFactCollection { facts ->
+            engineView.captureFullPage {}
+            geckoResult.complete(mock())
+            shadowOf(getMainLooper()).idle()
+
+            assertEquals(2, facts.size)
+            assertEquals(Component.BROWSER_ENGINE_GECKO, facts[0].component)
+            assertEquals(GeckoEngineViewFacts.Items.CAPTURE_FULL_PAGE_ATTEMPTED, facts[0].item)
+            assertEquals(GeckoEngineViewFacts.Items.CAPTURE_FULL_PAGE_RESULT, facts[1].item)
+            assertEquals(GeckoEngineViewFacts.CaptureFullPageResults.SUCCEEDED, facts[1].value)
+        }
+    }
+
+    @Test
+    fun `captureFullPage emits failure fact when the capture is rejected`() {
+        val engineView = GeckoEngineView(context)
+        val mockGeckoView = mock<NestedGeckoView>()
+        val geckoResult = GeckoResult<Bitmap>()
+        whenever(mockGeckoView.captureFullPage()).thenReturn(geckoResult)
+        engineView.geckoView = mockGeckoView
+
+        CollectionProcessor.withFactCollection { facts ->
+            engineView.captureFullPage {}
+            geckoResult.completeExceptionally(mock())
+            shadowOf(getMainLooper()).idle()
+
+            assertEquals(2, facts.size)
+            assertEquals(GeckoEngineViewFacts.Items.CAPTURE_FULL_PAGE_ATTEMPTED, facts[0].item)
+            assertEquals(GeckoEngineViewFacts.Items.CAPTURE_FULL_PAGE_RESULT, facts[1].item)
+            assertEquals(GeckoEngineViewFacts.CaptureFullPageResults.FAILED, facts[1].value)
+        }
     }
 
     @Test
