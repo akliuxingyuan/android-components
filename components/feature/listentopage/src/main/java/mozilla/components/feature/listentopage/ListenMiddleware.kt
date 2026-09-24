@@ -154,6 +154,7 @@ class ListenMiddleware(
 
             is ListenAction.Playback.SeekRequested -> store.seekToArticlePosition(action.positionMs)
 
+            is ListenAction.Controls -> Unit
             is ListenAction.Playback,
             ListenAction.Content.ContentUnavailable,
             is ListenAction.Voices.AvailableVoicesLoaded,
