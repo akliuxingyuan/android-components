@@ -18,6 +18,7 @@ private val fullState =
         tabId = TAB_ID,
         url = URL,
         title = "Match Preview: Wrexham AFC vs Sunderland AFC",
+        site = "bbc.co.uk",
         languageTag = "de-DE",
         mode = ListenMode.Player,
         error = ListenError.PlaybackFailed,
@@ -53,6 +54,7 @@ class ListenReducerTest {
         assertEquals("tab-2", state.tabId)
         assertEquals(URL, state.url)
         assertNull(state.title)
+        assertNull(state.site)
         assertNull(state.error)
         assertEquals(ListenMode.Player, state.mode)
         assertEquals("de-DE", state.languageTag)
@@ -238,9 +240,38 @@ class ListenReducerTest {
 
     @Test
     fun `test that an article in the language of the previous one keeps its voices`() {
-        val state = listenReducer(fullState, ListenAction.Content.ContentReady(languageTag = "de-DE"))
+        val state =
+            listenReducer(
+                fullState,
+                ListenAction.Content.ContentReady(
+                    languageTag = "de-DE",
+                    title = fullState.title,
+                    site = fullState.site,
+                ),
+            )
 
         assertEquals(fullState, state)
+    }
+
+    @Test
+    fun `test that a ready article records its title and site`() {
+        val state =
+            listenReducer(
+                ListenState(tabId = TAB_ID, url = URL),
+                ListenAction.Content.ContentReady(languageTag = "en-US", title = "An article", site = "example.org"),
+            )
+
+        assertEquals("An article", state.title)
+        assertEquals("example.org", state.site)
+    }
+
+    @Test
+    fun `test that a ready article with no title records none`() {
+        val state =
+            listenReducer(fullState, ListenAction.Content.ContentReady(languageTag = "de-DE", site = "example.org"))
+
+        assertNull(state.title)
+        assertEquals("example.org", state.site)
     }
 
     @Test

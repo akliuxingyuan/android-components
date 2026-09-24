@@ -64,6 +64,8 @@ internal class ListenMediaSessionService : MediaSessionService() {
             }
         )
 
+        setShowNotificationForIdlePlayer(SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER)
+
         setListener(
             object : Listener {
                 @RequiresApi(Build.VERSION_CODES.S)

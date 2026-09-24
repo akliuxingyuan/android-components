@@ -15,6 +15,8 @@ import mozilla.components.lib.state.State
  * @property url The article being read, kept so a URL change can reset the session.
  * @property title The article title, or `null` when the page has none. Shown on the player and on the media
  *   notification, so it is state rather than something the UI reads from the tab.
+ * @property site The site the article is from, or `null` when its URL names none. Shown on the player and on the media
+ *   notification.
  * @property languageTag The BCP 47 language of the article, used to pick a voice.
  * @property error The last error, or `null`.
  * @property voiceState State relating to narrator voice.
@@ -25,6 +27,7 @@ data class ListenState(
     val tabId: String? = null,
     val url: String? = null,
     val title: String? = null,
+    val site: String? = null,
     val languageTag: String? = null,
     val mode: ListenMode = ListenMode.Player,
     val error: ListenError? = null,

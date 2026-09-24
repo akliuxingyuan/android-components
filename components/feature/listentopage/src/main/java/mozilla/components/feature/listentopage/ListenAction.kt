@@ -31,8 +31,14 @@ sealed interface ListenAction : Action {
          * The article was extracted from the page.
          *
          * @property languageTag language of the article.
+         * @property title The article title, or `null` when the page has none.
+         * @property site The site the article is from, or `null` when its URL names none.
          */
-        data class ContentReady(val languageTag: String) : Content
+        data class ContentReady(
+            val languageTag: String,
+            val title: String? = null,
+            val site: String? = null,
+        ) : Content
 
         /** The page gave back no usable text. */
         data object ContentUnavailable : Content

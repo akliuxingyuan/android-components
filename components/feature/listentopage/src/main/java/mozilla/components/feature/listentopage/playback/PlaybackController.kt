@@ -191,6 +191,7 @@ class ListenPlaybackController(
             val controller = runCatching { released.await() }.getOrNull() ?: return@withContext
 
             controller.stop()
+            controller.clearMediaItems()
             controller.release()
         }
     }

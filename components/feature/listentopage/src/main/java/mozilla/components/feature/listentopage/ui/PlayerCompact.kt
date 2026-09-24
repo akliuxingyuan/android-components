@@ -17,13 +17,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornCorners
@@ -35,8 +33,7 @@ import mozilla.components.ui.icons.R as iconsR
 /** Listen to page audio player in compact state */
 @Composable
 fun PlayerCompact(
-    title: String,
-    source: String,
+    article: ArticleDetails,
     progress: () -> Float,
     playing: Boolean,
     onAction: (ListenAction) -> Unit,
@@ -69,22 +66,7 @@ fun PlayerCompact(
                             contentDescription = null,
                         )
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = title,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = AcornTheme.typography.headline8,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = source,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = AcornTheme.typography.caption,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    ArticleHeading(article = article, modifier = Modifier.weight(1f))
 
                     IconButton(
                         onClick = { onAction(ListenAction.Controls.RewindClicked) },
@@ -117,8 +99,7 @@ fun PlayerCompact(
 private fun PreviewPlayerCompact() {
     AcornTheme {
         PlayerCompact(
-            title = "Match Preview: Wrexham AFC vs Sunderland AFC",
-            source = "source",
+            article = ArticleDetails(title = "Match Preview: Wrexham AFC vs Sunderland AFC", site = "source"),
             progress = { 0.4f },
             playing = true,
             onAction = {},

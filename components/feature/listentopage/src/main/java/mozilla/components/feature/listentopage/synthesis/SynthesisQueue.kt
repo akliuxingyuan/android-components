@@ -116,13 +116,15 @@ internal class SynthesisQueue(
      * Moves the window of chunks kept on disk to sit around [playingChunk], making what it is missing and throwing away
      * what has fallen outside it.
      *
+     * @param queuedThrough The last chunk already handed to the player. Chunks up to it are kept even past the window,
+     *   , and deleting what it leaves behind ahead of the player would stop playback when it reached the missing file.
      * @throws SpeechSynthesisException if the engine cannot make one of them. What was made before it stays, so
      *   playback carries on as far as it can, and the chunk it stopped on is made again by [audioFor] if playback ever
      *   reaches it.
      */
-    suspend fun moveWindowTo(playingChunk: Int) {
+    suspend fun moveWindowTo(playingChunk: Int, queuedThrough: Int = -1) {
         val window = audioWindow(playingChunk, chunks.size)
-        audio.keepOnly(window)
+        audio.keepOnly(window.first..maxOf(window.last, queuedThrough))
 
         for (index in window) {
             if (audio.fileFor(index) != null) continue

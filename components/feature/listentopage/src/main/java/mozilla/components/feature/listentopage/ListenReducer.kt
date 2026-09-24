@@ -40,12 +40,14 @@ private fun reduceSession(state: ListenState, action: ListenAction.Session): Lis
 
 private fun reduceContent(state: ListenState, action: ListenAction.Content): ListenState =
     when (action) {
-        is ListenAction.Content.ContentReady ->
+        is ListenAction.Content.ContentReady -> {
+            val described = state.copy(title = action.title, site = action.site)
             if (action.languageTag == state.languageTag) {
-                state
+                described
             } else {
-                state.copy(languageTag = action.languageTag, voiceState = VoiceState())
+                described.copy(languageTag = action.languageTag, voiceState = VoiceState())
             }
+        }
 
         ListenAction.Content.ContentUnavailable -> state.copy(error = ListenError.ContentUnavailable)
     }
