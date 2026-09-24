@@ -7,11 +7,9 @@ package mozilla.components.service.sync.logins
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import mozilla.appservices.db_crypto.DbCryptoApiException
-import mozilla.appservices.db_crypto.checkCanary
-import mozilla.appservices.db_crypto.createCanary
 import mozilla.appservices.logins.KeyRegenerationEventReason
-import mozilla.appservices.logins.LoginsApiException.UnexpectedLoginsApiException
+import mozilla.appservices.logins.checkCanary
+import mozilla.appservices.logins.createCanary
 import mozilla.appservices.logins.recordKeyRegenerationEvent
 import mozilla.components.concept.storage.KeyGenerationReason
 import mozilla.components.concept.storage.KeyManager
@@ -67,15 +65,12 @@ class LoginsCrypto(
         // To detect key corruption or absence, use the newly generated key to encrypt a known string.
         // See isKeyValid below.
         plaintextPrefs.edit {
-            putString(
-                CANARY_PHRASE_CIPHERTEXT_KEY,
-                wrappingCryptoErrors { createCanary(CANARY_PHRASE_PLAINTEXT, key) },
-            )
+            putString(CANARY_PHRASE_CIPHERTEXT_KEY, createCanary(CANARY_PHRASE_PLAINTEXT, key))
         }
     }
 
     override fun createKey(): String {
-        return wrappingCryptoErrors { mozilla.appservices.db_crypto.createKey() }
+        return mozilla.appservices.logins.createKey()
     }
 
     override fun isKeyRecoveryNeeded(rawKey: String, canary: String): KeyGenerationReason.RecoveryNeeded? {
@@ -86,28 +81,11 @@ class LoginsCrypto(
                 // A bad key should trigger a IncorrectKey, but check this branch just in case.
                 KeyGenerationReason.RecoveryNeeded.Corrupt
             }
-        } catch (e: DbCryptoApiException) {
+        } catch (e: LoginsApiException) {
             logger.error("Check key validity method - failed", e)
             KeyGenerationReason.RecoveryNeeded.Corrupt
         }
     }
-
-    /**
-     * Runs [block], rethrowing a [DbCryptoApiException] as a [LoginsApiException].
-     *
-     * This key manager is only reachable through [SyncableLoginsStorage], whose API is documented to throw
-     * [LoginsApiException] and whose callers catch nothing else, so db_crypto exceptions must not escape it.
-     *
-     * Every variant collapses into [UnexpectedLoginsApiException]: nothing on this path distinguishes them, and a
-     * per-variant mapping would have to be kept in sync with two sets of generated bindings. The original type is
-     * preserved in the message.
-     */
-    private fun <T> wrappingCryptoErrors(block: () -> T): T =
-        try {
-            block()
-        } catch (e: DbCryptoApiException) {
-            throw UnexpectedLoginsApiException(e.toString())
-        }
 
     companion object {
         const val PREFS_NAME = "loginsCrypto"

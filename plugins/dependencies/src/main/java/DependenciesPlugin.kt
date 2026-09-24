@@ -275,8 +275,6 @@ object ComponentsDependencies {
     @JvmStatic
     val mozilla_appservices_autofill get() = "${getGroupId()}:autofill:${getVersionNumber()}"
     @JvmStatic
-    val mozilla_appservices_db_crypto get() = "${getGroupId()}:db-crypto:${getVersionNumber()}"
-    @JvmStatic
     val mozilla_appservices_logins get() = "${getGroupId()}:logins:${getVersionNumber()}"
     @JvmStatic
     val mozilla_appservices_merino get() = "${getGroupId()}:merino:${getVersionNumber()}"
