@@ -54,6 +54,27 @@ sealed interface ListenAction : Action {
         data object NoOfflineVoicesAvailable : Voices
     }
 
+    /**
+     * Actions reporting what the user did with the player controls. Closing the player is [Session.StopRequested]
+     * rather than a control of its own.
+     */
+    sealed interface Controls : ListenAction {
+        /** The user asked to start or pause playback. */
+        data object PlayPauseClicked : Controls
+
+        /** The user asked to skip back. */
+        data object RewindClicked : Controls
+
+        /** The user asked to skip forward. */
+        data object ForwardClicked : Controls
+
+        /** The user asked for the voices to pick from. */
+        data object VoicesClicked : Controls
+
+        /** The user asked to change the playback speed. */
+        data object PlaybackSpeedClicked : Controls
+    }
+
     /** Actions reporting what the player is doing. */
     sealed interface Playback : ListenAction {
         /**

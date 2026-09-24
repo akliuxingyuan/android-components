@@ -16,6 +16,7 @@ fun listenReducer(state: ListenState, action: ListenAction): ListenState =
         is ListenAction.Session -> reduceSession(state, action)
         is ListenAction.Content -> reduceContent(state, action)
         is ListenAction.Voices -> reduceVoices(state, action)
+        is ListenAction.Controls -> state
         is ListenAction.Playback -> reducePlayback(state, action)
         is ListenAction.Synthesis -> reduceSynthesis(state, action)
         ListenAction.ErrorDismissed -> state.copy(error = null)
@@ -75,7 +76,6 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
                 error = ListenError.PlaybackFailed,
             )
         is ListenAction.Playback.SeekRequested -> state
-
         is ListenAction.Playback.ArticleProgressChanged -> {
             val durationMs = action.durationMs.coerceAtLeast(0)
             state.copy(
