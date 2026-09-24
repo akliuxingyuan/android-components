@@ -101,8 +101,8 @@ internal class SynthesisQueue(
     }
 
     /**
-     * The audio of chunk [index], making it now if the window has not got to it yet, or `null` when the article has no
-     * such chunk and so has ended.
+     * The audio of chunk [index], making it now if the window has not got to it yet or if the system has reclaimed what
+     * the window made, or `null` when the article has no such chunk and so has ended.
      *
      * @throws SpeechSynthesisException if the engine cannot make it.
      */
@@ -131,8 +131,13 @@ internal class SynthesisQueue(
         }
     }
 
-    /** The audio of chunk [index], or `null` when it has not been made or has been thrown away. */
-    fun fileFor(index: Int): File? = audio.fileFor(index)
+    /**
+     * The audio of chunk [index], or `null` when it has not been made, has been thrown away, or has been reclaimed by
+     * the system. Use [audioFor] if you want the chunk to be remade.
+     */
+    suspend fun fileFor(index: Int): File? = audio.fileFor(index)
+
+    suspend fun discard(index: Int) = audio.discard(index)
 
     /** Throws away every chunk's audio and forgets the article. */
     suspend fun clear() {

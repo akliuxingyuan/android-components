@@ -101,7 +101,8 @@ class FakeSpeechSynthesizer(
 /**
  * A fake implementation of [AudioFileCache] for use in tests and Compose previews.
  *
- * It names files without creating them, so nothing has to clean up after it.
+ * It names files without creating them, so nothing has to clean up after it. Having no disk to ask, it takes every file
+ * it has not been told is gone to be present, and [reclaim] is how a test tells it otherwise.
  *
  * @property cleared Whether [clear] has been called.
  * @property deleted Every file it was asked to delete, in order.
@@ -110,14 +111,47 @@ class FakeAudioFileCache : AudioFileCache {
     var cleared = false
     val deleted = mutableListOf<File>()
 
-    override suspend fun create(key: String): File = File("/audio/$key.wav")
+    // Every file this has heard of, so that clearing can take away files it never named itself: the engine writes
+    // into this directory without going through create(), exactly as the platform one does.
+    private val known = mutableSetOf<File>()
+    private val missing = mutableSetOf<File>()
+
+    override suspend fun create(key: String): File =
+        File("/audio/$key.wav").also {
+            known.add(it)
+            missing.remove(it)
+        }
+
+    override suspend fun exists(file: File): Boolean {
+        known.add(file)
+
+        return file !in missing
+    }
 
     override suspend fun delete(file: File) {
         deleted.add(file)
+        known.add(file)
+        missing.add(file)
     }
 
     override suspend fun clear() {
         cleared = true
+        missing.addAll(known)
+    }
+
+    /**
+     * Takes [files] away behind the cache's back, as the system reclaiming the cache directory does.
+     *
+     * Nothing is recorded, because the point of it is that the session is never told.
+     */
+    fun reclaim(vararg files: File) {
+        known.addAll(files)
+        missing.addAll(files)
+    }
+
+    /** Takes away every file this has heard of, as the system emptying the cache directory does. */
+    fun reclaimEverything() {
+        missing.addAll(known)
     }
 }
 

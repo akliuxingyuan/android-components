@@ -65,6 +65,9 @@ private const val ENGINE = "com.example.tts"
 // Far enough past the window the lookahead fills that a seek there has to make the chunk itself.
 private const val SEEK_TARGET_CHUNK = 6
 
+// The opening, then the lookahead filling the window, then whatever a seek asks for next.
+private const val FIRST_REQUEST_AFTER_LOOKAHEAD = AUDIO_WINDOW_RADIUS + 2
+
 // How long the audio the fake synthesizer writes lasts, which is what the queue measures every chunk of an article at.
 private const val FAKE_AUDIO_MS = 5_000L
 
@@ -1870,6 +1873,322 @@ class ListenMiddlewareTest {
         assertTrue(playback.restartedAt.isEmpty())
         assertTrue(playback.seekedToItem.isEmpty())
         assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that seeking into a queued chunk the system reclaimed makes it again`() = runTest {
+        val synthesizer = FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root)
+        val cache = FakeAudioFileCache()
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { synthesizer },
+                playbackController = playback,
+                audioCache = cache,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val lengths = store.state.articleProgress.chunkDurationsMs
+
+        // The chunk a second into the article is one the player already holds, so this is the seek that would
+        // otherwise be answered by moving the player onto audio that is no longer there.
+        cache.reclaim(synthesizer.files[1])
+        store.dispatch(ListenAction.Playback.SeekRequested(lengths[0] + 1_000))
+        advanceUntilIdle()
+
+        assertTrue("the player was moved onto audio the system had taken", playback.seekedToItem.isEmpty())
+        assertEquals(1_000L, playback.restartedAt.single().second)
+        assertNotEquals(
+            "the playlist was restarted on the file that had gone",
+            synthesizer.files[1],
+            playback.restartedAt.single().first,
+        )
+        assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that the system emptying the cache mid-playback is not the end of the article`() = runTest {
+        val synthesizer = FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root)
+        val cache = FakeAudioFileCache()
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { synthesizer },
+                playbackController = playback,
+                audioCache = cache,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val played = synthesizer.files[0]
+
+        // The player is part way through the opening when the system takes the directory, so the first it is heard of
+        // is the player failing on a file that was there a moment ago.
+        cache.reclaimEverything()
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Failed, chunk = ChunkState(index = 0))
+        advanceUntilIdle()
+
+        assertNull("the reader was shown an error instead of the article carrying on", store.state.error)
+        assertNotEquals(
+            "the playlist was restarted on the file the player had just failed on",
+            played,
+            playback.restartedAt.single().first,
+        )
+    }
+
+    @Test
+    fun `test that the article carries on from where it had got to after the cache is emptied`() = runTest {
+        val playback = FakePlaybackController()
+        val cache = FakeAudioFileCache()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+                audioCache = cache,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        // Two chunks in and a second into the third, so that the recovery has a place to come back to rather than the
+        // top of the article.
+        val lengths = store.state.articleProgress.chunkDurationsMs
+        playback.status.value =
+            PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 2), positionMs = 1_000)
+        advanceUntilIdle()
+
+        cache.reclaimEverything()
+        playback.status.value =
+            PlaybackState(phase = PlaybackPhase.Failed, chunk = ChunkState(index = 2), positionMs = 1_000)
+        advanceUntilIdle()
+
+        assertEquals(lengths.take(2).sum() + 1_000, store.state.articleProgress.positionMs)
+        assertEquals(1_000L, playback.restartedAt.single().second)
+    }
+
+    @Test
+    fun `test that a player failure recreates a chunk even if a file is found for the chunk`() = runTest {
+        val synthesizer = FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root)
+        val cache = FakeAudioFileCache()
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { synthesizer },
+                playbackController = playback,
+                audioCache = cache,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val played = synthesizer.files[0]
+        assertTrue("the premise is a file the player failed on while it was still there", played.exists())
+
+        reportFailure(playback, index = 0)
+        advanceUntilIdle()
+
+        assertTrue("the file that failed was kept rather than thrown away", cache.deleted.contains(played))
+        assertNotEquals(
+            "the playlist was restarted on the file the player had just failed on",
+            played,
+            playback.restartedAt.single().first,
+        )
+        assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that a chunk that keeps failing is reported rather than made forever`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        repeat(MAX_RECOVERY_ATTEMPTS) {
+            reportFailure(playback, index = 0, positionMs = (it + 1).toLong())
+            advanceUntilIdle()
+            assertNull("the article was given up on attempt ${it + 1}", store.state.error)
+        }
+
+        reportFailure(playback, index = 0, positionMs = (MAX_RECOVERY_ATTEMPTS + 1).toLong())
+        advanceUntilIdle()
+
+        assertEquals(ListenError.PlaybackFailed, store.state.error)
+        assertEquals(MAX_RECOVERY_ATTEMPTS, playback.restartedAt.size)
+    }
+
+    @Test
+    fun `test that a later chunk gets its own count after one that kept failing`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        repeat(MAX_RECOVERY_ATTEMPTS) {
+            reportFailure(playback, index = 0, positionMs = (it + 1).toLong())
+            advanceUntilIdle()
+        }
+        val restartsBefore = playback.restartedAt.size
+
+        reportFailure(playback, index = 1, positionMs = 1_000)
+        advanceUntilIdle()
+
+        assertNull("the count carried over from the chunk before it", store.state.error)
+        assertEquals(restartsBefore + 1, playback.restartedAt.size)
+    }
+
+    @Test
+    fun `test that a failure does not take the playback from a seek the reader asked for`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val lengths = store.state.articleProgress.chunkDurationsMs
+        val wanted = lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000
+
+        store.dispatch(ListenAction.Playback.SeekRequested(wanted))
+        advanceTimeBy(100.milliseconds)
+        reportFailure(playback, index = 0)
+        advanceUntilIdle()
+
+        assertEquals("the failure restarted the playback as well", 1, playback.restartedAt.size)
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 0))
+        advanceUntilIdle()
+
+        assertEquals(SEEK_TARGET_CHUNK, store.state.playbackState.chunk.index)
+        assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that a seek the reader asked for takes the playback from a failure being recovered`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        reportFailure(playback, index = 0)
+        advanceTimeBy(100.milliseconds)
+
+        // Read after the failure, which is the report that refreshes the lengths the seek is measured against.
+        val lengths = store.state.articleProgress.chunkDurationsMs
+        store.dispatch(ListenAction.Playback.SeekRequested(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000))
+        advanceUntilIdle()
+
+        assertEquals("the recovery restarted the playback as well", 1, playback.restartedAt.size)
+
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 0))
+        advanceUntilIdle()
+
+        assertEquals(SEEK_TARGET_CHUNK, store.state.playbackState.chunk.index)
+    }
+
+    @Test
+    fun `test that a failure declined for a seek does not spend one of the chunk's attempts`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val lengths = store.state.articleProgress.chunkDurationsMs
+        store.dispatch(ListenAction.Playback.SeekRequested(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000))
+        advanceTimeBy(100.milliseconds)
+        repeat(MAX_RECOVERY_ATTEMPTS + 1) {
+            reportFailure(playback, index = 0, positionMs = (it + 1).toLong())
+        }
+        advanceUntilIdle()
+
+        val restartsAfterSeek = playback.restartedAt.size
+        repeat(MAX_RECOVERY_ATTEMPTS) {
+            reportFailure(playback, index = 0, positionMs = (it + 100).toLong())
+            advanceUntilIdle()
+        }
+
+        assertNull("the declined failures were counted against the chunk", store.state.error)
+        assertEquals(restartsAfterSeek + MAX_RECOVERY_ATTEMPTS, playback.restartedAt.size)
+    }
+
+    @Test
+    fun `test that a seek whose synthesis fails does not hold the playback against later repairs`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(
+                        audioDirectory = temporaryFolder.root,
+                        failAtRequest = FIRST_REQUEST_AFTER_LOOKAHEAD,
+                    )
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceUntilIdle()
+
+        val lengths = store.state.articleProgress.chunkDurationsMs
+        store.dispatch(ListenAction.Playback.SeekRequested(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000))
+        advanceUntilIdle()
+
+        assertEquals(ListenError.SynthesisFailed, store.state.error)
+        val restartsBefore = playback.restartedAt.size
+
+        reportFailure(playback, index = 0)
+        advanceUntilIdle()
+
+        assertEquals(
+            "the seek that failed was still holding the playback",
+            restartsBefore + 1,
+            playback.restartedAt.size,
+        )
+    }
+
+    private fun reportFailure(playback: FakePlaybackController, index: Int, positionMs: Long = 0) {
+        playback.status.value =
+            PlaybackState(phase = PlaybackPhase.Failed, chunk = ChunkState(index = index), positionMs = positionMs)
     }
 
     private fun longArticle() = (1..400).joinToString(" ") { "Sentence $it is right here." }
