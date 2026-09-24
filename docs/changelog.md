@@ -4,7 +4,9 @@ title: Changelog
 permalink: /changelog/
 ---
 
-# 158.0 (In Development)
+# 159.0 (In Development)
+
+# 158.0
 * **feature-accounts-push**
     * 🆕 Added a `SendTabUseCases.SendToDeviceUseCase` overload that takes a list of devices, sending every tab to every device. [Bug 2056922](https://bugzilla.mozilla.org/show_bug.cgi?id=2056922)
 * **service-pocket**
