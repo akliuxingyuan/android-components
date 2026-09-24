@@ -13,6 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import mozilla.components.feature.listentopage.PlaybackPhase
+import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.Voice
 import mozilla.components.feature.listentopage.playback.ArticleDisplayData
@@ -135,6 +136,7 @@ class FakeAudioFileCache : AudioFileCache {
  *   command of theirs asked for.
  * @property positionMs The position to report as reached.
  * @property seekedTo Every position it was asked to move to, in order.
+ * @property playbackSpeedSet Every speed it was asked to read at, in order.
  */
 class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
     val played = mutableListOf<File>()
@@ -144,6 +146,7 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
     val seekedTo = mutableListOf<Long>()
     val seekedToItem = mutableListOf<Pair<Int, Long>>()
     val restartedAt = mutableListOf<Pair<File, Long>>()
+    val playbackSpeedSet = mutableListOf<PlaybackSpeed>()
     var released = false
 
     override val status = MutableStateFlow(PlaybackState())
@@ -156,7 +159,7 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
         played.add(file)
         displayDataList.add(articleDisplayData)
 
-        status.value = PlaybackState(phase = PlaybackPhase.Buffering)
+        status.value = PlaybackState(phase = PlaybackPhase.Buffering, speed = status.value.speed)
     }
 
     override suspend fun enqueue(file: File) {
@@ -182,6 +185,11 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
     override suspend fun restartAt(file: File, positionMs: Long) {
         restartedAt.add(file to positionMs)
         played.add(file)
+    }
+
+    override suspend fun setSpeed(speed: PlaybackSpeed) {
+        playbackSpeedSet.add(speed)
+        status.value = status.value.copy(speed = speed)
     }
 
     override suspend fun release() {
