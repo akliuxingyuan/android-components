@@ -181,8 +181,8 @@ class FilePickerTest {
     }
 
     @Test
-    @Config(sdk = [28])
-    fun `handleFilePickerRequest with the required permission will call startActivityForResult on SDK 28`() {
+    @Config(sdk = [32])
+    fun `handleFilePickerRequest with the required permission will call startActivityForResult on SDK 32 and below`() {
         var onRequestPermissionWasCalled = false
 
         filePicker =
@@ -597,7 +597,6 @@ class FilePickerTest {
     }
 
     @Test
-    @Config(sdk = [33])
     fun `onPermissionsDenied launches androidPhotoPicker with capabilities if available`() {
         val capabilities = AndroidPhotoPicker.allHdrCapabilities()
         val mockAndroidPhotoPicker = mock<AndroidPhotoPicker>()

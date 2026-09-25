@@ -148,7 +148,6 @@ class AndroidPhotoPickerTest {
     }
 
     @Test
-    @Config(sdk = [33])
     fun `allHdrCapabilities returns common HDR types`() {
         val capabilities = AndroidPhotoPicker.allHdrCapabilities()
         assertTrue(capabilities.supportedHdrTypes.contains(PickVisualMedia.MediaCapabilities.TYPE_HLG10))
