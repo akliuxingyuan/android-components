@@ -491,7 +491,8 @@ internal class WorkManagerSyncWorker(
             // We will need a list of SyncableStores.
             val syncableStores =
                 params.inputData
-                    .getStringArray(KEY_DATA_STORES)
+                    .getNullableStringArray(KEY_DATA_STORES)
+                    ?.filterNotNull()
                     ?.filter {
                         !lastSyncedWithinStaggerBuffer(it)
                     }
