@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 159.0 (In Development)
+* **feature-readerview**
+    * 🆕 Added `ReaderViewFeature.colorSchemeOverride`, which forces reader view to be displayed with a given `ColorScheme` without overwriting the one the user configured. [Bug 2069110](https://bugzilla.mozilla.org/show_bug.cgi?id=2069110)
 
 # 158.0
 * **feature-accounts-push**
