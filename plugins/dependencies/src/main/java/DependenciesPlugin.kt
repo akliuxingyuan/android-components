@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import groovy.lang.GroovyObject
 import org.gradle.api.Plugin
 import org.gradle.api.flow.FlowAction
 import org.gradle.api.flow.FlowParameters
@@ -88,7 +89,15 @@ abstract class DependenciesPlugin : Plugin<Settings> {
         val onTry = settings.providers.environmentVariable("MOZ_SOURCE_REPO")
             .orNull == "https://hg.mozilla.org/try"
 
-        ComponentsDependencies.initialize(appservicesInTree, onTry)
+        // `mobile/android/shared-settings.gradle` sets `config` in `projectsLoaded`, which is
+        // after this plugin is applied, so resolve the version lazily.
+        @Suppress("GradleProjectIsolation")
+        val componentsVersion = lazy {
+            val config = settings.gradle.rootProject.extensions.extraProperties["config"] as GroovyObject
+            config.getProperty("componentsVersion") as String
+        }
+
+        ComponentsDependencies.initialize(appservicesInTree, onTry, componentsVersion)
 
         flowScope.always(LogGradleErrorForTreeHerder::class) {
             parameters.failure.set(flowProviders.buildWorkResult.map { result -> result.failure })
@@ -101,10 +110,12 @@ abstract class DependenciesPlugin : Plugin<Settings> {
 object ComponentsDependencies {
     private var appservicesInTree: Boolean? = null
     private var onTry: Boolean = false
+    private var componentsVersion: Lazy<String>? = null
 
-    internal fun initialize(inTree: Boolean, onTry: Boolean) {
+    internal fun initialize(inTree: Boolean, onTry: Boolean, componentsVersion: Lazy<String>) {
         appservicesInTree = inTree
         this.onTry = onTry
+        this.componentsVersion = componentsVersion
     }
 
     internal fun getGroupId(): String {
@@ -115,9 +126,14 @@ object ComponentsDependencies {
     }
 
     internal fun getVersionNumber(): String {
-        // On try, relax version pin to allow for --use-existing-task.
-        if (onTry && (appservicesInTree ?: false)) {
-            return "+"
+        if (appservicesInTree ?: false) {
+            // On try, relax version pin to allow for --use-existing-task.
+            if (onTry) {
+                return "+"
+            }
+            // In-tree app-services publishes with the android-components version, like `159.0a1`;
+            // see `configurePublish` in `third_party/application-services/publish.gradle`.
+            return componentsVersion!!.value
         }
         return ApplicationServicesConfig.version
     }
