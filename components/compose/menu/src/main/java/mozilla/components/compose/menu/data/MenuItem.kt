@@ -98,10 +98,12 @@ data class StandardMenuItem(
  *
  * @param text The text to show.
  * @param state The [MenuItemState] of this summary.
+ * @param maxLines The maximum number of lines to show this text on.
  */
 data class MenuItemSummary(
     val text: Text,
     val state: MenuItemState = DEFAULT,
+    val maxLines: Int = 1,
 )
 
 /**

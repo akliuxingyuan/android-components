@@ -77,6 +77,7 @@ internal fun RowScope.MenuListItemText(
             style = AcornTheme.typography.subtitle1.copy(hyphens = Hyphens.Auto),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start,
+            overflow = TextOverflow.Ellipsis,
             maxLines = 2,
             softWrap = true,
             color = state.contentColor,
@@ -87,7 +88,7 @@ internal fun RowScope.MenuListItemText(
                 text = summary.text.value,
                 style = AcornTheme.typography.body2,
                 overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
+                maxLines = summary.maxLines,
                 color = summary.state.secondaryContentColor,
             )
         }
