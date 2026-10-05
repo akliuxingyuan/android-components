@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.menu.data.MenuAttribution
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.MenuAction
@@ -103,8 +104,63 @@ class MenuTest {
         assertTrue(composeTestRule.onNodeWithTag("menu").getUnclippedBoundsInRoot().height < 300.dp)
     }
 
-    private fun setMenu(groups: List<MenuItemsGroup>): MenuStore {
-        val store = MenuStore(initialState = MenuState(groups))
+    @Test
+    fun `GIVEN top attribution WHEN scrolling THEN keep it above the sticky header`() {
+        assertAttributionStaysOutsideScrollingContent(showAtTop = true)
+    }
+
+    @Test
+    fun `GIVEN bottom attribution WHEN scrolling THEN keep it below the sticky footer`() {
+        assertAttributionStaysOutsideScrollingContent(showAtTop = false)
+    }
+
+    @Test
+    fun `GIVEN a short menu with attribution THEN wrap content and preserve attribution when items update`() {
+        val store =
+            setMenu(
+                groups = listOf(row("Item")),
+                attribution = MenuAttribution(Text.String("Powered by Focus"), showAtTop = false, icon = null),
+            )
+
+        composeTestRule.onNodeWithText("Powered by Focus").assertIsDisplayed()
+        assertTrue(composeTestRule.onNodeWithTag("menu").getUnclippedBoundsInRoot().height < 300.dp)
+
+        composeTestRule.runOnIdle { store.dispatch(MenuAction.Update(listOf(row("Updated item")))) }
+
+        composeTestRule.onNodeWithText("Updated item").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Powered by Focus").assertIsDisplayed()
+    }
+
+    private fun assertAttributionStaysOutsideScrollingContent(showAtTop: Boolean) {
+        setMenu(
+            groups = listOf(stickyGroup("Header")) + List(20) { row("Item $it") } + stickyGroup("Footer"),
+            attribution = MenuAttribution(Text.String("Powered by Focus"), showAtTop = showAtTop, icon = null),
+        )
+        val attributionBefore = composeTestRule.onNodeWithText("Powered by Focus").getUnclippedBoundsInRoot()
+
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasText("Item 19"))
+
+        composeTestRule.onNodeWithText("Powered by Focus").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Header").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Footer").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Item 19").assertIsDisplayed()
+        val attributionAfter = composeTestRule.onNodeWithText("Powered by Focus").getUnclippedBoundsInRoot()
+        val headerBounds = composeTestRule.onNodeWithText("Header").getUnclippedBoundsInRoot()
+        val footerBounds = composeTestRule.onNodeWithText("Footer").getUnclippedBoundsInRoot()
+        val listBounds = composeTestRule.onNode(hasScrollAction()).getUnclippedBoundsInRoot()
+        val lastItemBounds = composeTestRule.onNodeWithText("Item 19").getUnclippedBoundsInRoot()
+        assertEquals(attributionBefore, attributionAfter)
+        assertTrue(listBounds.bottom <= footerBounds.top)
+        assertTrue(lastItemBounds.bottom <= listBounds.bottom)
+        if (showAtTop) {
+            assertTrue(attributionAfter.bottom <= headerBounds.top)
+        } else {
+            assertTrue(footerBounds.bottom <= attributionAfter.top)
+        }
+    }
+
+    private fun setMenu(groups: List<MenuItemsGroup>, attribution: MenuAttribution? = null): MenuStore {
+        val store = MenuStore(initialState = MenuState(groups, attribution))
         composeTestRule.setContent {
             AcornTheme {
                 Box(Modifier.fillMaxSize()) {

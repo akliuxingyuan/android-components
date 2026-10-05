@@ -24,15 +24,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.menu.data.MenuAttribution
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.store.MenuState
 import mozilla.components.compose.menu.store.MenuStore
 import mozilla.components.compose.menu.ui.ListMenuItemsGroup
+import mozilla.components.compose.menu.ui.MenuAttribution
 import mozilla.components.compose.menu.ui.MenuGridContainer
+import mozilla.components.compose.menu.ui.MenuItemIconRes
 import mozilla.components.compose.menu.ui.utils.MenuPreviewParameterProvider
 import mozilla.components.lib.state.ext.observeAsComposableState
+import mozilla.components.ui.icons.R as iconsR
 
 /**
  * A vertically scrollable container for menu items.
@@ -40,6 +45,7 @@ import mozilla.components.lib.state.ext.observeAsComposableState
  * @param store The [MenuStore] backing this menu.
  * @param modifier [Modifier] to be applied to the menu container.
  */
+@Suppress("CognitiveComplexMethod")
 @Composable
 fun Menu(
     store: MenuStore,
@@ -50,7 +56,9 @@ fun Menu(
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         val onInteraction: (MenuEvent) -> Unit = remember(store) { { store.dispatch(it) } }
-        val menuGroups by store.observeAsComposableState { it.menuGroups }
+        val menuState by store.observeAsComposableState { it }
+        val menuGroups = menuState.menuGroups
+        val attribution = menuState.attribution
 
         val headerGroup = menuGroups.firstOrNull()?.takeIf { it.isSticky }
         val footerGroup = menuGroups.lastOrNull()?.takeIf { menuGroups.size > 1 && it.isSticky }
@@ -68,6 +76,10 @@ fun Menu(
             }
 
         Column {
+            if (attribution?.showAtTop == true) {
+                MenuAttribution(attribution = attribution)
+            }
+
             MenuContent(
                 listState = listState,
                 headerGroup = headerGroup,
@@ -84,6 +96,10 @@ fun Menu(
                     onInteraction = onInteraction,
                     backgroundColor = stickyBackgroundColor,
                 )
+            }
+
+            if (attribution?.showAtTop == false) {
+                MenuAttribution(attribution = attribution)
             }
         }
     }
@@ -189,6 +205,20 @@ private fun MenuFooter(
 @Composable
 private fun MenuPreview(@PreviewParameter(MenuPreviewParameterProvider::class) menuGroups: List<MenuItemsGroup>) {
     AcornTheme {
-        Menu(store = MenuStore(initialState = MenuState(menuGroups)))
+        Menu(
+            store =
+                MenuStore(
+                    initialState =
+                        MenuState(
+                            menuGroups = menuGroups,
+                            attribution =
+                                MenuAttribution(
+                                    title = Text.String("Powered by Mozilla"),
+                                    icon = MenuItemIconRes(iconsR.drawable.mozac_ic_logo_firefox_24),
+                                    showAtTop = false,
+                                ),
+                        )
+                )
+        )
     }
 }
