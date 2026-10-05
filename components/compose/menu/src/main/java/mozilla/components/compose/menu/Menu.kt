@@ -6,8 +6,6 @@ package mozilla.components.compose.menu
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,17 +18,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuItemsGroup
@@ -60,27 +52,12 @@ fun Menu(
         val onInteraction: (MenuEvent) -> Unit = remember(store) { { store.dispatch(it) } }
         val menuGroups by store.observeAsComposableState { it.menuGroups }
 
-        val headerGroup =
-            remember(menuGroups) {
-                menuGroups.firstOrNull()?.takeIf { it.isSticky }
-            }
-        val footerGroup =
-            remember(menuGroups) {
-                if (menuGroups.size > 1) {
-                    menuGroups.lastOrNull()?.takeIf { it.isSticky }
-                } else {
-                    null
-                }
-            }
+        val headerGroup = menuGroups.firstOrNull()?.takeIf { it.isSticky }
+        val footerGroup = menuGroups.lastOrNull()?.takeIf { menuGroups.size > 1 && it.isSticky }
         val scrollableGroups =
-            remember(menuGroups, headerGroup, footerGroup) {
-                menuGroups.filter { it != headerGroup && it != footerGroup }
-            }
+            menuGroups.drop(if (headerGroup != null) 1 else 0).dropLast(if (footerGroup != null) 1 else 0)
 
         val listState = rememberLazyListState()
-        var footerHeight by remember { mutableIntStateOf(0) }
-        val density = LocalDensity.current
-        val footerHeightDp = remember(footerHeight) { with(density) { footerHeight.toDp() } }
 
         val isScrollable = listState.canScrollForward || listState.canScrollBackward
         val stickyBackgroundColor =
@@ -90,22 +67,21 @@ fun Menu(
                 MaterialTheme.colorScheme.surfaceContainer
             }
 
-        Box {
+        Column {
             MenuContent(
                 listState = listState,
-                footerHeightDp = footerHeightDp,
                 headerGroup = headerGroup,
                 scrollableGroups = scrollableGroups,
                 onInteraction = onInteraction,
                 stickyBackgroundColor = stickyBackgroundColor,
+                modifier = Modifier.weight(1f, fill = false),
             )
 
             if (footerGroup != null) {
                 MenuFooter(
                     footerGroup = footerGroup,
-                    listState = listState,
+                    showDivider = listState.canScrollForward,
                     onInteraction = onInteraction,
-                    onHeightMeasured = { footerHeight = it },
                     backgroundColor = stickyBackgroundColor,
                 )
             }
@@ -116,21 +92,23 @@ fun Menu(
 @Composable
 private fun MenuContent(
     listState: LazyListState,
-    footerHeightDp: Dp,
     headerGroup: MenuItemsGroup?,
     scrollableGroups: List<MenuItemsGroup>,
     onInteraction: (MenuEvent) -> Unit,
     stickyBackgroundColor: Color,
+    modifier: Modifier = Modifier,
 ) {
+    // A sticky header spans the whole width and provides its own top spacing, which keeps it from scrolling away
+    // together with the padding that would otherwise be above it.
+    val topPadding = if (headerGroup == null) AcornTheme.layout.space.static100 else 0.dp
+
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxWidth(),
-        // A sticky header spans the whole width and provides its own top spacing, which keeps it from scrolling away
-        // together with the padding that would otherwise be above it.
+        modifier = modifier.fillMaxWidth(),
         contentPadding =
             PaddingValues(
-                top = if (headerGroup == null) AcornTheme.layout.space.static100 else 0.dp,
-                bottom = AcornTheme.layout.space.static100 + footerHeightDp,
+                top = topPadding,
+                bottom = AcornTheme.layout.space.static100,
             ),
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
     ) {
@@ -159,9 +137,7 @@ private fun MenuContent(
                 MenuGroupContent(
                     group,
                     onInteraction,
-                    isSticky = false,
-                    backgroundColor = Color.Transparent,
-                    modifier = Modifier.padding(horizontal = AcornTheme.layout.space.static100),
+                    Modifier.padding(horizontal = AcornTheme.layout.space.static100),
                 )
             }
         }
@@ -172,9 +148,9 @@ private fun MenuContent(
 private fun MenuGroupContent(
     group: MenuItemsGroup,
     onInteraction: (MenuEvent) -> Unit,
-    isSticky: Boolean,
-    backgroundColor: Color,
     modifier: Modifier = Modifier,
+    isSticky: Boolean = false,
+    backgroundColor: Color = Color.Transparent,
 ) {
     when (group) {
         is MenuItemsGroup.Grid -> {
@@ -194,20 +170,14 @@ private fun MenuGroupContent(
 }
 
 @Composable
-private fun BoxScope.MenuFooter(
+private fun MenuFooter(
     footerGroup: MenuItemsGroup,
-    listState: LazyListState,
+    showDivider: Boolean,
     onInteraction: (MenuEvent) -> Unit,
-    onHeightMeasured: (Int) -> Unit,
     backgroundColor: Color,
 ) {
-    Column(
-        modifier =
-            Modifier.align(Alignment.BottomCenter)
-                .onGloballyPositioned { onHeightMeasured(it.size.height) }
-                .background(backgroundColor)
-    ) {
-        if (listState.canScrollForward) {
+    Column(modifier = Modifier.background(backgroundColor)) {
+        if (showDivider) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
 
