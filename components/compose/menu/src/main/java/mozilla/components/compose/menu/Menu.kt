@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,6 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.MenuEvent
@@ -123,18 +125,21 @@ private fun MenuContent(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxWidth(),
+        // A sticky header spans the whole width and provides its own top spacing, which keeps it from scrolling away
+        // together with the padding that would otherwise be above it.
         contentPadding =
             PaddingValues(
-                start = AcornTheme.layout.space.static100,
-                top = AcornTheme.layout.space.static100,
-                end = AcornTheme.layout.space.static100,
+                top = if (headerGroup == null) AcornTheme.layout.space.static100 else 0.dp,
                 bottom = AcornTheme.layout.space.static100 + footerHeightDp,
             ),
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
     ) {
         if (headerGroup != null) {
             stickyHeader(key = headerGroup.id) {
-                Column(modifier = Modifier.background(stickyBackgroundColor)) {
+                Column(
+                    modifier =
+                        Modifier.background(stickyBackgroundColor).padding(top = AcornTheme.layout.space.static100)
+                ) {
                     MenuGroupContent(
                         headerGroup,
                         onInteraction,
@@ -151,7 +156,13 @@ private fun MenuContent(
 
         scrollableGroups.forEach { group ->
             item(key = group.id) {
-                MenuGroupContent(group, onInteraction, isSticky = false, backgroundColor = Color.Transparent)
+                MenuGroupContent(
+                    group,
+                    onInteraction,
+                    isSticky = false,
+                    backgroundColor = Color.Transparent,
+                    modifier = Modifier.padding(horizontal = AcornTheme.layout.space.static100),
+                )
             }
         }
     }
@@ -163,19 +174,21 @@ private fun MenuGroupContent(
     onInteraction: (MenuEvent) -> Unit,
     isSticky: Boolean,
     backgroundColor: Color,
+    modifier: Modifier = Modifier,
 ) {
     when (group) {
         is MenuItemsGroup.Grid -> {
             MenuGridContainer(
                 items = group.items,
                 onInteraction = onInteraction,
+                modifier = modifier,
                 isSticky = isSticky,
                 backgroundColor = backgroundColor,
             )
         }
 
         is MenuItemsGroup.Row -> {
-            ListMenuItemsGroup(group.items, onInteraction)
+            ListMenuItemsGroup(group.items, onInteraction, modifier)
         }
     }
 }
