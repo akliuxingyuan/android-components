@@ -2444,6 +2444,148 @@ class ListenMiddlewareTest {
         )
     }
 
+    @Test
+    fun `test that VoicesClicked refreshes the voice list and adds downloaded voice`() = runTest {
+        val oldList = listOf(Voice(id = "1", locale = Locale.US))
+        val newVoice = Voice(id = "2", locale = Locale.UK)
+        val newList = oldList + newVoice
+
+        val playback = FakePlaybackController()
+        val synthesizer = FakeSpeechSynthesizer(voices = oldList, enginePackageName = ENGINE)
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    synthesizer
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        synthesizer.updateVoices(newList)
+        store.dispatch(ListenAction.Controls.VoicesClicked)
+        advanceUntilIdle()
+
+        assertEquals(newList, store.state.voiceState.availableVoices)
+    }
+
+    @Test
+    fun `test that VoicesClicked refreshes the voice list and removes deleted voice`() = runTest {
+        val oldList = listOf(Voice(id = "1", locale = Locale.US), Voice(id = "2", locale = Locale.UK))
+        val newList = listOf(Voice(id = "1", locale = Locale.US))
+
+        val playback = FakePlaybackController()
+        val synthesizer = FakeSpeechSynthesizer(voices = oldList, enginePackageName = ENGINE)
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    synthesizer
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        synthesizer.updateVoices(newList)
+        store.dispatch(ListenAction.Controls.VoicesClicked)
+        advanceUntilIdle()
+
+        assertEquals(newList, store.state.voiceState.availableVoices)
+    }
+
+    @Test
+    fun `test that VoicesClicked sends an error and pauses playback if no voices are available`() = runTest {
+        val oldList = listOf(Voice(id = "1", locale = Locale.US), Voice(id = "2", locale = Locale.UK))
+        val newList = emptyList<Voice>()
+
+        val playback = FakePlaybackController()
+        val synthesizer = FakeSpeechSynthesizer(voices = oldList, enginePackageName = ENGINE)
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    synthesizer
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        synthesizer.updateVoices(newList)
+        store.dispatch(ListenAction.Controls.VoicesClicked)
+        advanceUntilIdle()
+
+        assertEquals(ListenError.NoOfflineVoice, store.state.error)
+        assertEquals(PlaybackPhase.Paused, playback.status.value.phase)
+    }
+
+    @Test
+    fun `test that VoicesClicked keeps the selected voice if it is available`() = runTest {
+        val us = Voice(id = "1", locale = Locale.US)
+        val uk = Voice(id = "2", locale = Locale.UK)
+        val ca = Voice(id = "3", locale = Locale.CANADA)
+        val oldList = listOf(us, uk, ca)
+        val newList = oldList - uk
+
+        val playback = FakePlaybackController()
+        val synthesizer = FakeSpeechSynthesizer(voices = oldList, enginePackageName = ENGINE)
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    synthesizer
+                },
+                settings = ListenSettings.inMemory(ENGINE, voiceIds = mapOf("en" to "3")),
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        assertEquals(ca, store.state.voiceState.selectedVoice)
+
+        synthesizer.updateVoices(newList)
+        store.dispatch(ListenAction.Controls.VoicesClicked)
+        advanceUntilIdle()
+
+        assertEquals(ca, store.state.voiceState.selectedVoice)
+    }
+
+    @Test
+    fun `test that VoicesClicked chooses a fallback voice if the selected voice is not available`() = runTest {
+        val us = Voice(id = "1", locale = Locale.US)
+        val uk = Voice(id = "2", locale = Locale.UK)
+        val ca = Voice(id = "3", locale = Locale.CANADA)
+        val oldList = listOf(us, uk, ca)
+        val newList = oldList - uk
+
+        val playback = FakePlaybackController()
+        val synthesizer = FakeSpeechSynthesizer(voices = oldList, enginePackageName = ENGINE)
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    synthesizer
+                },
+                settings = ListenSettings.inMemory(ENGINE, voiceIds = mapOf("en" to "2")),
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        assertEquals(uk, store.state.voiceState.selectedVoice)
+
+        synthesizer.updateVoices(newList)
+        store.dispatch(ListenAction.Controls.VoicesClicked)
+        advanceUntilIdle()
+
+        assertEquals(us, store.state.voiceState.selectedVoice)
+    }
+
     private fun reportFailure(playback: FakePlaybackController, index: Int, positionMs: Long = 0) {
         playback.status.value =
             PlaybackState(phase = PlaybackPhase.Failed, chunk = ChunkState(index = index), positionMs = positionMs)

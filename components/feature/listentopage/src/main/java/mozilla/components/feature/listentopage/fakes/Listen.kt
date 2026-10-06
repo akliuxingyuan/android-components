@@ -49,7 +49,7 @@ private const val FAKE_ENGINE_ERROR = -1
  */
 class FakeSpeechSynthesizer(
     override val maxInputLength: Int = 4000,
-    private val voices: List<Voice> = listOf(Voice(id = "voice-1", locale = Locale.US)),
+    private var voices: List<Voice> = listOf(Voice(id = "voice-1", locale = Locale.US)),
     override val enginePackageName: String = "com.example.tts",
     private val audioDirectory: File? = null,
     private val audioDuration: Duration = 5.seconds,
@@ -95,6 +95,15 @@ class FakeSpeechSynthesizer(
     override suspend fun loadAvailableVoices(langTag: String): List<Voice> {
         voiceRequests.add(langTag)
         return voices
+    }
+
+    /**
+     * Updates the set of available voices. Used for testing voice language updates.
+     *
+     * @param newVoices The new set of voices to return
+     */
+    fun updateVoices(newVoices: List<Voice>) {
+        this.voices = newVoices
     }
 }
 
@@ -206,10 +215,12 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
 
     override suspend fun pause() {
         paused += 1
+        status.value = PlaybackState(phase = PlaybackPhase.Paused, speed = status.value.speed)
     }
 
     override suspend fun resume() {
         resumed += 1
+        status.value = PlaybackState(phase = PlaybackPhase.Buffering, speed = status.value.speed)
     }
 
     override suspend fun seekTo(positionMs: Long) {
