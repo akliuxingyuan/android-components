@@ -304,6 +304,29 @@ class GeckoEngineSession(
             )
     }
 
+    /** See [EngineSession.requestPdfToShare] */
+    override fun requestPdfToShare(
+        onResult: (Response) -> Unit,
+        onException: (Throwable) -> Unit,
+    ) {
+        pdfToDownload()
+            .then(
+                { webResponse ->
+                    if (webResponse?.body == null) {
+                        onException(IllegalStateException("No PDF available"))
+                        return@then GeckoResult<Void>()
+                    }
+
+                    onResult(webResponse.toResponse())
+                    GeckoResult()
+                },
+                { throwable ->
+                    onException(throwable)
+                    GeckoResult()
+                },
+            )
+    }
+
     /**
      * Determines the correct PDF bytes to download. If the tab is showing a PDF, then the bytes should come directly
      * from that PDF, else they should be generated for the page.
