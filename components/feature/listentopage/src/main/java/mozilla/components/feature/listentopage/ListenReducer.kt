@@ -68,7 +68,11 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
             )
 
         ListenAction.Playback.PlaybackWaiting ->
-            state.copy(playbackState = state.playbackState.copy(phase = PlaybackPhase.Buffering))
+            if (state.playbackState.phase == PlaybackPhase.Paused) {
+                state
+            } else {
+                state.copy(playbackState = state.playbackState.copy(phase = PlaybackPhase.Buffering))
+            }
 
         ListenAction.Playback.PlaybackEnded ->
             state.copy(playbackState = state.playbackState.copy(phase = PlaybackPhase.Ended))

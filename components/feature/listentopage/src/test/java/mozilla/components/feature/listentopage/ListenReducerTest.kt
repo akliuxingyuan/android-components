@@ -390,6 +390,15 @@ class ListenReducerTest {
     }
 
     @Test
+    fun `test that a paused player stays paused while it waits`() {
+        val paused = fullState.copy(playbackState = fullState.playbackState.copy(phase = PlaybackPhase.Paused))
+
+        val state = listenReducer(paused, ListenAction.Playback.PlaybackWaiting)
+
+        assertEquals(PlaybackPhase.Paused, state.playbackState.phase)
+    }
+
+    @Test
     fun `test that the article being read out is recorded as ended`() {
         val readOut = fullState.copy(error = null)
 
