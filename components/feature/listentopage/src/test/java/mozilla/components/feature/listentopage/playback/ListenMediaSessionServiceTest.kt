@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage.playback
 
 import android.app.Service
 import android.content.Intent
+import android.os.Looper
 import android.view.KeyEvent
 import androidx.annotation.OptIn
 import androidx.media3.common.PlaybackParameters
@@ -145,6 +146,21 @@ class ListenMediaSessionServiceTest {
             }
 
         assertEquals(PlaybackSpeed.entries.size, said.toSet().size)
+    }
+
+    @OptIn(UnstableApi::class)
+    @Test
+    fun `test that the speed control shows a speed set from outside the notification`() {
+        val controller = Robolectric.buildService(ListenMediaSessionService::class.java).create()
+        val session = controller.get().onGetSession(mock())!!
+
+        session.player.setPlaybackSpeed(PlaybackSpeed.X0_5.multiplier)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val speed = session.mediaButtonPreferences.last()
+        controller.destroy()
+        assertEquals("Playback set to half speed", speed.displayName.toString())
+        assertEquals(iconsR.drawable.mozac_ic_playback_speed_0_5x_24, speed.iconResId)
     }
 
     @Test

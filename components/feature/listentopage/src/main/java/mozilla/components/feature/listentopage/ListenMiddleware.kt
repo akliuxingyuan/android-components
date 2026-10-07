@@ -175,7 +175,8 @@ class ListenMiddleware(
             ListenAction.Controls.RewindClicked -> store.skipBy(-SEEK_BACK_INCREMENT_MS)
             ListenAction.Controls.ForwardClicked -> store.skipBy(SEEK_FORWARD_INCREMENT_MS)
             ListenAction.Controls.VoicesClicked -> store.refreshVoices()
-
+            is ListenAction.Controls.PlaybackSpeedSelected ->
+                scope.launch { playbackController.setSpeed(action.playbackSpeed) }
             is ListenAction.Playback,
             is ListenAction.Controls,
             ListenAction.Content.ContentUnavailable,

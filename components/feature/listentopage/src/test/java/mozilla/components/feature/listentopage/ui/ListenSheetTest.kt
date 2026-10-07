@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
+import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
 import mozilla.components.feature.listentopage.VoiceState
 import mozilla.components.support.test.robolectric.testContext
@@ -36,6 +37,7 @@ class ListenSheetTest {
                     article = ArticleDetails(title = TITLE, site = "bbc.co.uk"),
                     articleProgressState = remember { mutableStateOf(ArticleProgress()) },
                     playing = false,
+                    speed = PlaybackSpeed.Default,
                     voiceState = VoiceState(),
                     onAction = {},
                     onExpandClicked = onExpandClicked,

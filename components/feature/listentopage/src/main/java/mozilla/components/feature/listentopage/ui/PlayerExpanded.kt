@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -28,6 +29,7 @@ import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.ListenAction
+import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
 import mozilla.components.feature.listentopage.VoiceState
 import mozilla.components.ui.icons.R as iconsR
@@ -40,6 +42,7 @@ internal fun PlayerExpanded(
     article: ArticleDetails,
     articleProgressState: State<ArticleProgress>,
     playing: Boolean,
+    speed: PlaybackSpeed,
     voiceState: VoiceState,
     onAction: (ListenAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -69,7 +72,13 @@ internal fun PlayerExpanded(
 
         AudioProgress(articleProgressState = articleProgressState)
 
-        PlaybackControls(playing = playing, voiceState = voiceState, onAction = onAction)
+        val locale = LocalConfiguration.current.locales[0]
+        val labelPattern = stringResource(R.string.mozac_feature_listentopage_playback_speed_option)
+        val speedState =
+            remember(speed, locale, labelPattern, onAction) {
+                speed.toSpeedState(locale, labelPattern) { onAction(ListenAction.Controls.PlaybackSpeedSelected(it)) }
+            }
+        PlaybackControls(playing = playing, voiceState = voiceState, speedState = speedState, onAction = onAction)
     }
 }
 
@@ -123,6 +132,7 @@ private fun PlayerExpandedPreview() {
                     mutableStateOf(ArticleProgress(positionMs = 84_000, durationMs = 360_000))
                 },
             playing = false,
+            speed = PlaybackSpeed.Default,
             voiceState = VoiceState(),
             onAction = {},
         )

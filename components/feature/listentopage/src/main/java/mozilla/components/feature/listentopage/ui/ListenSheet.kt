@@ -40,6 +40,7 @@ import mozilla.components.compose.base.theme.AcornCorners
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.ListenAction
+import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.VoiceState
 
 private const val FADE_OUT_DURATION_MS = 50
@@ -71,6 +72,7 @@ private val ContentExit =
  *   value so that the position is read while drawing the progress bar instead of while composing the player, which
  *   keeps a position update from recomposing the controls around it.
  * @param playing equals true if audio is playing, false if audio is paused.
+ * @param speed How fast the article is being read out, shown on the expanded player's speed control.
  * @param voiceState The voices the expanded player offers to read the article in, and the one it is read in.
  * @param expanded Whether to show the full player. `false` shows the compact one.
  * @param onAction Invoked to pass upwards a [ListenAction] in response to a UI event.
@@ -82,6 +84,7 @@ fun ListenSheet(
     article: ArticleDetails,
     articleProgressState: State<ArticleProgress>,
     playing: Boolean,
+    speed: PlaybackSpeed,
     voiceState: VoiceState,
     onAction: (ListenAction) -> Unit,
     onExpandClicked: () -> Unit,
@@ -120,6 +123,7 @@ fun ListenSheet(
                         article = article,
                         articleProgressState = articleProgressState,
                         playing = playing,
+                        speed = speed,
                         voiceState = voiceState,
                         onAction = onAction,
                         modifier = Modifier.inertWhileTransitioning(scope = this),
@@ -249,6 +253,7 @@ private fun ListenSheetPreview(
             ),
         articleProgressState = remember { mutableStateOf(ArticleProgress(positionMs = 84_000, durationMs = 360_000)) },
         playing = true,
+        speed = PlaybackSpeed.Default,
         voiceState = VoiceState(),
         onAction = {},
         onExpandClicked = {},

@@ -16,11 +16,22 @@ fun listenReducer(state: ListenState, action: ListenAction): ListenState =
         is ListenAction.Session -> reduceSession(state, action)
         is ListenAction.Content -> reduceContent(state, action)
         is ListenAction.Voices -> reduceVoices(state, action)
-        is ListenAction.Controls -> state
+        is ListenAction.Controls -> reduceControls(state, action)
         is ListenAction.Playback -> reducePlayback(state, action)
         is ListenAction.Synthesis -> reduceSynthesis(state, action)
         is ListenAction.ModeChanged -> state.copy(mode = action.mode)
         ListenAction.ErrorDismissed -> state.copy(error = null)
+    }
+
+private fun reduceControls(state: ListenState, action: ListenAction.Controls): ListenState =
+    when (action) {
+        is ListenAction.Controls.PlaybackSpeedSelected ->
+            state.copy(playbackState = state.playbackState.copy(speed = action.playbackSpeed))
+
+        ListenAction.Controls.PlayPauseClicked,
+        ListenAction.Controls.RewindClicked,
+        ListenAction.Controls.ForwardClicked,
+        ListenAction.Controls.VoicesClicked -> state
     }
 
 private fun reduceSession(state: ListenState, action: ListenAction.Session): ListenState =

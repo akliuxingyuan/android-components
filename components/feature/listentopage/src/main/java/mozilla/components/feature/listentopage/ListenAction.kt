@@ -77,8 +77,12 @@ sealed interface ListenAction : Action {
         /** The user asked for the voices to pick from. */
         data object VoicesClicked : Controls
 
-        /** The user asked to change the playback speed. */
-        data object PlaybackSpeedClicked : Controls
+        /**
+         * The user picked a playback speed.
+         *
+         * @property playbackSpeed The speed to read the article out at.
+         */
+        data class PlaybackSpeedSelected(val playbackSpeed: PlaybackSpeed) : Controls
     }
 
     /** Actions reporting what the player is doing. */

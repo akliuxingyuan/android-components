@@ -19,12 +19,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ListenAction
+import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
 import mozilla.components.feature.listentopage.VoiceState
 import mozilla.components.ui.icons.R as iconsR
@@ -34,10 +36,12 @@ import mozilla.components.ui.icons.R as iconsR
 internal fun PlaybackControls(
     playing: Boolean,
     voiceState: VoiceState,
+    speedState: SpeedState,
     onAction: (ListenAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var voicesExpanded by remember { mutableStateOf(false) }
+    var speedsExpanded by remember { mutableStateOf(false) }
 
     Row(
         modifier =
@@ -81,14 +85,21 @@ internal fun PlaybackControls(
         CenterControls(playing = playing, onAction = onAction)
 
         // Speed
-        IconButton(
-            onClick = { onAction(ListenAction.Controls.PlaybackSpeedClicked) },
-            contentDescription = stringResource(R.string.mozac_feature_listentopage_playback_speed_1),
-        ) {
-            Icon(
-                painter = painterResource(iconsR.drawable.mozac_ic_playback_speed_1x_24),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
+        Box {
+            IconButton(
+                onClick = { speedsExpanded = true },
+                contentDescription = stringResource(speedState.contentDescription),
+            ) {
+                Icon(
+                    painter = painterResource(speedState.icon),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            PlaybackSpeedMenu(
+                speedList = speedState.menuItems,
+                expanded = speedsExpanded,
+                onDismissRequest = { speedsExpanded = false },
             )
         }
     }
@@ -137,6 +148,15 @@ private fun CenterControls(
 @Composable
 private fun PlaybackControlsPreview() {
     AcornTheme {
-        PlaybackControls(playing = false, voiceState = VoiceState(), onAction = {})
+        PlaybackControls(
+            playing = false,
+            voiceState = VoiceState(),
+            speedState =
+                PlaybackSpeed.Default.toSpeedState(
+                    locale = LocalConfiguration.current.locales[0],
+                    labelPattern = stringResource(R.string.mozac_feature_listentopage_playback_speed_option),
+                ) {},
+            onAction = {},
+        )
     }
 }

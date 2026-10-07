@@ -1997,6 +1997,17 @@ class ListenMiddlewareTest {
     }
 
     @Test
+    fun `test that picking a playback speed sets it on the player`() = runTest {
+        val playback = FakePlaybackController()
+        val store = storeWithTwoChunkProgress(playback, positionMs = 20_000)
+
+        store.dispatch(ListenAction.Controls.PlaybackSpeedSelected(PlaybackSpeed.X1_5))
+        advanceUntilIdle()
+
+        assertEquals(listOf(PlaybackSpeed.X1_5), playback.playbackSpeedSet)
+    }
+
+    @Test
     fun `test that skipping forward near the end of the article stops at the end`() = runTest {
         val playback = FakePlaybackController()
         val store = storeWithTwoChunkProgress(playback, positionMs = 70_000)

@@ -131,6 +131,13 @@ class ListenReducerTest {
     }
 
     @Test
+    fun `test that a picked playback speed is recorded`() {
+        val state = listenReducer(ListenState(), ListenAction.Controls.PlaybackSpeedSelected(PlaybackSpeed.X0_5))
+
+        assertEquals(PlaybackSpeed.X0_5, state.playbackState.speed)
+    }
+
+    @Test
     fun `test that loaded voices are recorded`() {
         val voices =
             listOf(Voice(id = "en-us-female", locale = Locale.US), Voice(id = "en-us-male", locale = Locale.US))
