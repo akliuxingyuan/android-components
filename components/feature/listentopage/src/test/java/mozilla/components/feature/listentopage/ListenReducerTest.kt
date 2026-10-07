@@ -20,7 +20,7 @@ private val fullState =
         title = "Match Preview: Wrexham AFC vs Sunderland AFC",
         site = "bbc.co.uk",
         languageTag = "de-DE",
-        mode = ListenMode.Player,
+        mode = PlayerMode.Compact,
         error = ListenError.PlaybackFailed,
         voiceState =
             VoiceState(
@@ -56,7 +56,7 @@ class ListenReducerTest {
         assertNull(state.title)
         assertNull(state.site)
         assertNull(state.error)
-        assertEquals(ListenMode.Player, state.mode)
+        assertEquals(PlayerMode.Expanded, state.mode)
         assertEquals("de-DE", state.languageTag)
         assertEquals(fullState.voiceState, state.voiceState)
         assertEquals(PlaybackState(), state.playbackState)
@@ -101,6 +101,15 @@ class ListenReducerTest {
 
             assertNull("$error was not cleared", state.error)
         }
+    }
+
+    @Test
+    fun `test that changing the mode records it`() {
+        val collapsed = listenReducer(ListenState(), ListenAction.ModeChanged(PlayerMode.Compact))
+        val expanded = listenReducer(collapsed, ListenAction.ModeChanged(PlayerMode.Expanded))
+
+        assertEquals(ListenState(mode = PlayerMode.Compact), collapsed)
+        assertEquals(ListenState(), expanded)
     }
 
     @Test
@@ -227,7 +236,7 @@ class ListenReducerTest {
     }
 
     @Test
-    fun `test that a session has no tab, no error and the player mode by default`() {
+    fun `test that a session has no tab, no error and the expanded mode by default`() {
         val initial = ListenState()
 
         assertNull(initial.tabId)
@@ -235,7 +244,7 @@ class ListenReducerTest {
         assertNull(initial.title)
         assertNull(initial.languageTag)
         assertNull(initial.error)
-        assertEquals(ListenMode.Player, initial.mode)
+        assertEquals(PlayerMode.Expanded, initial.mode)
     }
 
     @Test

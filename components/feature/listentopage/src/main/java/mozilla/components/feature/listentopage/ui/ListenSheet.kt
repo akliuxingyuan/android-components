@@ -4,71 +4,166 @@
 
 package mozilla.components.feature.listentopage.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import mozilla.components.compose.base.theme.AcornCorners
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.ListenAction
 import mozilla.components.feature.listentopage.VoiceState
+
+private const val FADE_OUT_DURATION_MS = 50
+private const val RESIZE_DURATION_MS = 200
+private const val FADE_IN_DURATION_MS = 50
+private val EasingStandard = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+private val EasingStandardAccelerate = CubicBezierEasing(0.3f, 0f, 1f, 1f)
+private val EasingStandardDecelerate = CubicBezierEasing(0f, 0f, 0f, 1f)
+
+private val ContentEnter =
+    fadeIn(
+        animationSpec =
+            tween(
+                durationMillis = FADE_IN_DURATION_MS,
+                delayMillis = FADE_OUT_DURATION_MS + RESIZE_DURATION_MS,
+                easing = EasingStandardDecelerate,
+            )
+    )
+
+private val ContentExit =
+    fadeOut(animationSpec = tween(durationMillis = FADE_OUT_DURATION_MS, easing = EasingStandardAccelerate))
 
 /**
  * Media player with controls for the Listen To Page feature, shown either collapsed to a single row or expanded with
  * the full transport controls.
  *
  * @param article What the player says about the article it reads.
- * @param elapsedTime How far playback has got, already formatted for display.
- * @param totalTime How long the audio is, already formatted for display.
- * @param progressState Fraction of the audio that has played, from `0` to `1`. Held as a [State] rather than a plain
+ * @param articleProgressState How far playback has got and how long the audio is. Held as a [State] rather than a plain
  *   value so that the position is read while drawing the progress bar instead of while composing the player, which
  *   keeps a position update from recomposing the controls around it.
  * @param playing equals true if audio is playing, false if audio is paused.
  * @param voiceState The voices the expanded player offers to read the article in, and the one it is read in.
  * @param expanded Whether to show the full player. `false` shows the compact one.
  * @param onAction Invoked to pass upwards a [ListenAction] in response to a UI event.
+ * @param onExpandClicked Invoked when the user asks for the expanded player from the compact one.
  * @param modifier Optional modifier for further customisation of this player.
  */
 @Composable
 fun ListenSheet(
     article: ArticleDetails,
-    elapsedTime: String,
-    totalTime: String,
-    progressState: State<Float>,
+    articleProgressState: State<ArticleProgress>,
     playing: Boolean,
     voiceState: VoiceState,
     onAction: (ListenAction) -> Unit,
+    onExpandClicked: () -> Unit,
     modifier: Modifier = Modifier,
     expanded: Boolean = true,
 ) {
-    // Reading progressState here instead of inside the lambda would defeat the point of hoisting it as a State.
-    val progress = { progressState.value }
+    // Reading articleProgressState here instead of inside the lambda would defeat the point of hoisting it as a State.
+    val progress = { articleProgressState.value.fraction }
 
-    if (expanded) {
-        PlayerExpanded(
-            article = article,
-            elapsedTime = elapsedTime,
-            totalTime = totalTime,
-            progress = progress,
-            playing = playing,
-            voiceState = voiceState,
-            onAction = onAction,
-            modifier = modifier,
-        )
-    } else {
-        PlayerCompact(
-            article = article,
-            progress = progress,
-            playing = playing,
-            onAction = onAction,
-            modifier = modifier,
-        )
+    val transition = updateTransition(targetState = expanded, label = "ListenSheet")
+
+    Box(modifier = modifier) {
+        Card(
+            shape = RoundedCornerShape(AcornCorners.extraLarge),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(AcornTheme.layout.elevation.level2),
+            border = BorderStroke(AcornTheme.layout.border.default, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            transition.AnimatedContent(
+                transitionSpec = {
+                    ContentEnter togetherWith
+                        ContentExit using
+                        SizeTransform { _, _ ->
+                            tween(
+                                durationMillis = RESIZE_DURATION_MS,
+                                delayMillis = FADE_OUT_DURATION_MS,
+                                easing = EasingStandard,
+                            )
+                        }
+                },
+                contentAlignment = Alignment.BottomStart,
+            ) { isExpanded ->
+                if (isExpanded) {
+                    PlayerExpanded(
+                        article = article,
+                        articleProgressState = articleProgressState,
+                        playing = playing,
+                        voiceState = voiceState,
+                        onAction = onAction,
+                        modifier = Modifier.inertWhileTransitioning(scope = this),
+                    )
+                } else {
+                    PlayerCompact(
+                        article = article,
+                        playing = playing,
+                        onAction = onAction,
+                        onExpandClicked = onExpandClicked,
+                        modifier = Modifier.inertWhileTransitioning(scope = this),
+                    )
+                }
+            }
+        }
+        transition.AnimatedVisibility(
+            visible = { isExpanded -> !isExpanded },
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = ContentEnter,
+            exit = ContentExit,
+        ) {
+            AudioProgressBarCompact(progress = progress)
+        }
     }
+}
+
+/**
+ * Makes a player layout ignore touches and hides it from accessibility services while it fades in or out.
+ *
+ * @param scope The scope that shows and hides the layout.
+ */
+private fun Modifier.inertWhileTransitioning(scope: AnimatedVisibilityScope): Modifier {
+    val transition = scope.transition
+    if (transition.currentState == EnterExitState.Visible && transition.targetState == EnterExitState.Visible) {
+        return this
+    }
+    return this.clearAndSetSemantics {}
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                }
+            }
+        }
 }
 
 /**
@@ -88,7 +183,7 @@ data class ArticleDetails(val title: String? = null, val site: String? = null, v
 
 @Composable
 internal fun ArticleHeading(article: ArticleDetails, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
         Text(
             text = article.heading.orEmpty(),
             color = MaterialTheme.colorScheme.onSurface,
@@ -110,42 +205,41 @@ internal fun ArticleHeading(article: ArticleDetails, modifier: Modifier = Modifi
 
 @PreviewLightDark
 @Composable
-private fun PreviewListenSheetCompact() {
+private fun ListenSheetCompactPreview() {
     AcornTheme {
-        ListenSheetExample(expanded = false)
+        ListenSheetPreview(expanded = false)
     }
 }
 
 @PreviewLightDark
 @Composable
-private fun PreviewListenSheetExpanded() {
+private fun ListenSheetExpandedPreview() {
     AcornTheme {
-        ListenSheetExample(expanded = true)
+        ListenSheetPreview(expanded = true)
     }
 }
 
 @PreviewLightDark
 @Composable
-private fun PreviewListenSheetCompactUntitled() {
+private fun ListenSheetCompactUntitledPreview() {
     AcornTheme {
-        ListenSheetExample(expanded = false, title = null)
+        ListenSheetPreview(expanded = false, title = null)
     }
 }
 
 @PreviewLightDark
 @Composable
-private fun PreviewListenSheetExpandedUntitled() {
+private fun ListenSheetExpandedUntitledPreview() {
     AcornTheme {
-        ListenSheetExample(expanded = true, title = null)
+        ListenSheetPreview(expanded = true, title = null)
     }
 }
 
 @Composable
-private fun ListenSheetExample(
+private fun ListenSheetPreview(
     expanded: Boolean,
     title: String? = "Match Preview: Wrexham AFC vs Sunderland AFC",
 ) {
-    val progress = 0.4f
     ListenSheet(
         article =
             ArticleDetails(
@@ -153,12 +247,11 @@ private fun ListenSheetExample(
                 site = "bbc.co.uk",
                 url = "https://www.bbc.co.uk/sport/football/articles/c0l8m2y4kxpo",
             ),
-        elapsedTime = "1:24",
-        totalTime = "6:00",
-        progressState = remember { mutableFloatStateOf(progress) },
+        articleProgressState = remember { mutableStateOf(ArticleProgress(positionMs = 84_000, durationMs = 360_000)) },
         playing = true,
         voiceState = VoiceState(),
         onAction = {},
+        onExpandClicked = {},
         expanded = expanded,
     )
 }

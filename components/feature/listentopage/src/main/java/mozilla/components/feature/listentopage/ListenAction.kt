@@ -135,6 +135,13 @@ sealed interface ListenAction : Action {
         data object SynthesisFailed : Synthesis
     }
 
+    /**
+     * The player was expanded or collapsed.
+     *
+     * @property mode What the player shows.
+     */
+    data class ModeChanged(val mode: PlayerMode) : ListenAction
+
     /** The error that needs to be cleared it is shown. */
     data object ErrorDismissed : ListenAction
 }

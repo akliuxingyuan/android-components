@@ -19,6 +19,7 @@ fun listenReducer(state: ListenState, action: ListenAction): ListenState =
         is ListenAction.Controls -> state
         is ListenAction.Playback -> reducePlayback(state, action)
         is ListenAction.Synthesis -> reduceSynthesis(state, action)
+        is ListenAction.ModeChanged -> state.copy(mode = action.mode)
         ListenAction.ErrorDismissed -> state.copy(error = null)
     }
 

@@ -18,6 +18,7 @@ import mozilla.components.lib.state.State
  * @property site The site the article is from, or `null` when its URL names none. Shown on the player and on the media
  *   notification.
  * @property languageTag The BCP 47 language of the article, used to pick a voice.
+ * @property mode Whether the player is shown expanded or compact.
  * @property error The last error, or `null`.
  * @property voiceState State relating to narrator voice.
  * @property playbackState State relating to the audio being played.
@@ -29,17 +30,17 @@ data class ListenState(
     val title: String? = null,
     val site: String? = null,
     val languageTag: String? = null,
-    val mode: ListenMode = ListenMode.Player,
+    val mode: PlayerMode = PlayerMode.Expanded,
     val error: ListenError? = null,
     val voiceState: VoiceState = VoiceState(),
     val playbackState: PlaybackState = PlaybackState(),
     val articleProgress: ArticleProgress = ArticleProgress(),
 ) : State
 
-/** What the user asked to see. */
-enum class ListenMode {
-    /** The playback controls. */
-    Player
+/** The expanded or compact player. */
+enum class PlayerMode {
+    Expanded,
+    Compact,
 }
 
 /** The ways a session can fail. */

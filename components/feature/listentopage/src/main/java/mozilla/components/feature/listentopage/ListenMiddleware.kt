@@ -182,6 +182,7 @@ class ListenMiddleware(
             is ListenAction.Voices.AvailableVoicesLoaded,
             ListenAction.Voices.NoOfflineVoicesAvailable,
             ListenAction.Synthesis.SynthesisFailed,
+            is ListenAction.ModeChanged,
             ListenAction.ErrorDismissed -> Unit
         }
     }
