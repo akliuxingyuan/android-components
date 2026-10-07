@@ -72,7 +72,6 @@ data class BrowserToolbarCFR(
  *   using a bottom toolbar and the user is entering text in a website.
  * @param browserActionsColor Optional `onSurface` color override applied only to the display toolbar's browser actions
  *   (outside the URL bounding box), leaving page actions unchanged.
- * @param showDivider Whether to show the divider on the edge of the toolbar facing the webpage.
  */
 @Composable
 fun BrowserToolbar(
@@ -80,7 +79,6 @@ fun BrowserToolbar(
     cfr: BrowserToolbarCFR? = null,
     useMinimalBottomToolbarWhenEnteringText: Boolean = false,
     browserActionsColor: Color? = null,
-    showDivider: Boolean = true,
 ) {
     val uiState by store.observeAsComposableState { it }
     val cfrProperties = browserToolbarCFRProperties(uiState.gravity)
@@ -101,7 +99,6 @@ fun BrowserToolbar(
                     MaterialTheme.colorScheme.surface
                 },
             outlineColor = outlineColor,
-            showDivider = showDivider,
             suggestion = uiState.editState.suggestion,
             editActionsStart = uiState.editState.editActionsStart,
             editActionsEnd = uiState.editState.editActionsEnd,
@@ -125,7 +122,6 @@ fun BrowserToolbar(
                     browserActionsColor = browserActionsColor,
                     onInteraction = { store.dispatch(it) },
                     useMinimalBottomToolbarWhenEnteringText = useMinimalBottomToolbarWhenEnteringText,
-                    showDivider = showDivider,
                 )
             }
 
