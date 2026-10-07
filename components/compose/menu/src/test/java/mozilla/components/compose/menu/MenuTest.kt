@@ -17,15 +17,20 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.menu.R as MozacMenuR
+import mozilla.components.compose.menu.data.BannerMenuItem
 import mozilla.components.compose.menu.data.MenuAttribution
+import mozilla.components.compose.menu.data.MenuItemSummary
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.MenuAction
@@ -33,6 +38,8 @@ import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.store.MenuState
 import mozilla.components.compose.menu.store.MenuStore
 import mozilla.components.compose.menu.ui.MenuItemIconRes
+import mozilla.components.lib.state.Middleware
+import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.ui.icons.R as iconsR
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -159,8 +166,56 @@ class MenuTest {
         }
     }
 
-    private fun setMenu(groups: List<MenuItemsGroup>, attribution: MenuAttribution? = null): MenuStore {
-        val store = MenuStore(initialState = MenuState(groups, attribution))
+    @Test
+    fun `GIVEN a banner in a list WHEN showing the menu THEN show its title and subtitle`() {
+        setMenu(listOf(MenuItemsGroup.Row(id = "banner", items = listOf(banner))))
+
+        composeTestRule.onNodeWithText(BANNER_TITLE).assertIsDisplayed()
+        composeTestRule.onNodeWithText(BANNER_SUBTITLE).assertIsDisplayed()
+    }
+
+    @Test
+    fun `WHEN clicking a banner THEN dispatch its click event`() {
+        val events = mutableListOf<MenuAction>()
+        setMenu(listOf(MenuItemsGroup.Row(id = "banner", items = listOf(banner))), middleware = recording(events))
+
+        composeTestRule.onNodeWithText(BANNER_TITLE).performClick()
+
+        assertEquals(listOf<MenuAction>(BannerClicked), events.filterIsInstance<MenuEvent>())
+    }
+
+    @Test
+    fun `WHEN dismissing a banner THEN dispatch its dismiss event`() {
+        val closeButtonContentDescription =
+            testContext.getString(MozacMenuR.string.mozac_menu_banner_dismiss_description)
+        val events = mutableListOf<MenuAction>()
+        setMenu(listOf(MenuItemsGroup.Row(id = "banner", items = listOf(banner))), middleware = recording(events))
+
+        composeTestRule.onNodeWithContentDescription(closeButtonContentDescription).performClick()
+
+        assertEquals(listOf<MenuAction>(BannerDismissed), events.filterIsInstance<MenuEvent>())
+    }
+
+    @Test
+    fun `GIVEN a banner in a grid WHEN showing the menu THEN don't show it`() {
+        setMenu(listOf(MenuItemsGroup.Grid(id = "banner", items = listOf(banner)), row("Item")))
+
+        composeTestRule.onNodeWithText("Item").assertIsDisplayed()
+        composeTestRule.onNodeWithText(BANNER_TITLE).assertDoesNotExist()
+    }
+
+    private fun recording(events: MutableList<MenuAction>): List<Middleware<MenuState, MenuAction>> =
+        listOf { _, next, action ->
+            events += action
+            next(action)
+        }
+
+    private fun setMenu(
+        groups: List<MenuItemsGroup>,
+        attribution: MenuAttribution? = null,
+        middleware: List<Middleware<MenuState, MenuAction>> = emptyList(),
+    ): MenuStore {
+        val store = MenuStore(initialState = MenuState(groups, attribution), middleware = middleware)
         composeTestRule.setContent {
             AcornTheme {
                 Box(Modifier.fillMaxSize()) {
@@ -176,10 +231,28 @@ class MenuTest {
     private fun stickyGroup(title: String) =
         MenuItemsGroup.Grid(id = title, items = listOf(item(title)), isSticky = true)
 
+    private data object BannerClicked : MenuEvent
+
+    private data object BannerDismissed : MenuEvent
+
+    private val banner =
+        BannerMenuItem(
+            title = Text.String(BANNER_TITLE),
+            summary = MenuItemSummary(Text.String(BANNER_SUBTITLE)),
+            icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
+            onClickEvent = BannerClicked,
+            onDismissEvent = BannerDismissed,
+        )
+
     private fun item(title: String) =
         StandardMenuItem(
             title = Text.String(title),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
             onClickEvent = object : MenuEvent {},
         )
+
+    private companion object {
+        const val BANNER_TITLE = "Banner title"
+        const val BANNER_SUBTITLE = "Banner subtitle"
+    }
 }
