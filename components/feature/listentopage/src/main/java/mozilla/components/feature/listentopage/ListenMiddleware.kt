@@ -546,8 +546,10 @@ class ListenMiddleware(
             playbackController.enqueue(file)
             appendedThrough = missing
 
-            // Restart the player once there is synthesized content
-            playbackController.resume()
+            // If the player has ended, there is a non-zero chance that other audio has gained focus while
+            // we synthesize. We call seekTo here to queue a chunk to the player, but it will wait until focus
+            // is returned to the player before playing.
+            playbackController.seekTo(missing - playlistStartChunk, 0)
 
             queue.workAheadOf(missing)
         }

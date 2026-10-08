@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage.playback
 
 import android.content.Context
 import android.net.Uri
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -59,6 +60,11 @@ class ListenPlayer(context: Context) {
             // The session reads both values off the player, so the notification and the player sheet agree.
             .setSeekBackIncrementMs(SEEK_BACK_INCREMENT_MS)
             .setSeekForwardIncrementMs(SEEK_FORWARD_INCREMENT_MS)
+            // The speech content type will cause our player to pause when other media sources request focus
+            .setAudioAttributes(
+                AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_SPEECH).build(),
+                true,
+            )
             .build()
             .apply {
                 // A foreground service keeps the process alive but not the CPU, so playback stalls once the device

@@ -928,12 +928,16 @@ class ListenMiddlewareTest {
             }
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
-        assertEquals(0, playback.resumed)
+        val queuedBefore = playback.queued.size
 
         playback.status.value = PlaybackState(phase = PlaybackPhase.Ended)
         advanceUntilIdle()
 
-        assertEquals(1, playback.resumed)
+        // The refill queues its chunk behind the opening and the chunks queued before it. Its playlist index counts
+        // the opening too.
+        assertEquals(listOf(queuedBefore + 1 to 0L), playback.seekedToItem)
+        // Resuming would ask for audio focus again, and take it from an app that started playing while we waited.
+        assertEquals(0, playback.resumed)
     }
 
     @Test
