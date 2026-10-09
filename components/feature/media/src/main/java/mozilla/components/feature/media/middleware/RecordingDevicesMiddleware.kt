@@ -67,7 +67,7 @@ class RecordingDevicesMiddleware(
         isReminder: Boolean,
     ) {
         val devices =
-            (store.state.tabs + store.state.customTabs)
+            store.state.tabs
                 .map { tab -> tab.content.recordingDevices }
                 .flatten()
                 .filter { device -> device.status == RecordingDevice.Status.RECORDING }
