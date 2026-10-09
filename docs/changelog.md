@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 160.0 (In Development)
+* **ui-richtext**
+    * 🆕 Added `StreamingParser`, which parses a markdown document as it arrives in chunks, reparsing only the part of it that can still change. [Bug 2059255](https://bugzilla.mozilla.org/show_bug.cgi?id=2059255)
 
 # 159.0
 * **feature-readerview**
