@@ -23,7 +23,7 @@ class MediaSessionCallbackTest {
         val controller: MediaSession.Controller = mock()
         val store = storeWith(controller, MediaSession.PlaybackState.PAUSED)
 
-        MediaSessionCallback(store).onPlay()
+        MediaSessionCallback(store, onMediaSessionPlay = { true }).onPlay()
 
         verify(controller).play()
     }
@@ -33,7 +33,7 @@ class MediaSessionCallbackTest {
         val controller: MediaSession.Controller = mock()
         val store = storeWith(controller, MediaSession.PlaybackState.PLAYING)
 
-        MediaSessionCallback(store).onPause()
+        MediaSessionCallback(store, onMediaSessionPlay = { true }).onPause()
 
         verify(controller).pause()
     }
@@ -43,7 +43,7 @@ class MediaSessionCallbackTest {
         val controller: MediaSession.Controller = mock()
         val store = storeWith(controller, MediaSession.PlaybackState.PLAYING)
 
-        MediaSessionCallback(store).onSkipToNext()
+        MediaSessionCallback(store, onMediaSessionPlay = { true }).onSkipToNext()
 
         verify(controller).nextTrack()
     }
@@ -53,7 +53,7 @@ class MediaSessionCallbackTest {
         val controller: MediaSession.Controller = mock()
         val store = storeWith(controller, MediaSession.PlaybackState.PLAYING)
 
-        MediaSessionCallback(store).onSkipToPrevious()
+        MediaSessionCallback(store, onMediaSessionPlay = { true }).onSkipToPrevious()
 
         verify(controller).previousTrack()
     }
