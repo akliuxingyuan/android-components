@@ -47,7 +47,7 @@ internal fun PlayerCompact(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
-                onClick = { onAction(ListenAction.Session.StopRequested) },
+                onClick = { onAction(ListenAction.Session.StopRequested()) },
                 contentDescription = stringResource(R.string.mozac_feature_listentopage_close),
             ) {
                 Icon(

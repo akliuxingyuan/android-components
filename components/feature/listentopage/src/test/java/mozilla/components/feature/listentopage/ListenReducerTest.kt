@@ -74,7 +74,7 @@ class ListenReducerTest {
     fun `test that stopping resets appropriate fields`() {
         assertEquals(
             ListenState(voiceState = fullState.voiceState.copy()),
-            listenReducer(fullState, ListenAction.Session.StopRequested),
+            listenReducer(fullState, ListenAction.Session.StopRequested()),
         )
     }
 

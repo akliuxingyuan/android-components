@@ -31,7 +31,10 @@ private fun reduceControls(state: ListenState, action: ListenAction.Controls): L
         ListenAction.Controls.PlayPauseClicked,
         ListenAction.Controls.RewindClicked,
         ListenAction.Controls.ForwardClicked,
-        ListenAction.Controls.VoicesClicked -> state
+        ListenAction.Controls.VoicesClicked,
+        ListenAction.Controls.VoicesDismissed,
+        ListenAction.Controls.PlaybackSpeedClicked,
+        ListenAction.Controls.PlaybackSpeedDismissed -> state
     }
 
 private fun reduceSession(state: ListenState, action: ListenAction.Session): ListenState =
@@ -45,7 +48,7 @@ private fun reduceSession(state: ListenState, action: ListenAction.Session): Lis
             )
         }
 
-        ListenAction.Session.StopRequested -> {
+        is ListenAction.Session.StopRequested -> {
             ListenState(tabId = null, url = null, voiceState = state.voiceState.copy())
         }
     }

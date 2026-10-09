@@ -139,7 +139,7 @@ class ListenMiddlewareTest {
         val store = storeWith { extraction.await() }
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         extraction.complete(Result.success(Content(text = "Article text", languageTag = "de-DE")))
         advanceUntilIdle()
 
@@ -1088,7 +1088,7 @@ class ListenMiddlewareTest {
 
         // Nothing advanced between them, so the stop is still emptying the cache directory when the session after it
         // starts writing into it. Emptying is a recursive delete of the directory both of them share.
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         store.listenAndPlay(OTHER_TAB_ID, URL)
         advanceUntilIdle()
 
@@ -1130,7 +1130,7 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
         val readTo = playback.queued.last()
 
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
         store.listenAndPlay(OTHER_TAB_ID, URL)
         advanceUntilIdle()
@@ -1149,7 +1149,7 @@ class ListenMiddlewareTest {
             }
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
 
         assertTrue(playback.released)
@@ -1167,7 +1167,7 @@ class ListenMiddlewareTest {
 
         // Stop while the engine still has the request, so its write lands after the session has been told to stop.
         advanceTimeBy(500.milliseconds)
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
 
         assertEquals(emptyList<String>(), directory.list()?.toList().orEmpty())
@@ -1212,7 +1212,7 @@ class ListenMiddlewareTest {
         assertEquals(1, engines.size)
         assertFalse(engines[0].closed)
 
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
 
         assertTrue(engines[0].closed)
@@ -1251,7 +1251,7 @@ class ListenMiddlewareTest {
 
         assertFalse(audioCache.cleared)
 
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
 
         assertTrue(audioCache.cleared)
@@ -1298,7 +1298,7 @@ class ListenMiddlewareTest {
             }
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
 
         // The article is gone, so nothing is left to synthesize a second time.
@@ -1650,7 +1650,7 @@ class ListenMiddlewareTest {
             }
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
 
         playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 4_000)
@@ -1670,7 +1670,7 @@ class ListenMiddlewareTest {
             }
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
-        store.dispatch(ListenAction.Session.StopRequested)
+        store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
         store.listenAndPlay(OTHER_TAB_ID, URL)
         advanceUntilIdle()
@@ -1696,7 +1696,10 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
 
         assertEquals(
-            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL), ListenAction.Session.StopRequested),
+            listOf(
+                ListenAction.Session.ListenRequested(TAB_ID, URL),
+                ListenAction.Session.StopRequested(ListenAction.Session.StopSource.TabClosed),
+            ),
             actions.filterIsInstance<ListenAction.Session>(),
         )
     }
@@ -1757,7 +1760,10 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
 
         assertEquals(
-            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL), ListenAction.Session.StopRequested),
+            listOf(
+                ListenAction.Session.ListenRequested(TAB_ID, URL),
+                ListenAction.Session.StopRequested(ListenAction.Session.StopSource.TabClosed),
+            ),
             actions.filterIsInstance<ListenAction.Session>(),
         )
     }

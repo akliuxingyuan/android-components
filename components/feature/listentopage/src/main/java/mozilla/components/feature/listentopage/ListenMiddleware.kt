@@ -153,7 +153,7 @@ class ListenMiddleware(
                 trackTabClosure(store, action.tabId)
             }
 
-            ListenAction.Session.StopRequested -> endSession(releasePlayback = true)
+            is ListenAction.Session.StopRequested -> endSession(releasePlayback = true)
 
             is ListenAction.Content.ContentReady -> store.loadVoicesAndPlayIfRequested(action.languageTag)
 
@@ -246,7 +246,7 @@ class ListenMiddleware(
                     tab.content.url != startingTabUrl && tab.pageUrl != startingTabPageUrl
                 }
                 .let {
-                    store.dispatch(ListenAction.Session.StopRequested)
+                    store.dispatch(ListenAction.Session.StopRequested(ListenAction.Session.StopSource.TabClosed))
                 }
         }
     }
@@ -420,7 +420,7 @@ class ListenMiddleware(
                     dispatch(
                         ListenAction.Voices.AvailableVoicesLoaded(voices = voices, selectedVoice = selected ?: fallback)
                     )
-                    dispatch(ListenAction.Voices.VoiceSelected(fallback))
+                    dispatch(ListenAction.Voices.VoiceSelected(fallback, ListenAction.Voices.VoiceSource.Fallback))
                 }
             }
         }

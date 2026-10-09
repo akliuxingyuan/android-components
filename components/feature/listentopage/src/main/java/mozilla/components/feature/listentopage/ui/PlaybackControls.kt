@@ -78,7 +78,10 @@ internal fun PlaybackControls(
                     voicesExpanded = false
                     onAction(ListenAction.Voices.VoiceSelected(it))
                 },
-                onDismissRequest = { voicesExpanded = false },
+                onDismissRequest = {
+                    voicesExpanded = false
+                    onAction(ListenAction.Controls.VoicesDismissed)
+                },
             )
         }
 
@@ -87,7 +90,10 @@ internal fun PlaybackControls(
         // Speed
         Box {
             IconButton(
-                onClick = { speedsExpanded = true },
+                onClick = {
+                    onAction(ListenAction.Controls.PlaybackSpeedClicked)
+                    speedsExpanded = true
+                },
                 contentDescription = stringResource(speedState.contentDescription),
             ) {
                 Icon(
@@ -99,7 +105,10 @@ internal fun PlaybackControls(
             PlaybackSpeedMenu(
                 speedList = speedState.menuItems,
                 expanded = speedsExpanded,
-                onDismissRequest = { speedsExpanded = false },
+                onDismissRequest = {
+                    speedsExpanded = false
+                    onAction(ListenAction.Controls.PlaybackSpeedDismissed)
+                },
             )
         }
     }
