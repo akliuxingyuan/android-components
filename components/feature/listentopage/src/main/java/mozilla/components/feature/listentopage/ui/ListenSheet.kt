@@ -4,6 +4,8 @@
 
 package mozilla.components.feature.listentopage.ui
 
+import android.content.Context
+import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -16,6 +18,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -44,7 +48,7 @@ import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.VoiceState
 
 private const val FADE_OUT_DURATION_MS = 50
-private const val RESIZE_DURATION_MS = 200
+private const val RESIZE_DURATION_MS = 150
 private const val FADE_IN_DURATION_MS = 50
 private val EasingStandard = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 private val EasingStandardAccelerate = CubicBezierEasing(0.3f, 0f, 1f, 1f)
@@ -131,6 +135,7 @@ fun ListenSheet(
                 } else {
                     PlayerCompact(
                         article = article,
+                        articleProgressState = articleProgressState,
                         playing = playing,
                         onAction = onAction,
                         onExpandClicked = onExpandClicked,
@@ -186,14 +191,27 @@ data class ArticleDetails(val title: String? = null, val site: String? = null, v
 }
 
 @Composable
-internal fun ArticleHeading(article: ArticleDetails, modifier: Modifier = Modifier) {
+internal fun ArticleHeading(
+    article: ArticleDetails,
+    modifier: Modifier = Modifier,
+    shouldScrollTitle: Boolean = false,
+) {
+    val context = LocalContext.current
+    val reducedMotion = remember(context) { isReducedMotionEnabled(context) }
+    val marquee = shouldScrollTitle && !reducedMotion
     Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
         Text(
             text = article.heading.orEmpty(),
+            modifier =
+                if (marquee) {
+                    Modifier.basicMarquee(iterations = Int.MAX_VALUE, repeatDelayMillis = 0)
+                } else {
+                    Modifier
+                },
             color = MaterialTheme.colorScheme.onSurface,
             style = AcornTheme.typography.headline8,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            overflow = if (marquee) TextOverflow.Clip else TextOverflow.Ellipsis,
         )
         if (article.hasTitle) {
             Text(
@@ -206,6 +224,9 @@ internal fun ArticleHeading(article: ArticleDetails, modifier: Modifier = Modifi
         }
     }
 }
+
+private fun isReducedMotionEnabled(context: Context): Boolean =
+    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
 
 @PreviewLightDark
 @Composable
