@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.feature.ipprotection
+package mozilla.components.feature.ipprotection.storage
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -26,8 +26,9 @@ import mozilla.components.service.fxa.store.SyncStore
  * A system that collects state from an [FxaAccountManager] and [IPProtectionEligibilityStorage] and forwards it to the
  * [IPProtectionStore].
  *
- * This helper is a convenience for [IPProtectionFeature] that needs to react to multiple data sources in combination,
- * so forwarding them to one location, allows the Store to be the single-source-of-truth for the feature.
+ * This helper is a convenience for [mozilla.components.feature.ipprotection.IPProtectionFeature] that needs to react to
+ * multiple data sources in combination, so forwarding them to one location, allows the Store to be the
+ * single-source-of-truth for the feature.
  */
 class IPProtectionStorageSynchronizer(
     val storage: IPProtectionEligibilityStorage,

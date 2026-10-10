@@ -43,8 +43,9 @@ import mozilla.components.support.base.log.logger.Logger
  * Feature that coordinates the IP protection proxy service. It observes [IPProtectionStore] for eligibility and account
  * state changes, registers with the [Engine] and forwards activate/deactivate requests back to the [Engine].
  *
- * See [mozilla.components.feature.ipprotection.auth.fxa.IPProtectionFxaAuthFlow] and [IPProtectionStorageSynchronizer]
- * helpers that complement this feature.
+ * See [mozilla.components.feature.ipprotection.auth.fxa.IPProtectionFxaAuthFlow] and
+ * [mozilla.components.feature.ipprotection.storage.IPProtectionStorageSynchronizer] helpers that complement this
+ * feature.
  *
  * Call [initialize] once at startup to begin observing. The feature manages its own lifecycle internally and does not
  * need to be stopped.
