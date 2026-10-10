@@ -7,6 +7,8 @@ permalink: /changelog/
 # 160.0 (In Development)
 * **ui-richtext**
     * 🆕 Added `StreamingParser`, which parses a markdown document as it arrives in chunks, reparsing only the part of it that can still change. [Bug 2059255](https://bugzilla.mozilla.org/show_bug.cgi?id=2059255)
+* **browser-engine-gecko**
+    * Download filenames from `onExternalResponse` are now validated by Gecko with the same rules as desktop, so `GeckoEngineSession` no longer applies the `String.sanitizeFileName` helper from **support-ktx** to them. [Bug 1822968](https://bugzilla.mozilla.org/show_bug.cgi?id=1822968)
 
 # 159.0
 * **feature-readerview**
