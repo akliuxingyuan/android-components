@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -44,6 +45,8 @@ import mozilla.components.compose.base.theme.AcornCorners
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.ListenAction
+import mozilla.components.feature.listentopage.ListenError
+import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.VoiceState
 
@@ -75,7 +78,7 @@ private val ContentExit =
  * @param articleProgressState How far playback has got and how long the audio is. Held as a [State] rather than a plain
  *   value so that the position is read while drawing the progress bar instead of while composing the player, which
  *   keeps a position update from recomposing the controls around it.
- * @param playing equals true if audio is playing, false if audio is paused.
+ * @param playbackPhase The phase of playback, used to display the correct controls to the user.
  * @param speed How fast the article is being read out, shown on the expanded player's speed control.
  * @param voiceState The voices the expanded player offers to read the article in, and the one it is read in.
  * @param expanded Whether to show the full player. `false` shows the compact one.
@@ -87,18 +90,20 @@ private val ContentExit =
 fun ListenSheet(
     article: ArticleDetails,
     articleProgressState: State<ArticleProgress>,
-    playing: Boolean,
+    playbackPhase: PlaybackPhase,
     speed: PlaybackSpeed,
     voiceState: VoiceState,
     onAction: (ListenAction) -> Unit,
     onExpandClicked: () -> Unit,
     modifier: Modifier = Modifier,
+    error: ListenError? = null,
     expanded: Boolean = true,
 ) {
     // Reading articleProgressState here instead of inside the lambda would defeat the point of hoisting it as a State.
     val progress = { articleProgressState.value.fraction }
 
     val transition = updateTransition(targetState = expanded, label = "ListenSheet")
+    val playbackUiState = playbackPhase.toUiState(error = error)
 
     Box(modifier = modifier) {
         Card(
@@ -126,7 +131,7 @@ fun ListenSheet(
                     PlayerExpanded(
                         article = article,
                         articleProgressState = articleProgressState,
-                        playing = playing,
+                        playbackUiState = playbackUiState,
                         speed = speed,
                         voiceState = voiceState,
                         onAction = onAction,
@@ -135,8 +140,8 @@ fun ListenSheet(
                 } else {
                     PlayerCompact(
                         article = article,
+                        playbackUiState = playbackUiState,
                         articleProgressState = articleProgressState,
-                        playing = playing,
                         onAction = onAction,
                         onExpandClicked = onExpandClicked,
                         modifier = Modifier.inertWhileTransitioning(scope = this),
@@ -195,6 +200,7 @@ internal fun ArticleHeading(
     article: ArticleDetails,
     modifier: Modifier = Modifier,
     shouldScrollTitle: Boolean = false,
+    playbackUiState: PlaybackUiState,
 ) {
     val context = LocalContext.current
     val reducedMotion = remember(context) { isReducedMotionEnabled(context) }
@@ -213,7 +219,15 @@ internal fun ArticleHeading(
             maxLines = 1,
             overflow = if (marquee) TextOverflow.Clip else TextOverflow.Ellipsis,
         )
-        if (article.hasTitle) {
+        if (playbackUiState is PlaybackUiState.Error) {
+            Text(
+                text = stringResource(playbackUiState.listenError.userFacingMessage),
+                color = MaterialTheme.colorScheme.error,
+                style = AcornTheme.typography.caption,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        } else if (article.hasTitle) {
             Text(
                 text = article.site.orEmpty(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -273,7 +287,7 @@ private fun ListenSheetPreview(
                 url = "https://www.bbc.co.uk/sport/football/articles/c0l8m2y4kxpo",
             ),
         articleProgressState = remember { mutableStateOf(ArticleProgress(positionMs = 84_000, durationMs = 360_000)) },
-        playing = true,
+        playbackPhase = PlaybackPhase.Playing,
         speed = PlaybackSpeed.Default,
         voiceState = VoiceState(),
         onAction = {},

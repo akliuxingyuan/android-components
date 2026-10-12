@@ -5,7 +5,9 @@
 package mozilla.components.feature.listentopage.ui
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +27,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
@@ -41,7 +44,7 @@ private const val MS_PER_SECOND = 1000L
 internal fun PlayerExpanded(
     article: ArticleDetails,
     articleProgressState: State<ArticleProgress>,
-    playing: Boolean,
+    playbackUiState: PlaybackUiState,
     speed: PlaybackSpeed,
     voiceState: VoiceState,
     onAction: (ListenAction) -> Unit,
@@ -67,7 +70,11 @@ internal fun PlayerExpanded(
                     contentDescription = null,
                 )
             }
-            ArticleHeading(article = article, shouldScrollTitle = playing)
+            ArticleHeading(
+                article = article,
+                playbackUiState = playbackUiState,
+                shouldScrollTitle = playbackUiState is PlaybackUiState.Playing,
+            )
         }
 
         AudioProgress(articleProgressState = articleProgressState)
@@ -80,7 +87,7 @@ internal fun PlayerExpanded(
             }
         PlaybackControls(
             articleProgressState = articleProgressState,
-            playing = playing,
+            playbackUiState = playbackUiState,
             voiceState = voiceState,
             speedState = speedState,
             onAction = onAction,
@@ -129,18 +136,20 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>) {
 
 @PreviewLightDark
 @Composable
-private fun PlayerExpandedPreview() {
+private fun PlayerExpandedPreview(@PreviewParameter(PlaybackUIStatePreviewProvider::class) state: PlaybackUiState) {
     AcornTheme {
-        PlayerExpanded(
-            article = ArticleDetails(title = "Match Preview: Wrexham AFC vs Sunderland AFC", site = "source"),
-            articleProgressState =
-                remember {
-                    mutableStateOf(ArticleProgress(positionMs = 84_000, durationMs = 360_000))
-                },
-            playing = false,
-            speed = PlaybackSpeed.Default,
-            voiceState = VoiceState(),
-            onAction = {},
-        )
+        Box(modifier = Modifier.background(color = MaterialTheme.colorScheme.surface)) {
+            PlayerExpanded(
+                article = ArticleDetails(title = "Match Preview: Wrexham AFC vs Sunderland AFC", site = "source"),
+                articleProgressState =
+                    remember {
+                        mutableStateOf(ArticleProgress(positionMs = 84_000, durationMs = 360_000))
+                    },
+                playbackUiState = state,
+                speed = PlaybackSpeed.Default,
+                voiceState = VoiceState(),
+                onAction = {},
+            )
+        }
     }
 }

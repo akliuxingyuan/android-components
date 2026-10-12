@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage
 
 import java.util.Locale
 import kotlin.math.abs
+import mozilla.components.feature.listentopage.PlaybackSpeed.Companion.Default
 import mozilla.components.lib.state.State
 
 /**
@@ -43,18 +44,19 @@ enum class PlayerMode {
     Compact,
 }
 
-/** The ways a session can fail. */
+/** The ways a session can fail. These errors are reported inside the player. */
 sealed interface ListenError {
-    /** No installed, network-free voice exists for the article language. Reported as a snackbar, with no player. */
+
+    /** No installed, network-free voice exists for the article language. */
     data object NoOfflineVoice : ListenError
 
-    /** The page gave back no usable text. Reported as a snackbar, with no player. */
+    /** The page gave back no usable text. */
     data object ContentUnavailable : ListenError
 
-    /** The synthesizer failed part-way through. Reported as a dialog over the player. */
+    /** The synthesizer failed part-way through. */
     data object SynthesisFailed : ListenError
 
-    /** The player failed part-way through. Reported as a dialog over the player. */
+    /** The player failed part-way through. */
     data object PlaybackFailed : ListenError
 }
 
