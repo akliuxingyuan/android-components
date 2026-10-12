@@ -131,7 +131,7 @@ internal class MediaSessionServiceDelegate(
 
     fun onCreate() {
         logger.debug("Service created")
-        mediaSession.setCallback(MediaSessionCallback(store))
+        mediaSession.setCallback(MediaSessionCallback(store, onMediaSessionPlay = ::onMediaSessionPlay))
         notificationScope = mainScope
     }
 
@@ -291,16 +291,31 @@ internal class MediaSessionServiceDelegate(
     }
 
     @MainThread
-    private fun requestAudioFocusIfNeeded(sessionState: SessionState) {
+    private fun requestAudioFocusIfNeeded(sessionState: SessionState): Boolean {
         val type = sessionState.mediaSessionState?.audioSessionType ?: MediaSession.AudioSessionType.AUTO
         val key = sessionState.id to type
         if (focusRequestKey == key) {
             logger.debug("Audio focus already requested for tab ${sessionState.id} with type $type, skipping")
-            return
+            return true
         }
         val granted = audioFocus.request(sessionState.id, type)
         logger.debug("Audio focus requested for tab ${sessionState.id} with type $type, granted=$granted")
         focusRequestKey = if (granted) key else null
+        return granted
+    }
+
+    // Play sent through the Android media session comes from the user, never from the page. After a
+    // permanent focus loss the page can keep reporting that it is playing, so this is where focus is
+    // requested again. Focus can only be requested while the service is in the foreground; before
+    // that, play goes ahead and startForeground() requests it.
+    @MainThread
+    private fun onMediaSessionPlay(sessionState: SessionState): Boolean {
+        focusRequestKey = null
+        val shouldPlay = !isForegroundService || requestAudioFocusIfNeeded(sessionState)
+        logger.debug(
+            "Media session play for tab ${sessionState.id}, foreground=$isForegroundService, shouldPlay=$shouldPlay"
+        )
+        return shouldPlay
     }
 
     @MainThread

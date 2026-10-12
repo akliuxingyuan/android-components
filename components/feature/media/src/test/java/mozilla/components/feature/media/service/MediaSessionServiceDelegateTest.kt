@@ -404,7 +404,7 @@ class MediaSessionServiceDelegateTest {
         val service: AbstractMediaSessionService = mock()
         val crashReporter: CrashReporting = mock()
         val delegate = MediaSessionServiceDelegate(testContext, service, store, crashReporter, mock())
-        val mediaSessionCallback = MediaSessionCallback(store)
+        val mediaSessionCallback = MediaSessionCallback(store, onMediaSessionPlay = { true })
         delegate.onCreate()
 
         mediaSessionCallback.onPause()
