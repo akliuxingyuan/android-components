@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.listentopage.playback
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.content.res.Resources
 import android.os.Build
@@ -13,6 +14,8 @@ import androidx.annotation.OptIn
 import androidx.annotation.PluralsRes
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
+import androidx.core.os.BundleCompat
+import androidx.core.os.bundleOf
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -29,6 +32,15 @@ import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.ui.icons.R as iconsR
+
+internal const val COMMAND_SET_SESSION_ACTIVITY = "mozilla.components.feature.listentopage.SET_SESSION_ACTIVITY"
+
+private const val KEY_SESSION_ACTIVITY = "mozilla.components.feature.listentopage.SESSION_ACTIVITY"
+
+internal fun PendingIntent?.toSessionActivityArgs(): Bundle = bundleOf(KEY_SESSION_ACTIVITY to this)
+
+internal fun Bundle.sessionActivity(): PendingIntent? =
+    BundleCompat.getParcelable(this, KEY_SESSION_ACTIVITY, PendingIntent::class.java)
 
 /**
  * Owns the [ListenPlayer] that reads an article out loud.
@@ -56,7 +68,7 @@ internal class ListenMediaSessionService : MediaSessionService() {
         mediaSession =
             MediaSession.Builder(this, player.exoPlayer)
                 .setMediaButtonPreferences(notificationControls(resources, PlaybackSpeed.Default))
-                .setCallback(PlaybackSpeedCallback())
+                .setCallback(ListenSessionCallback(ownPackage = packageName))
                 .build()
         player.exoPlayer.addListener(
             object : Player.Listener {
@@ -127,8 +139,12 @@ internal class ListenMediaSessionService : MediaSessionService() {
     }
 }
 
-/** Grants the speed control its command and does what the control asks. */
-private class PlaybackSpeedCallback : MediaSession.Callback {
+/**
+ * Grants the session its commands and does what a controller asks of them.
+ *
+ * @param ownPackage The package this service runs in, which [COMMAND_SET_SESSION_ACTIVITY] is granted to
+ */
+internal class ListenSessionCallback(private val ownPackage: String) : MediaSession.Callback {
 
     @OptIn(UnstableApi::class)
     override fun onConnect(
@@ -136,10 +152,15 @@ private class PlaybackSpeedCallback : MediaSession.Callback {
         controller: MediaSession.ControllerInfo,
     ): MediaSession.ConnectionResult {
         val granted = MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller).build()
-        val cycleSpeedCommand = SessionCommand(ACTION_CYCLE_SPEED, Bundle.EMPTY)
+
+        val commands = granted.availableSessionCommands.buildUpon()
+        commands.add(SessionCommand(ACTION_CYCLE_SPEED, Bundle.EMPTY))
+        if (controller.packageName == ownPackage) {
+            commands.add(SessionCommand(COMMAND_SET_SESSION_ACTIVITY, Bundle.EMPTY))
+        }
 
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
-            .setAvailableSessionCommands(granted.availableSessionCommands.buildUpon().add(cycleSpeedCommand).build())
+            .setAvailableSessionCommands(commands.build())
             .build()
     }
 
@@ -150,11 +171,11 @@ private class PlaybackSpeedCallback : MediaSession.Callback {
         customCommand: SessionCommand,
         args: Bundle,
     ): ListenableFuture<SessionResult> {
-        if (customCommand.customAction != ACTION_CYCLE_SPEED) {
-            return super.onCustomCommand(session, controller, customCommand, args)
+        when (customCommand.customAction) {
+            ACTION_CYCLE_SPEED -> session.player.setPlaybackSpeed(session.player.nextSpeed().multiplier)
+            COMMAND_SET_SESSION_ACTIVITY -> session.setSessionActivity(args.sessionActivity())
+            else -> return super.onCustomCommand(session, controller, customCommand, args)
         }
-
-        session.player.setPlaybackSpeed(session.player.nextSpeed().multiplier)
 
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }

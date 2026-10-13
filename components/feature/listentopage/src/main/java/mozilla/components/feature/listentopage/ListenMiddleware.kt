@@ -502,7 +502,7 @@ class ListenMiddleware(
 
             try {
                 val opening = queue.startReading(article.text, article.languageTag)
-                playbackController.play(file = opening, articleDisplayData = article.displayData)
+                playbackController.play(file = opening, articleDisplayData = article.displayData, tabId = article.tabId)
                 appendedThrough = firstChunkIndex
                 if (resumeAtMs > 0) {
                     playbackController.seekTo(resumeAtMs)

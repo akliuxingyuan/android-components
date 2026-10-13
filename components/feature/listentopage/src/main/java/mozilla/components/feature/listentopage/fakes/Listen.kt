@@ -199,7 +199,7 @@ class FakePlaybackController(var positionMs: Long = 0L) : PlaybackController {
     // What the article now playing says it is, as the real controller keeps it.
     private var displayData: ArticleDisplayData? = null
 
-    override suspend fun play(file: File, articleDisplayData: ArticleDisplayData) {
+    override suspend fun play(file: File, articleDisplayData: ArticleDisplayData, tabId: String) {
         displayData = articleDisplayData
         played.add(file)
         displayDataList.add(articleDisplayData)

@@ -4,12 +4,15 @@
 
 package mozilla.components.feature.listentopage.playback
 
+import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import androidx.core.content.ContextCompat
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
@@ -60,7 +63,7 @@ interface PlaybackController {
     val status: StateFlow<PlaybackState>
 
     /** Plays [file], replacing anything already playing, as [articleDisplayData] describes it. */
-    suspend fun play(file: File, articleDisplayData: ArticleDisplayData)
+    suspend fun play(file: File, articleDisplayData: ArticleDisplayData, tabId: String)
 
     /** Adds [file] to the end of the playlist, to be read out once what is already queued has been. */
     suspend fun enqueue(file: File)
@@ -106,11 +109,13 @@ interface PlaybackController {
  *
  * @param context Used to connect to [ListenMediaSessionService].
  * @param scope The [CoroutineScope] the connection is held in.
+ * @param sessionActivity Is lambda to construct an intent to open the tab on notification click.
  * @param ioDispatcher The dispatcher the service lookup runs on.
  */
 class ListenPlaybackController(
     private val context: Context,
     private val scope: CoroutineScope,
+    private val sessionActivity: (tabId: String) -> PendingIntent? = { null },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : PlaybackController {
 
@@ -138,7 +143,7 @@ class ListenPlaybackController(
             }
         }
 
-    override suspend fun play(file: File, articleDisplayData: ArticleDisplayData) = onController {
+    override suspend fun play(file: File, articleDisplayData: ArticleDisplayData, tabId: String) = onController {
         // Published before the command, so that a report the previous session left behind cannot be read as this
         // session's in the time it takes the player to report for itself.
         _status.value =
@@ -150,6 +155,10 @@ class ListenPlaybackController(
         val displayDataWithAppNameIfUntitled = articleDisplayData.withAppNameIfUntitled(appName)
         displayData = displayDataWithAppNameIfUntitled
 
+        it.sendCustomCommand(
+            SessionCommand(COMMAND_SET_SESSION_ACTIVITY, Bundle.EMPTY),
+            sessionActivity(tabId).toSessionActivityArgs(),
+        )
         it.setMediaItem(file.toMediaItem(displayDataWithAppNameIfUntitled))
         it.prepare()
         it.play()
