@@ -1879,7 +1879,7 @@ class ListenMiddlewareTest {
         val lengths = store.state.articleProgress.chunkDurationsMs
 
         // A second into the chunk the lookahead queued behind the opening.
-        store.dispatch(ListenAction.Playback.SeekRequested(lengths[0] + 1_000))
+        store.seekTo(lengths[0] + 1_000)
         advanceUntilIdle()
 
         assertEquals(listOf(1 to 1_000L), playback.seekedToItem)
@@ -1904,7 +1904,7 @@ class ListenMiddlewareTest {
 
         // Well past the window the lookahead filled, so nothing there has been made yet.
         val target = store.state.articleProgress.chunkDurationsMs.take(SEEK_TARGET_CHUNK).sum() + 1_000
-        store.dispatch(ListenAction.Playback.SeekRequested(target))
+        store.seekTo(target)
         advanceUntilIdle()
 
         assertEquals(1, playback.restartedAt.size)
@@ -1931,7 +1931,7 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
 
         val target = store.state.articleProgress.chunkDurationsMs.take(SEEK_TARGET_CHUNK).sum() + 1_000
-        store.dispatch(ListenAction.Playback.SeekRequested(target))
+        store.seekTo(target)
         advanceUntilIdle()
 
         playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, chunk = ChunkState(index = 0))
@@ -1959,9 +1959,9 @@ class ListenMiddlewareTest {
         val abandoned = lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000
         val wanted = lengths.take(SEEK_TARGET_CHUNK + 2).sum() + 1_000
 
-        store.dispatch(ListenAction.Playback.SeekRequested(abandoned))
+        store.seekTo(abandoned)
         advanceTimeBy(100.milliseconds)
-        store.dispatch(ListenAction.Playback.SeekRequested(wanted))
+        store.seekTo(wanted)
         advanceUntilIdle()
 
         assertEquals("the abandoned seek took the playback over as well", 1, playback.restartedAt.size)
@@ -2146,12 +2146,113 @@ class ListenMiddlewareTest {
         val playback = FakePlaybackController()
         val store = storeWith(playbackController = playback) { Result.success(Content("Article text", "en-US")) }
 
-        store.dispatch(ListenAction.Playback.SeekRequested(30_000))
+        store.dispatch(ListenAction.Playback.SeekRequested(0.5f))
         advanceUntilIdle()
 
         assertTrue(playback.restartedAt.isEmpty())
         assertTrue(playback.seekedToItem.isEmpty())
         assertNull(store.state.error)
+    }
+
+    @Test
+    fun `test that a seek with nowhere to go puts the elapsed time back where it was`() = runTest {
+        val store = storeWith { Result.success(Content("Article text", "en-US")) }
+        store.dispatch(ListenAction.Playback.ArticleProgressChanged(positionMs = 30_000, durationMs = 60_000))
+        val before = store.state.articleProgress
+
+        store.dispatch(ListenAction.Playback.SeekRequested(0.75f))
+
+        assertEquals(before, store.state.articleProgress)
+    }
+
+    @Test
+    fun `test that a seek moves the elapsed time to where the reader let go before the player gets there`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        val target = store.state.articleProgress.chunkDurationsMs.take(SEEK_TARGET_CHUNK).sum() + 1_000
+        store.seekTo(target)
+
+        assertTrue("the player was already moved", playback.restartedAt.isEmpty())
+        assertEquals(target, store.state.articleProgress.positionMs)
+    }
+
+    @Test
+    fun `test that a seek whose synthesis fails puts the elapsed time back where it was`() = runTest {
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(
+                        audioDirectory = temporaryFolder.root,
+                        failAtRequest = FIRST_REQUEST_AFTER_LOOKAHEAD,
+                    )
+                }
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        val before = store.state.articleProgress
+
+        store.seekTo(before.chunkDurationsMs.take(SEEK_TARGET_CHUNK).sum() + 1_000)
+        advanceUntilIdle()
+
+        assertEquals(ListenError.SynthesisFailed, store.state.error)
+        assertEquals(before, store.state.articleProgress)
+    }
+
+    @Test
+    fun `test that a seek overtaken by another does not put the elapsed time back`() = runTest {
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                }
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        val lengths = store.state.articleProgress.chunkDurationsMs
+        val firstSeek = lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000
+        val secondSeek = lengths.take(SEEK_TARGET_CHUNK + 2).sum() + 1_000
+
+        store.seekTo(firstSeek)
+        advanceTimeBy(100.milliseconds)
+        store.seekTo(secondSeek)
+        advanceUntilIdle()
+
+        assertEquals(secondSeek, store.state.articleProgress.positionMs)
+    }
+
+    @Test
+    fun `test that a seek cut short by a cancelled session does not put the elapsed time back`() = runTest {
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                }
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        store.seekTo(store.state.articleProgress.chunkDurationsMs.take(SEEK_TARGET_CHUNK).sum() + 1_000)
+        advanceTimeBy(100.milliseconds)
+        store.dispatch(ListenAction.Session.StopRequested())
+        advanceUntilIdle()
+
+        assertEquals(ArticleProgress(), store.state.articleProgress)
     }
 
     @Test
@@ -2175,7 +2276,7 @@ class ListenMiddlewareTest {
         // The chunk a second into the article is one the player already holds, so this is the seek that would
         // otherwise be answered by moving the player onto audio that is no longer there.
         cache.reclaim(synthesizer.files[1])
-        store.dispatch(ListenAction.Playback.SeekRequested(lengths[0] + 1_000))
+        store.seekTo(lengths[0] + 1_000)
         advanceUntilIdle()
 
         assertTrue("the player was moved onto audio the system had taken", playback.seekedToItem.isEmpty())
@@ -2352,7 +2453,7 @@ class ListenMiddlewareTest {
         val lengths = store.state.articleProgress.chunkDurationsMs
         val wanted = lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000
 
-        store.dispatch(ListenAction.Playback.SeekRequested(wanted))
+        store.seekTo(wanted)
         advanceTimeBy(100.milliseconds)
         reportFailure(playback, index = 0)
         advanceUntilIdle()
@@ -2386,7 +2487,7 @@ class ListenMiddlewareTest {
 
         // Read after the failure, which is the report that refreshes the lengths the seek is measured against.
         val lengths = store.state.articleProgress.chunkDurationsMs
-        store.dispatch(ListenAction.Playback.SeekRequested(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000))
+        store.seekTo(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000)
         advanceUntilIdle()
 
         assertEquals("the recovery restarted the playback as well", 1, playback.restartedAt.size)
@@ -2413,7 +2514,7 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
 
         val lengths = store.state.articleProgress.chunkDurationsMs
-        store.dispatch(ListenAction.Playback.SeekRequested(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000))
+        store.seekTo(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000)
         advanceTimeBy(100.milliseconds)
         repeat(MAX_RECOVERY_ATTEMPTS + 1) {
             reportFailure(playback, index = 0, positionMs = (it + 1).toLong())
@@ -2449,7 +2550,7 @@ class ListenMiddlewareTest {
         advanceUntilIdle()
 
         val lengths = store.state.articleProgress.chunkDurationsMs
-        store.dispatch(ListenAction.Playback.SeekRequested(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000))
+        store.seekTo(lengths.take(SEEK_TARGET_CHUNK).sum() + 1_000)
         advanceUntilIdle()
 
         assertEquals(ListenError.SynthesisFailed, store.state.error)
@@ -2647,6 +2748,10 @@ class ListenMiddlewareTest {
         dispatch(ListenAction.Session.ListenRequested(tabId, url))
         dispatch(ListenAction.Controls.PlayPauseClicked)
     }
+
+    /** Seeks to [positionMs] into the article, as the progress bar does: as a share of how long the article lasts. */
+    private fun ListenStore.seekTo(positionMs: Long) =
+        dispatch(ListenAction.Playback.SeekRequested(positionMs.toFloat() / state.articleProgress.durationMs))
 
     /** Records every action that reaches the store into [into], and lets it through. */
     private fun recordingMiddleware(into: MutableList<ListenAction>): Middleware<ListenState, ListenAction> =

@@ -13,7 +13,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -142,6 +144,8 @@ class ListenMiddleware(
         // Read before the reducer runs, because afterwards the store already holds the voice the action carries and
         // there would be nothing left to compare it against.
         val previousVoice = store.state.voiceState.selectedVoice
+        // Read before the reducer runs, to save the previous article progress before a seek in case the seek fails.
+        val previousProgress = store.state.articleProgress
 
         next(action)
 
@@ -169,8 +173,12 @@ class ListenMiddleware(
                 }
             }
 
-            is ListenAction.Playback.SeekRequested -> store.seekToArticlePosition(action.positionMs)
-
+            is ListenAction.Playback.SeekRequested -> {
+                store.seekToArticlePosition(
+                    positionMs = store.state.articleProgress.positionMs,
+                    revertTo = previousProgress,
+                )
+            }
             ListenAction.Controls.PlayPauseClicked -> store.togglePlayback()
             ListenAction.Controls.RewindClicked -> store.skipBy(-SEEK_BACK_INCREMENT_MS)
             ListenAction.Controls.ForwardClicked -> store.skipBy(SEEK_FORWARD_INCREMENT_MS)
@@ -593,10 +601,15 @@ class ListenMiddleware(
      * reported to the player, so this keeps them in sync even if the queue has been actively synthesizing lengths for
      * other chunks.
      */
-    private fun ListenStore.seekToArticlePosition(positionMs: Long) {
-        val queue = synthesisQueue ?: return
-        val target = state.articleProgress.chunkDurationsMs.chunkPositionAt(positionMs) ?: return
-        val lock = synthesisJobPriorityLock.tryClaim(PlaybackIntent.Seek) ?: return
+    private fun ListenStore.seekToArticlePosition(positionMs: Long, revertTo: ArticleProgress? = null) {
+        val revert: () -> Unit = {
+            if (revertTo != null) {
+                revertProgress(revertTo)
+            }
+        }
+        val queue = synthesisQueue ?: return revert()
+        val target = state.articleProgress.chunkDurationsMs.chunkPositionAt(positionMs) ?: return revert()
+        val lock = synthesisJobPriorityLock.tryClaim(PlaybackIntent.Seek) ?: return revert()
 
         scope.launch {
             if (!lock.isHeld) return@launch
@@ -609,8 +622,18 @@ class ListenMiddleware(
                 return@launch
             }
 
-            remakeAndRestartAt(target, lock, queue)
+            remakeAndRestartAt(target, lock, queue, onFailed = revert)
         }
+    }
+
+    private fun ListenStore.revertProgress(progress: ArticleProgress) {
+        dispatch(
+            ListenAction.Playback.ArticleProgressChanged(
+                positionMs = progress.positionMs,
+                durationMs = progress.durationMs,
+                chunkDurationsMs = progress.chunkDurationsMs,
+            )
+        )
     }
 
     /** Drops the work in flight, makes the audio of [target] and starts the playlist again there. */
@@ -618,12 +641,14 @@ class ListenMiddleware(
         target: ChunkPosition,
         lock: SynthesisJobPriorityLock.Handle,
         queue: SynthesisQueue,
+        onFailed: () -> Unit = {},
     ) {
         dispatch(ListenAction.Playback.PlaybackWaiting)
 
         stopSynthesizing {}
 
         synthesizing(this::dispatch) {
+            var restarted = false
             try {
                 // Ensure another seek has not occurred
                 if (!lock.isHeld) return@synthesizing
@@ -634,11 +659,17 @@ class ListenMiddleware(
                 if (!lock.isHeld) return@synthesizing
 
                 playbackController.restartAt(file, target.positionMs)
+                restarted = true
                 seeked = true
                 playlistStartChunk = target.chunkIndex
                 playingChunk = target.chunkIndex
                 appendedThrough = target.chunkIndex
             } finally {
+                // Do not revert the progress if another seek has occurred or the coroutine is canceled - this is not
+                // a failure, and that seek has written its own progress position
+                if (!restarted && lock.isHeld && currentCoroutineContext().isActive) {
+                    onFailed()
+                }
                 lock.release()
             }
 

@@ -4,6 +4,8 @@
 
 package mozilla.components.feature.listentopage
 
+import kotlin.math.roundToLong
+
 /**
  * Reduces the given [action] and current [state] into a new [ListenState].
  *
@@ -96,7 +98,15 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
                 playbackState = state.playbackState.copy(phase = PlaybackPhase.Failed),
                 error = ListenError.PlaybackFailed,
             )
-        is ListenAction.Playback.SeekRequested -> state
+        is ListenAction.Playback.SeekRequested -> {
+            val durationMs = state.articleProgress.durationMs
+            state.copy(
+                articleProgress =
+                    state.articleProgress.copy(
+                        positionMs = (durationMs * action.fraction.coerceIn(0f, 1f)).roundToLong()
+                    )
+            )
+        }
         is ListenAction.Playback.ArticleProgressChanged -> {
             val durationMs = action.durationMs.coerceAtLeast(0)
             state.copy(

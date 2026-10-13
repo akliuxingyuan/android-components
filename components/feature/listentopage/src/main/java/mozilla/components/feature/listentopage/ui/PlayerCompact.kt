@@ -99,6 +99,7 @@ internal fun AudioProgressBarCompact(progress: () -> Float, modifier: Modifier =
         progress = progress,
         modifier = modifier.padding(horizontal = AcornTheme.layout.space.static400),
         type = AudioProgressBarType.Mini,
+        onSeek = {}, // Compact bar does not support seeking
     )
 }
 

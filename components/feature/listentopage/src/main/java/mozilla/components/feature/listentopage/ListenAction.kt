@@ -153,10 +153,9 @@ sealed interface ListenAction : Action {
         /**
          * The reader chose a place in the article to carry on from.
          *
-         * @property positionMs How far into the article to move to, measured against the lengths in
-         *   [ArticleProgress.chunkDurationsMs].
+         * @property fraction How far into the article to move to.
          */
-        data class SeekRequested(val positionMs: Long) : Playback
+        data class SeekRequested(val fraction: Float) : Playback
 
         /** The player read out every chunk it had been given and the article has more to come. */
         data object PlaybackWaiting : Playback

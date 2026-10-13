@@ -368,6 +368,29 @@ class ListenReducerTest {
     }
 
     @Test
+    fun `test that a seek moves the elapsed time to that share of the article`() {
+        val state = listenReducer(fullState, ListenAction.Playback.SeekRequested(0.25f))
+
+        assertEquals(fullState.copy(articleProgress = fullState.articleProgress.copy(positionMs = 150_000)), state)
+    }
+
+    @Test
+    fun `test that a seek past either end of the article stops at that end`() {
+        assertEquals(
+            600_000,
+            listenReducer(fullState, ListenAction.Playback.SeekRequested(1.5f)).articleProgress.positionMs,
+        )
+        assertEquals(0, listenReducer(fullState, ListenAction.Playback.SeekRequested(-0.5f)).articleProgress.positionMs)
+    }
+
+    @Test
+    fun `test that a seek in an article of no length stays at the start`() {
+        val state = listenReducer(ListenState(), ListenAction.Playback.SeekRequested(0.5f))
+
+        assertEquals(ArticleProgress(), state.articleProgress)
+    }
+
+    @Test
     fun `test that a failed player is reported as an error`() {
         val state = listenReducer(ListenState(), ListenAction.Playback.PlaybackFailed)
 

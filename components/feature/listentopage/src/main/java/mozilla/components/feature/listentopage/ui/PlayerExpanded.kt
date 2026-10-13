@@ -77,7 +77,7 @@ internal fun PlayerExpanded(
             )
         }
 
-        AudioProgress(articleProgressState = articleProgressState)
+        AudioProgress(articleProgressState = articleProgressState, onAction = onAction)
 
         val locale = LocalConfiguration.current.locales[0]
         val labelPattern = stringResource(R.string.mozac_feature_listentopage_playback_speed_option)
@@ -96,7 +96,7 @@ internal fun PlayerExpanded(
 }
 
 @Composable
-private fun AudioProgress(articleProgressState: State<ArticleProgress>) {
+private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction: (ListenAction) -> Unit) {
     // Reading articleProgressState here instead of inside the lambda would defeat the point of hoisting it as a State.
     val progress = { articleProgressState.value.fraction }
     val elapsedTime by remember {
@@ -115,7 +115,13 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>) {
                 )
                 .fillMaxWidth()
     ) {
-        AudioProgressBar(progress = progress, type = AudioProgressBarType.Full)
+        AudioProgressBar(
+            progress = progress,
+            type = AudioProgressBarType.Full,
+            onSeek = {
+                onAction(ListenAction.Playback.SeekRequested(it))
+            },
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
