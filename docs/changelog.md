@@ -4,9 +4,17 @@ title: Changelog
 permalink: /changelog/
 ---
 
-# 159.0 (In Development)
+# 160.0 (In Development)
+* **ui-richtext**
+    * 🆕 Added `StreamingParser`, which parses a markdown document as it arrives in chunks, reparsing only the part of it that can still change. [Bug 2059255](https://bugzilla.mozilla.org/show_bug.cgi?id=2059255)
+* **browser-engine-gecko**
+    * Download filenames from `onExternalResponse` are now validated by Gecko with the same rules as desktop, so `GeckoEngineSession` no longer applies the `String.sanitizeFileName` helper from **support-ktx** to them. [Bug 1822968](https://bugzilla.mozilla.org/show_bug.cgi?id=1822968)
+
+# 159.0
 * **feature-readerview**
     * 🆕 Added `ReaderViewFeature.colorSchemeOverride`, which forces reader view to be displayed with a given `ColorScheme` without overwriting the one the user configured. [Bug 2069110](https://bugzilla.mozilla.org/show_bug.cgi?id=2069110)
+* **concept-engine**, **browser-engine-gecko**, **browser-engine-system**, **browser-state**, **feature-app-links**
+    * ⚠️ **Breaking change**: `EngineSession.Observer.onLaunchIntentRequest` and `AppIntentState` take a `sourceUrl`, the URL of the page the launch was requested from, or null when the launch was not requested from a page. [Bug 2068801](https://bugzilla.mozilla.org/show_bug.cgi?id=2068801)
 
 # 158.0
 * **feature-accounts-push**
