@@ -37,7 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.badge.BADGE_SIZE_SMALL
 import mozilla.components.compose.base.badge.BadgedIcon
-import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
@@ -121,27 +120,23 @@ private fun Modifier.menuGridItemClickable(
     onInteraction: (MenuEvent) -> Unit,
 ): Modifier {
     val haptic = LocalHapticFeedback.current
-    return this.clickable(
-            enabled = state != DISABLED && onLongClickEvent == null,
+    return if (onLongClickEvent != null) {
+        this.combinedClickable(
+            enabled = state != DISABLED,
+            onClick = { onInteraction(onClickEvent) },
+            onLongClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onInteraction(onLongClickEvent)
+            },
+            role = Button,
+        )
+    } else {
+        this.clickable(
+            enabled = state != DISABLED,
             onClick = { onInteraction(onClickEvent) },
             role = Button,
         )
-        .thenConditional(
-            Modifier.combinedClickable(
-                enabled = state != DISABLED,
-                onClick = { onInteraction(onClickEvent) },
-                onLongClick =
-                    onLongClickEvent?.let {
-                        {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onInteraction(it)
-                        }
-                    },
-                role = Button,
-            )
-        ) {
-            onLongClickEvent != null
-        }
+    }
 }
 
 @Composable

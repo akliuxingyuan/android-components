@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -152,7 +153,7 @@ fun ExpandableHeaderItem(
             MenuListItem(
                 title = it.title,
                 contentDescription = it.contentDescription,
-                modifier = Modifier,
+                modifier = Modifier.clip(MaterialTheme.shapes.extraSmall),
                 role = it.role,
                 summary = it.summary,
                 icon = it.icon,

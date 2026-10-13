@@ -204,6 +204,28 @@ class MenuTest {
         composeTestRule.onNodeWithText(BANNER_TITLE).assertDoesNotExist()
     }
 
+    @Test
+    fun `WHEN menu with sticky header is scrollable THEN report dark header background`() {
+        var isHeaderDark = false
+        val groups = listOf(stickyGroup("Header")) + List(20) { row("Item $it") }
+        val store = MenuStore(initialState = MenuState(groups))
+        composeTestRule.setContent {
+            AcornTheme {
+                Box(Modifier.fillMaxSize()) {
+                    Menu(
+                        store = store,
+                        modifier = Modifier.width(320.dp).heightIn(max = 300.dp),
+                        onHeaderDarkBackgroundChanged = { isHeaderDark = it },
+                    )
+                }
+            }
+        }
+
+        composeTestRule.runOnIdle {
+            assertTrue(isHeaderDark)
+        }
+    }
+
     private fun recording(events: MutableList<MenuAction>): List<Middleware<MenuState, MenuAction>> =
         listOf { _, next, action ->
             events += action
