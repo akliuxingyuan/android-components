@@ -25,14 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CollectionItemInfo
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.semantics.collectionItemInfo
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.text.Text
@@ -63,7 +62,8 @@ import mozilla.components.ui.icons.R as iconsR
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
  * @param showNewIndicator Whether to show a new indicator.
- * @param badge An optional badge to show.
+ * @param badge An optional badge to show. For a [Role.Switch] this is expected to show the current state, which screen
+ *   readers will announce whenever it changes.
  * @param actionButton An optional action button to show.
  * @param state The state of this menu item.
  */
@@ -95,6 +95,7 @@ internal fun MenuListItem(
         verticalAlignment = CenterVertically,
     ) {
         val contentDescriptionValue = contentDescription?.value
+        val stateDescriptionValue = badge?.text?.value?.takeIf { role == Role.Switch }
         Row(
             modifier =
                 Modifier.weight(1f)
@@ -117,7 +118,7 @@ internal fun MenuListItem(
                                 )
                         }
                         contentDescriptionValue?.let { this.contentDescription = it }
-                        liveRegion = LiveRegionMode.Polite
+                        stateDescriptionValue?.let { this.stateDescription = it }
                     }
                     .menuItemClickableBehavior(
                         state = state,
@@ -139,7 +140,7 @@ internal fun MenuListItem(
 
             MenuListItemNewIndicator(showNewIndicator, state)
 
-            MenuListItemBadge(badge)
+            MenuListItemBadge(badge, hideFromAccessibility = stateDescriptionValue != null)
         }
 
         MenuListItemActionButton(actionButton, onInteraction)

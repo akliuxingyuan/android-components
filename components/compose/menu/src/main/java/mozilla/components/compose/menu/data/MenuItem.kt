@@ -73,7 +73,8 @@ data class ExpandableMenuItem(
  * @param summary An optional summary of the menu item.
  * @param icon An optional icon of the menu item.
  * @param showNewIndicator Whether to show a new indicator.
- * @param badge An optional badge to show.
+ * @param badge An optional badge to show. For a [Role.Switch] this is expected to show the current state, which screen
+ *   readers will announce whenever it changes.
  * @param onLongClickEvent [MenuEvent] to dispatch when the menu item is long-clicked.
  * @param actionButton An optional action button to show.
  * @param state The state of this menu item.

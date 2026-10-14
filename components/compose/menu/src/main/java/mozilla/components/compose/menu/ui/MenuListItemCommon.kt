@@ -22,6 +22,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,8 +40,18 @@ import mozilla.components.compose.menu.data.MenuItemSummary
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState.DISABLED
 
+/**
+ * The badge of a menu list item.
+ *
+ * @param badge The [MenuItemBadge] to show, if any.
+ * @param hideFromAccessibility Whether screen readers should skip the badge, for when its text is already announced in
+ *   another way.
+ */
 @Composable
-internal fun MenuListItemBadge(badge: MenuItemBadge?) {
+internal fun MenuListItemBadge(
+    badge: MenuItemBadge?,
+    hideFromAccessibility: Boolean = false,
+) {
     if (badge != null) {
         Text(
             text = badge.text.value,
@@ -54,7 +65,8 @@ internal fun MenuListItemBadge(badge: MenuItemBadge?) {
                     .padding(
                         horizontal = AcornTheme.layout.space.static200,
                         vertical = AcornTheme.layout.space.static100,
-                    ),
+                    )
+                    .then(if (hideFromAccessibility) Modifier.clearAndSetSemantics {} else Modifier),
         )
     }
 }
