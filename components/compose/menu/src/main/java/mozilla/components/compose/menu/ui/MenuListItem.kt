@@ -132,7 +132,7 @@ internal fun MenuListItem(
                         onInteraction = onInteraction,
                     )
                     .padding(
-                        horizontal = AcornTheme.layout.space.static200,
+                        horizontal = AcornTheme.layout.space.dynamic200,
                         vertical = AcornTheme.layout.space.static100,
                     ),
             verticalAlignment = CenterVertically,
