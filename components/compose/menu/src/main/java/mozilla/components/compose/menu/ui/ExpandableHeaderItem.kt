@@ -93,7 +93,7 @@ fun ExpandableHeaderItem(
     state: MenuItemState = DEFAULT,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    val contentDescriptionValue = contentDescription?.value ?: title
+    val contentDescriptionValue = contentDescription?.value ?: title.value
     val expandedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_expanded)
     val collapsedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_collapsed)
     val statefulContentDescription =
