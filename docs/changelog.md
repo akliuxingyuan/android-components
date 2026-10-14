@@ -5,6 +5,11 @@ permalink: /changelog/
 ---
 
 # 160.0 (In Development)
+* **feature-awesomebar**
+    * Suggestions from `HistoryStorageSuggestionProvider`, including those `CombinedHistorySuggestionProvider` gets from history storage, now have the `HISTORY` flag, like the other history and bookmark suggestions. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
+    * `SessionSuggestionProvider` falls back to the URL formatted by `URLStringUtils.toLosslessDisplayUrl` when a tab has no title. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
+* **compose-awesomebar**
+    * The descriptions of bookmark and history suggestions are shown formatted by `URLStringUtils.toLosslessDisplayUrl`. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
 * **support-utils**
     * `URLStringUtils.isURLLike` (and so `isSearchTerm` and `String.isUrl`) now accepts spaces in the path, query or fragment of an HTTP/S URL such as `https://example.com/a b`, and of a scheme-less one with a port, an IP address as its host, or a `?` or `#` after its first `/`. Spaces in the scheme or authority are still rejected. [Bug 1813919](https://bugzilla.mozilla.org/show_bug.cgi?id=1813919)
     * `URLStringUtils.toNormalizedURL` and `String.toNormalizedUrl` now encode the spaces in the path, query and fragment of an HTTP/S URL as `%20`, using the new `URLStringUtils.encodeSpacesAfterAuthority`. [Bug 1813919](https://bugzilla.mozilla.org/show_bug.cgi?id=1813919)

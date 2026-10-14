@@ -40,6 +40,7 @@ import mozilla.components.compose.browser.awesomebar.AwesomeBarOrientation
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags
 import mozilla.components.compose.browser.awesomebar.R
 import mozilla.components.concept.awesomebar.AwesomeBar
+import mozilla.components.support.ktx.util.URLStringUtils
 import mozilla.components.ui.icons.R as iconsR
 
 // We only show one row of text, covering at max screen width.
@@ -72,7 +73,7 @@ internal fun Suggestion(
         }
         SuggestionTitleAndDescription(
             title = suggestion.title?.take(SUGGESTION_TEXT_MAX_LENGTH),
-            description = suggestion.description?.take(SUGGESTION_TEXT_MAX_LENGTH),
+            description = suggestion.displayDescription()?.take(SUGGESTION_TEXT_MAX_LENGTH),
             colors = colors,
             modifier =
                 Modifier.weight(1f)
@@ -96,6 +97,14 @@ internal fun Suggestion(
         }
     }
 }
+
+/** The description to show, with the URL of a bookmark or history entry made readable. */
+internal fun AwesomeBar.Suggestion.displayDescription(): String? =
+    if (flags.any { it == AwesomeBar.Suggestion.Flag.BOOKMARK || it == AwesomeBar.Suggestion.Flag.HISTORY }) {
+        description?.let(URLStringUtils::toLosslessDisplayUrl)
+    } else {
+        description
+    }
 
 @Composable
 private fun SuggestionTitleAndDescription(
