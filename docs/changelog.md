@@ -8,6 +8,9 @@ permalink: /changelog/
 * **support-utils**
     * `URLStringUtils.isURLLike` (and so `isSearchTerm` and `String.isUrl`) now accepts spaces in the path, query or fragment of an HTTP/S URL such as `https://example.com/a b`, and of a scheme-less one with a port, an IP address as its host, or a `?` or `#` after its first `/`. Spaces in the scheme or authority are still rejected. [Bug 1813919](https://bugzilla.mozilla.org/show_bug.cgi?id=1813919)
     * `URLStringUtils.toNormalizedURL` and `String.toNormalizedUrl` now encode the spaces in the path, query and fragment of an HTTP/S URL as `%20`, using the new `URLStringUtils.encodeSpacesAfterAuthority`. [Bug 1813919](https://bugzilla.mozilla.org/show_bug.cgi?id=1813919)
+    * Added `URLStringUtils.toLosslessDisplayUrl` and `URLStringUtils.toLosslessEditableUrl`, which decode the path, query and fragment of an HTTP/S URL when that is lossless, following desktop's `losslessDecodeDisplaySpec`. `toLosslessDisplayUrl` keeps spaces as `%20`, and `URLStringUtils.toDisplayUrl` now applies it. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
+* **support-ktx**
+    * `String.toShortUrl` now decodes the URL it returns when it cannot shorten it, using `URLStringUtils.toLosslessDisplayUrl`. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
 * **ui-richtext**
     * 🆕 Added `StreamingParser`, which parses a markdown document as it arrives in chunks, reparsing only the part of it that can still change. [Bug 2059255](https://bugzilla.mozilla.org/show_bug.cgi?id=2059255)
 * **browser-engine-gecko**

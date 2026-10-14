@@ -4,10 +4,16 @@
 
 package mozilla.components.support.ktx.util
 
+import android.text.SpannableStringBuilder
+import android.text.Spanned
 import android.text.TextUtils
 import android.util.Patterns
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
+import java.net.URLEncoder
+import java.nio.ByteBuffer
+import java.nio.charset.CharacterCodingException
+import java.nio.charset.CodingErrorAction
 import java.util.regex.Pattern
 
 object URLStringUtils {
@@ -146,11 +152,14 @@ object URLStringUtils {
     private const val WWW = "www."
 
     /**
-     * Generates a shorter version of the provided URL for display purposes by stripping it of https/http and/or WWW
-     * prefixes and/or trailing slash when applicable.
+     * Generates a shorter version of the provided URL for display purposes by applying the lossless formatting of
+     * [toLosslessDisplayUrl] and then stripping it of https/http and/or WWW prefixes and/or trailing slash when
+     * applicable.
+     *
+     * Any spans already set on [originalUrl] are preserved.
      */
     fun toDisplayUrl(originalUrl: CharSequence): CharSequence =
-        maybeStripTrailingSlash(maybeStripUrlProtocol(originalUrl))
+        maybeStripTrailingSlash(maybeStripUrlProtocol(losslessFormat(originalUrl, decodeSpaces = false)))
 
     private fun maybeStripUrlProtocol(url: CharSequence): CharSequence {
         if (url.startsWith(HTTPS)) {
@@ -166,6 +175,76 @@ object URLStringUtils {
     private fun maybeStripTrailingSlash(url: CharSequence): CharSequence {
         return url.trimEnd('/')
     }
+
+    private const val ESCAPE_LENGTH = 3
+    private const val HEX_RADIX = 16
+
+    private val nestedReservedEscape = Regex("%25(?:3B|2F|3F|3A|40|26|3D|2B|24|2C|23)", RegexOption.IGNORE_CASE)
+    private val malformedEscape = Regex("%(?![0-9a-f]{2})", RegexOption.IGNORE_CASE)
+
+    // decodeURI's reserved characters, plus `%`, which could start a new escape, and `\`, which URLs read as `/`.
+    private val decodableEscapes =
+        Regex("(?:%(?!3B|2F|3F|3A|40|26|3D|2B|24|2C|23|25|5C)[0-9a-f]{2})+", RegexOption.IGNORE_CASE)
+    private val invisibleCharacters = Regex("""[\p{Z}\p{Cc}\u2800\uFFFC&&[^\u0020]]|\u0020(?=[\p{C}\p{Z}])|\s$""")
+    private val unsafeCharacters =
+        Regex(
+            """[\p{Cf}&&[^\u200C\u200D]]|[\u034F\u115F\u1160\u17B4\u17B5\u180B-\u180D\u3164""" +
+                """\uFE00-\uFE0F\uFFA0\uFFF0-\uFFFB\p{Cn}\p{Co}\x{E0000}-\x{E0FFF}\x{1F50F}-\x{1F513}\x{1F6E1}]"""
+        )
+
+    /**
+     * Decodes the path, query and fragment of an HTTP/S [url] when that is lossless, following desktop's
+     * `losslessDecodeDisplaySpec`; spaces stay `%20`. Other URLs are returned unchanged. Meant for URLs the browser
+     * owns, not for text the user typed.
+     */
+    fun toLosslessDisplayUrl(url: String): String = losslessFormat(url, decodeSpaces = false).toString()
+
+    /** Same as [toLosslessDisplayUrl] but also decodes the spaces that can be shown, for an editable address bar. */
+    fun toLosslessEditableUrl(url: String): String = losslessFormat(url, decodeSpaces = true).toString()
+
+    private fun losslessFormat(url: CharSequence, decodeSpaces: Boolean): CharSequence {
+        val original = url.toString()
+        if (!original.startsWith(HTTP, ignoreCase = true) && !original.startsWith(HTTPS, ignoreCase = true)) return url
+        val tailStart = authorityLength(original).takeIf { it < original.length } ?: return url
+
+        val tail = original.substring(tailStart)
+        val decoded = decodeTail(tail, decodeSpaces)
+        return when {
+            decoded == tail -> url
+            // Only the tail changes, so spans on the authority keep their indexes.
+            url is Spanned -> SpannableStringBuilder(url).replace(tailStart, url.length, decoded)
+            else -> original.substring(0, tailStart) + decoded
+        }
+    }
+
+    private fun decodeTail(tail: String, decodeSpaces: Boolean): String {
+        val decoded = if (nestedReservedEscape.containsMatchIn(tail)) tail else decodeUri(tail)
+        val visible = invisibleCharacters.replace(decoded) { escape(it.value) }
+        val safe = unsafeCharacters.replace(visible) { escape(it.value) }
+        return if (decodeSpaces) safe else safe.replace(" ", "%20")
+    }
+
+    private fun decodeUri(value: String): String {
+        if (malformedEscape.containsMatchIn(value)) return value
+        val decoder =
+            Charsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+        return try {
+            decodableEscapes.replace(value) { match ->
+                val bytes =
+                    ByteArray(match.value.length / ESCAPE_LENGTH) { index ->
+                        val start = index * ESCAPE_LENGTH + 1
+                        match.value.substring(start, start + 2).toInt(HEX_RADIX).toByte()
+                    }
+                decoder.decode(ByteBuffer.wrap(bytes)).toString()
+            }
+        } catch (_: CharacterCodingException) {
+            value
+        }
+    }
+
+    private fun escape(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name()).replace("+", "%20")
 
     /** Determines whether a string is http or https URL */
     fun isHttpOrHttps(url: String): Boolean {

@@ -568,6 +568,12 @@ class StringTest {
     }
 
     @Test
+    fun `should losslessly decode the path of a url it cannot shorten`() {
+        "http://badport:65536/%D1%82%D0%B5%D1%81%D1%82%20file" shortenedShouldBecome "http://badport:65536/тест%20file"
+        "http://$PUNYCODE.com/%D1%82%D0%B5%D1%81%D1%82" shortenedShouldBecome "$IDN.com"
+    }
+
+    @Test
     fun `should convert host to idn when calling shortURL`() {
         "http://$PUNYCODE.blah.com" shortenedShouldBecome "$IDN.blah.com"
     }

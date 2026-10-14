@@ -77,7 +77,7 @@ fun String.toShortUrl(publicSuffixList: PublicSuffixList): String {
             inputString.startsWith(FILE_PREFIX) ||
             uri.port !in -1..MAX_VALID_PORT
     ) {
-        return inputString
+        return URLStringUtils.toLosslessDisplayUrl(inputString)
     }
 
     if (
