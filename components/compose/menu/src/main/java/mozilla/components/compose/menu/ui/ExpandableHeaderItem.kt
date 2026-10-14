@@ -25,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,7 +57,7 @@ import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState.DEFAULT
 import mozilla.components.ui.icons.R as iconsR
 
-private const val ANIMATION_DURATION_MS = 75
+private const val ANIMATION_DURATION_MS = 300
 
 /**
  * A menu item that can be expanded to show others or collapsed to hide them.
@@ -101,11 +103,13 @@ fun ExpandableHeaderItem(
         remember(isExpanded) {
             "$contentDescriptionValue. ${if (isExpanded) expandedDescription else collapsedDescription}"
         }
+    var headerHeight by remember { mutableIntStateOf(0) }
 
     if (!hideOnExpand || !isExpanded) {
         Row(
             modifier =
                 modifier
+                    .onSizeChanged { headerHeight = it.height }
                     .background(MaterialTheme.colorScheme.surfaceBright)
                     .defaultMinSize(
                         minHeight =
@@ -149,7 +153,8 @@ fun ExpandableHeaderItem(
         }
     }
 
-    MenuItemAnimation(isExpanded) {
+    // Sub-items replacing their header start from its height, so that the menu only grows when expanding.
+    MenuItemAnimation(isExpanded = isExpanded, initialHeight = if (hideOnExpand) headerHeight else 0) {
         subMenuItems.forEach {
             MenuListItem(
                 title = it.title,
@@ -170,9 +175,17 @@ fun ExpandableHeaderItem(
     }
 }
 
+/**
+ * Animates showing or hiding sub-items.
+ *
+ * @param isExpanded Whether the sub-items should be shown.
+ * @param initialHeight Height, in pixels, from which the sub-items start expanding.
+ * @param content The sub-items to show.
+ */
 @Composable
 private fun MenuItemAnimation(
     isExpanded: Boolean,
+    initialHeight: Int,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     AnimatedVisibility(
@@ -180,6 +193,7 @@ private fun MenuItemAnimation(
         enter =
             expandVertically(
                 expandFrom = Alignment.Top,
+                initialHeight = { fullHeight -> initialHeight.coerceAtMost(fullHeight) },
                 animationSpec =
                     tween(
                         durationMillis = ANIMATION_DURATION_MS,
