@@ -30,13 +30,13 @@ import mozilla.components.compose.base.badge.BADGE_SIZE_SMALL
 import mozilla.components.compose.base.badge.BadgedIcon
 import mozilla.components.compose.base.badge.StatusBadge
 import mozilla.components.compose.base.modifier.debouncedClickable
-import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.information
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemBadge
 import mozilla.components.compose.menu.data.MenuItemSummary
+import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState.DISABLED
 
@@ -86,18 +86,18 @@ internal fun MenuListItemNewIndicator(
 
 @Composable
 internal fun RowScope.MenuListItemText(
-    title: Text,
+    title: MenuItemTitle,
     state: MenuItemState,
     summary: MenuItemSummary?,
 ) {
     Column(modifier = Modifier.weight(1f)) {
         Text(
-            text = title.value,
+            text = title.text.value,
             style = AcornTheme.typography.subtitle1.copy(hyphens = Hyphens.Auto),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start,
             overflow = TextOverflow.Ellipsis,
-            maxLines = 2,
+            maxLines = title.maxLines,
             softWrap = true,
             color = state.contentColor,
         )

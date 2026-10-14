@@ -4,6 +4,7 @@
 
 package mozilla.components.compose.menu.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -41,6 +42,7 @@ import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemActionButton
 import mozilla.components.compose.menu.data.MenuItemBadge
 import mozilla.components.compose.menu.data.MenuItemSummary
+import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState.ACTIVE
 import mozilla.components.compose.menu.ui.MenuItemState.DEFAULT
@@ -65,11 +67,12 @@ import mozilla.components.ui.icons.R as iconsR
  * @param badge An optional badge to show. For a [Role.Switch] this is expected to show the current state, which screen
  *   readers will announce whenever it changes.
  * @param actionButton An optional action button to show.
+ * @param trailingIcon An optional icon to show at the end of the menu item, as a hint of what clicking it does.
  * @param state The state of this menu item.
  */
 @Composable
 internal fun MenuListItem(
-    title: Text,
+    title: MenuItemTitle,
     modifier: Modifier = Modifier,
     index: Int? = null,
     onClickEvent: MenuEvent?,
@@ -82,6 +85,7 @@ internal fun MenuListItem(
     showNewIndicator: Boolean = false,
     badge: MenuItemBadge? = null,
     actionButton: MenuItemActionButton? = null,
+    @DrawableRes trailingIcon: Int? = null,
     state: MenuItemState = DEFAULT,
 ) {
     LaunchedEffect(onShownEvent) {
@@ -141,6 +145,15 @@ internal fun MenuListItem(
             MenuListItemNewIndicator(showNewIndicator, state)
 
             MenuListItemBadge(badge, hideFromAccessibility = stateDescriptionValue != null)
+
+            if (trailingIcon != null) {
+                Icon(
+                    painter = painterResource(trailingIcon),
+                    contentDescription = null,
+                    modifier = Modifier.size(AcornTheme.layout.size.static300),
+                    tint = state.secondaryContentColor,
+                )
+            }
         }
 
         MenuListItemActionButton(actionButton, onInteraction)
@@ -179,7 +192,7 @@ private fun MenuListItemActionButton(
 private fun MenuListItemPreview() {
     AcornTheme {
         MenuListItem(
-            title = Text.String("Title"),
+            title = MenuItemTitle(Text.String("Title")),
             contentDescription = Text.String(""),
             index = 0,
             modifier = Modifier.fillMaxWidth(),
@@ -205,7 +218,7 @@ private fun MenuListItemPreview() {
 private fun ActiveListItemPreview() {
     AcornTheme {
         MenuListItem(
-            title = Text.String("Title"),
+            title = MenuItemTitle(Text.String("Title")),
             contentDescription = Text.String(""),
             index = 0,
             modifier = Modifier.fillMaxWidth(),
@@ -233,7 +246,7 @@ private fun ActiveListItemPreview() {
 private fun DisabledMenuListItemPreview() {
     AcornTheme {
         MenuListItem(
-            title = Text.String("Title"),
+            title = MenuItemTitle(Text.String("Title")),
             contentDescription = Text.String(""),
             index = 0,
             modifier = Modifier.fillMaxWidth(),
@@ -261,7 +274,7 @@ private fun DisabledMenuListItemPreview() {
 private fun WarningMenuListItemPreview() {
     AcornTheme {
         MenuListItem(
-            title = Text.String("Title"),
+            title = MenuItemTitle(Text.String("Title")),
             contentDescription = Text.String(""),
             index = 0,
             modifier = Modifier.fillMaxWidth(),
@@ -289,7 +302,7 @@ private fun WarningMenuListItemPreview() {
 private fun TitleOnlyMenuListItemPreview() {
     AcornTheme {
         MenuListItem(
-            title = Text.String("Title"),
+            title = MenuItemTitle(Text.String("Title")),
             contentDescription = Text.String(""),
             index = 0,
             onClickEvent = object : MenuEvent {},

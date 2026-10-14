@@ -62,6 +62,7 @@ internal fun ListMenuItemsGroup(
                         showNewIndicator = it.showNewIndicator,
                         badge = it.badge,
                         actionButton = it.actionButton,
+                        trailingIcon = it.trailingIcon,
                         state = it.state,
                         onClickEvent = it.onClickEvent,
                         onInteraction = onClick,
@@ -87,7 +88,7 @@ internal fun ListMenuItemsGroup(
 
                 is BannerMenuItem ->
                     MenuBanner(
-                        title = it.title,
+                        title = it.title.text,
                         summary = it.summary,
                         icon = it.icon,
                         onDismiss = { onClick(it.onDismissEvent) },

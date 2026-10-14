@@ -52,6 +52,7 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemBadge
 import mozilla.components.compose.menu.data.MenuItemSummary
+import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState.DEFAULT
@@ -80,7 +81,7 @@ private const val ANIMATION_DURATION_MS = 300
  */
 @Composable
 fun ExpandableHeaderItem(
-    title: Text,
+    title: MenuItemTitle,
     subMenuItems: List<StandardMenuItem>,
     modifier: Modifier = Modifier,
     hideOnExpand: Boolean = false,
@@ -96,7 +97,7 @@ fun ExpandableHeaderItem(
     state: MenuItemState = DEFAULT,
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
-    val contentDescriptionValue = contentDescription?.value ?: title.value
+    val contentDescriptionValue = contentDescription?.value ?: title.text.value
     val expandedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_expanded)
     val collapsedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_collapsed)
     val statefulContentDescription =
@@ -166,6 +167,7 @@ fun ExpandableHeaderItem(
                 showNewIndicator = it.showNewIndicator,
                 badge = it.badge,
                 actionButton = it.actionButton,
+                trailingIcon = it.trailingIcon,
                 state = it.state,
                 onClickEvent = it.onClickEvent,
                 onShownEvent = it.onShownEvent,
@@ -279,7 +281,7 @@ private fun ChevronBadge(
 private fun ExpandableHeaderItemPreview() = AcornTheme {
     Surface {
         ExpandableHeaderItem(
-            title = Text.String("Title"),
+            title = MenuItemTitle(Text.String("Title")),
             contentDescription = Text.String(""),
             subMenuItems = emptyList(),
             summary = MenuItemSummary(Text.String("Summary")),

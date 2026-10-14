@@ -18,6 +18,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuItemBadge
+import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.store.MenuEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -93,7 +94,7 @@ class MenuListItemTest {
         composeTestRule.setContent {
             AcornTheme {
                 MenuListItem(
-                    title = Text.String(TITLE),
+                    title = MenuItemTitle(Text.String(TITLE)),
                     onClickEvent = Clicked,
                     onInteraction = { events += it },
                     contentDescription = null,
@@ -138,7 +139,7 @@ class MenuListItemTest {
         composeTestRule.setContent {
             AcornTheme {
                 MenuListItem(
-                    title = Text.String(TITLE),
+                    title = MenuItemTitle(Text.String(TITLE)),
                     onClickEvent = onClickEvent,
                     onInteraction = { events += it },
                     contentDescription = null,

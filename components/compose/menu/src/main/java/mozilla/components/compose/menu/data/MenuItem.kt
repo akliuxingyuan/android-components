@@ -15,7 +15,7 @@ import mozilla.components.compose.menu.ui.MenuItemState.DEFAULT
 
 /** Parent of all items that can be shown in a menu. */
 sealed class MenuItem {
-    abstract val title: Text
+    abstract val title: MenuItemTitle
     abstract val contentDescription: Text?
     abstract val onClickEvent: MenuEvent?
     abstract val role: Role
@@ -47,7 +47,7 @@ sealed class MenuItem {
  * @param state The state of this menu item.
  */
 data class ExpandableMenuItem(
-    override val title: Text,
+    override val title: MenuItemTitle,
     override val onClickEvent: MenuEvent,
     val subMenuItems: List<StandardMenuItem>,
     val hideOnExpand: Boolean = false,
@@ -77,10 +77,11 @@ data class ExpandableMenuItem(
  *   readers will announce whenever it changes.
  * @param onLongClickEvent [MenuEvent] to dispatch when the menu item is long-clicked.
  * @param actionButton An optional action button to show.
+ * @param trailingIcon An optional icon to show at the end of the menu item, as a hint of what clicking it does.
  * @param state The state of this menu item.
  */
 data class StandardMenuItem(
-    override val title: Text,
+    override val title: MenuItemTitle,
     override val onClickEvent: MenuEvent? = null,
     val onShownEvent: MenuEvent? = null,
     override val contentDescription: Text? = null,
@@ -91,6 +92,7 @@ data class StandardMenuItem(
     override val badge: MenuItemBadge? = null,
     override val onLongClickEvent: MenuEvent? = null,
     val actionButton: MenuItemActionButton? = null,
+    @DrawableRes val trailingIcon: Int? = null,
     override val state: MenuItemState = DEFAULT,
 ) : MenuItem()
 
@@ -105,7 +107,7 @@ data class StandardMenuItem(
  * @param onDismissEvent [MenuEvent] to dispatch when the banner is dismissed.
  */
 data class BannerMenuItem(
-    override val title: Text,
+    override val title: MenuItemTitle,
     override val summary: MenuItemSummary,
     override val icon: MenuItemIcon,
     override val onClickEvent: MenuEvent,
@@ -118,6 +120,17 @@ data class BannerMenuItem(
     override val state: MenuItemState = DEFAULT
     override val onLongClickEvent: MenuEvent? = null
 }
+
+/**
+ * Configuration of the title text of a [MenuItem].
+ *
+ * @param text The text to show.
+ * @param maxLines The maximum number of lines to show this text on.
+ */
+data class MenuItemTitle(
+    val text: Text,
+    val maxLines: Int = 2,
+)
 
 /**
  * Configuration of the summary text of a [MenuItem].
