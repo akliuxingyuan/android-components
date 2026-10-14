@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -92,7 +93,7 @@ fun ExpandableHeaderItem(
     actionButtonText: Text? = null,
     state: MenuItemState = DEFAULT,
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    var isExpanded by rememberSaveable { mutableStateOf(false) }
     val contentDescriptionValue = contentDescription?.value ?: title.value
     val expandedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_expanded)
     val collapsedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_collapsed)
