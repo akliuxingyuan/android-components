@@ -98,7 +98,7 @@ fun MenuBanner(
                     painter = icon.painter,
                     contentDescription = null,
                     modifier =
-                        Modifier.align(Alignment.CenterVertically)
+                        Modifier.align(Alignment.Bottom)
                             .padding(end = AcornTheme.layout.space.static200)
                             .graphicsLayer(scaleX = if (isRtl) 1f else -1f),
                 )
