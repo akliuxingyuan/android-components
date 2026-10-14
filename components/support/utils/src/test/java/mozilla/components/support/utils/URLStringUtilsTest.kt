@@ -42,6 +42,14 @@ class URLStringUtilsTest {
     }
 
     @Test
+    fun `toNormalizedURL encodes only the spaces after the authority of HTTP and HTTPS URLs`() {
+        assertEquals("http://example.com/a%20b?q=c%20d#e%20f", toNormalizedURL("example.com/a b?q=c d#e f"))
+        assertEquals("https://example.com/a%20b%2520", toNormalizedURL("https://example.com/a b%2520"))
+        assertEquals("http://some words", toNormalizedURL("some words"))
+        assertEquals("custom:a b", toNormalizedURL("custom:a b"))
+    }
+
+    @Test
     fun isUrlLike() {
         assertFalse(isURLLike("inurl:mozilla.org advanced search"))
         assertFalse(isURLLike("sf: help"))
@@ -137,6 +145,58 @@ class URLStringUtilsTest {
 
         // Examples from issues
         assertTrue(isURLLike("https://abc--cba.com/")) // #7096
+    }
+
+    @Test
+    fun `HTTP paths queries and fragments accept spaces without changing host classification`() {
+        listOf(
+                "http://example.com/a b",
+                "https://example.com/?q=hello world",
+                "https://example.com/#section one",
+                "example.com/?q=hello world",
+                "example.com/a#section one",
+                "127.0.0.1/a b",
+                "localhost:8000/a b",
+                "127.0.0.1:8000/a b",
+                "[::1]:8000/a b",
+                "example.com:8000/a b",
+                "my.app:443/a b",
+                "https://例え.テスト/日本 語?q=한 글#café au lait",
+                "https://example.com/a%2Fb/%2520?q=a+b%2Bc d",
+                "example.com/r?u=https://other.example/a b",
+                "https://example.com/r?u=https://other.example/a b",
+            )
+            .forEach { input ->
+                assertTrue(input, isURLLike(input))
+                assertFalse(input, isSearchTerm(input))
+            }
+        listOf(
+                "some ordinary words",
+                "intranet/a b",
+                "example.com/a b",
+                "example.unknown/a b",
+                "例え.テスト/日本 語",
+                "node.js/express tutorial",
+                "3.5/5 stars",
+                "vue.js/nuxt setup",
+                "example.com some words",
+                "https://exa mple.com/a",
+                "https://example.com some words/a",
+                "example.com some words?q=test",
+                "example.com some words?u=https://other.example",
+                "site:example.com/a b",
+                "my.app:open data/a b",
+                "tel:12345 67890",
+                "javascript:alert('a b')",
+                "data:text/plain,a b",
+                "file:///a b",
+                "https://example.com/a\tb",
+                "https://example.com/a\nb",
+            )
+            .forEach { input ->
+                assertFalse(input, isURLLike(input))
+                assertTrue(input, isSearchTerm(input))
+            }
     }
 
     @Test

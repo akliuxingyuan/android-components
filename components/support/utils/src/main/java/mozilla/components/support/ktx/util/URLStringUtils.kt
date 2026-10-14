@@ -15,10 +15,33 @@ object URLStringUtils {
      * Determine whether a string is a URL.
      *
      * This method performs a lenient check to determine whether a string is a URL. Anything that contains a :, ://, or
-     * . and has no internal spaces is potentially a URL. If you need a stricter check, consider using
-     * isURLLikeStrict().
+     * . and has no internal spaces is potentially a URL. HTTP/S URLs may also contain spaces outside the authority,
+     * such as in a path, query, or fragment.
      */
-    fun isURLLike(string: String) = isURLLenient.matcher(string).matches()
+    fun isURLLike(string: String) = isURLLenient.matcher(string).matches() || isHttpOrHttpsURLLike(string)
+
+    /** Whether [string] is an HTTP/S or scheme-less URL, allowing spaces in its path, query or fragment. */
+    private fun isHttpOrHttpsURLLike(string: String): Boolean {
+        val trimmedInput = string.trim()
+        val authority = trimmedInput.substring(0, authorityLength(trimmedInput))
+        if (' ' in authority || !isURLLenient.matcher(trimmedInput.replace(" ", "%20")).matches()) return false
+
+        val schemeEnd = authority.indexOf(SCHEME_SEPARATOR)
+        if (schemeEnd >= 0) {
+            val scheme = authority.substring(0, schemeEnd)
+            return scheme.equals("http", ignoreCase = true) || scheme.equals("https", ignoreCase = true)
+        }
+        // Without "://", as in desktop's URIFixup, spaces mean a search unless the input has a port, an IP address as
+        // its host, or a "?" or "#" after its first "/".
+        return authority.startsWith('[') ||
+            possiblyHostPort.matcher(trimmedInput).find() ||
+            (':' !in authority && (ipv4Like.matches(authority) || hasQueryOrFragmentAfterSlash(trimmedInput)))
+    }
+
+    private fun hasQueryOrFragmentAfterSlash(input: String): Boolean {
+        val slash = input.indexOf('/')
+        return slash != -1 && input.indexOfAny(charArrayOf('?', '#'), slash) != -1
+    }
 
     /**
      * Determine whether a string is a search term.
@@ -27,7 +50,7 @@ object URLStringUtils {
      */
     fun isSearchTerm(string: String) = !isURLLike(string)
 
-    /** Normalizes a URL String. */
+    /** Normalizes a URL String, encoding the spaces after the authority of an HTTP/S URL as `%20`. */
     fun toNormalizedURL(string: String): String {
         val trimmedInput = string.trim()
         var uri = trimmedInput.toUri()
@@ -36,8 +59,27 @@ object URLStringUtils {
         } else {
             uri = uri.normalizeScheme()
         }
-        return uri.toString()
+        return encodeSpacesAfterAuthority(uri.toString())
     }
+
+    /** Encodes the spaces in the path, query and fragment of an HTTP/S [url] as `%20`. Other URLs are unchanged. */
+    fun encodeSpacesAfterAuthority(url: String): String {
+        if (!url.startsWith(HTTP, ignoreCase = true) && !url.startsWith(HTTPS, ignoreCase = true)) return url
+        val tailStart = authorityLength(url)
+        return url.substring(0, tailStart) + url.substring(tailStart).replace(" ", "%20")
+    }
+
+    /** Length of the scheme and the authority of [url], i.e. where its path, query or fragment starts. */
+    private fun authorityLength(url: String): Int {
+        val schemeEnd = url.indexOf(SCHEME_SEPARATOR)
+        // A "://" in the path, query or fragment, e.g. in a redirect parameter, does not end a scheme.
+        val hasScheme = schemeEnd != -1 && url.indexOfAny(tailDelimiters) !in 0 until schemeEnd
+        val start = if (hasScheme) schemeEnd + SCHEME_SEPARATOR.length else 0
+        val tailStart = url.indexOfAny(tailDelimiters, start)
+        return if (tailStart == -1) url.length else tailStart
+    }
+
+    private val tailDelimiters = charArrayOf('/', '?', '#')
 
     private val isURLLenient by lazy {
         // Be lenient about what is classified as potentially a URL.
@@ -79,6 +121,14 @@ object URLStringUtils {
         )
     }
 
+    // Mirrors possiblyHostPortRegex in docshell/base/URIFixup.sys.mjs.
+    private val possiblyHostPort by lazy {
+        Pattern.compile("^[a-z0-9-]+(\\.[a-z0-9-]+)*:[0-9]{1,5}([/?#]|$)", Pattern.CASE_INSENSITIVE)
+    }
+
+    // Mirrors IPv4LikeRegex in docshell/base/URIFixup.sys.mjs, which also accepts a shorthand with two dots.
+    private val ipv4Like by lazy { Regex("(\\d{1,3}\\.){2,3}\\d{1,3}") }
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal const val UNICODE_CHARACTER_CLASS: Int = 0x100
 
     // To run tests on a non-Android device (like a computer), Pattern.compile
@@ -90,6 +140,7 @@ object URLStringUtils {
     // complain that this value is not one of the predefined enums that are allowed.
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal var flags = 0
 
+    private const val SCHEME_SEPARATOR = "://"
     private const val HTTP = "http://"
     private const val HTTPS = "https://"
     private const val WWW = "www."

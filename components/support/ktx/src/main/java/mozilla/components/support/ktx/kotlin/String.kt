@@ -142,7 +142,10 @@ fun String.isExtensionUrl() = this.startsWith("moz-extension://")
 /** Checks if this String is a URL of a resource. */
 fun String.isResourceUrl() = this.startsWith("resource://")
 
-/** Appends `http` scheme if no scheme is present in this String. */
+/**
+ * Appends `http` scheme if no scheme is present in this String, and encodes the spaces after the authority of an HTTP/S
+ * URL as `%20`.
+ */
 fun String.toNormalizedUrl(): String {
     val s = this.sanitizeURL()
     // Most commonly we'll encounter http or https schemes.
@@ -150,7 +153,7 @@ fun String.toNormalizedUrl(): String {
     return if (!s.startsWith("http://") && !s.startsWith("https://")) {
         URLStringUtils.toNormalizedURL(s)
     } else {
-        s
+        URLStringUtils.encodeSpacesAfterAuthority(s)
     }
 }
 

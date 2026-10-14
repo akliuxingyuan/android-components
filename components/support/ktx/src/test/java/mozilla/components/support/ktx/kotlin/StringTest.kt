@@ -86,6 +86,8 @@ class StringTest {
         assertEquals(expectedUrl, "http://mozilla.org".toNormalizedUrl())
         assertEquals(expectedUrl, "  http://mozilla.org  ".toNormalizedUrl())
         assertEquals(expectedUrl, "mozilla.org".toNormalizedUrl())
+        assertEquals("https://mozilla.org/a%20b", "https://mozilla.org/a b".toNormalizedUrl())
+        assertEquals("http://mozilla.org/a%20b", "mozilla.org/a b".toNormalizedUrl())
     }
 
     @Test
