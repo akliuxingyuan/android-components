@@ -28,4 +28,21 @@ class SuggestionTest {
             assertEquals(url, Suggestion(mock(), description = url, flags = flags).displayDescription())
         }
     }
+
+    @Test
+    fun `history titles made from the URL are shown readable`() {
+        mapOf("mozilla.org/%D1%82%D0%B5%D1%81%D1%82%20a" to "mozilla.org/тест%20a", "Mozilla" to "Mozilla").forEach {
+            (title, shown) ->
+            val suggestion = Suggestion(mock(), title = title, description = url, flags = setOf(Flag.HISTORY))
+
+            assertEquals(shown, suggestion.displayTitle())
+        }
+    }
+
+    @Test
+    fun `other titles made from the URL are shown as they are`() {
+        val title = "mozilla.org/%D1%82%D0%B5%D1%81%D1%82%20a"
+
+        assertEquals(title, Suggestion(mock(), title = title, description = url).displayTitle())
+    }
 }
