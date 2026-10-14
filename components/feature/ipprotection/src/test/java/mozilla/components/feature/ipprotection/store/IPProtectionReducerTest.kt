@@ -536,6 +536,26 @@ class IPProtectionReducerTest {
     }
 
     @Test
+    fun `GIVEN no active proxy WHEN the service cannot run THEN no deactivation is requested`() {
+        val actions =
+            listOf(ServiceState.Unauthenticated, ServiceState.OptedOut, ServiceState.Unavailable).map {
+                IPProtectionAction.EngineStateChanged(StateInfo(serviceState = it))
+            }
+
+        listOf(Uninitialized, Authorized.Idle).forEach { proxyStatus ->
+            actions.forEach { action ->
+                val state = buildIPProtectionState(proxyStatus = proxyStatus)
+
+                assertEquals(
+                    "No deactivation expected for $action with a $proxyStatus proxy",
+                    null,
+                    iPProtectionReducer(state, action).pendingActivationRequest,
+                )
+            }
+        }
+    }
+
+    @Test
     fun `WHEN the engine resets to uninitialized THEN a queued activation is cleared so a later request reads as new`() {
         val state = buildIPProtectionState().copy(pendingActivationRequest = PendingActivationRequest.Activate(null))
         val info = StateInfo(serviceState = ServiceState.Uninitialized)

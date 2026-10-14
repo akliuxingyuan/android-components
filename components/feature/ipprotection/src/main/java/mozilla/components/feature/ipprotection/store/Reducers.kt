@@ -20,6 +20,7 @@ import mozilla.components.feature.ipprotection.store.state.ProxyActivation
 import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.feature.ipprotection.store.state.Recommended
 import mozilla.components.feature.ipprotection.store.state.Uninitialized
+import mozilla.components.feature.ipprotection.store.state.isActivationInFlight
 
 @Suppress("CognitiveComplexMethod", "LongMethod", "ForbiddenSuppress")
 // FIXME(IPP) break this up into more smaller parts only if the changes are meaningful.
@@ -42,7 +43,7 @@ internal fun iPProtectionReducer(
 
                     ServiceState.Unavailable,
                     ServiceState.Unauthenticated,
-                    ServiceState.OptedOut -> PendingActivationRequest.Deactivate
+                    ServiceState.OptedOut -> state.maybeDeactivate()
 
                     ServiceState.Ready ->
                         when (newProxyStatus) {
@@ -411,6 +412,19 @@ private fun IPProtectionState.clearProfileData(action: InternalAction.AccountMan
         accountState = accountState.copy(status = action.status),
         locationState = LocationState(),
     )
+}
+
+private fun IPProtectionState.maybeDeactivate(): PendingActivationRequest.Deactivate? {
+    if (isActivationInFlight) {
+        return PendingActivationRequest.Deactivate
+    }
+
+    return when (proxyStatus) {
+        Authorized.Active,
+        Authorized.ConnectionError,
+        Authorized.DataLimitReached -> PendingActivationRequest.Deactivate
+        else -> null
+    }
 }
 
 private fun IPProtectionState.handleFinishingEnrollment(action: InternalAction.FinishingEnrollment): IPProtectionState {
