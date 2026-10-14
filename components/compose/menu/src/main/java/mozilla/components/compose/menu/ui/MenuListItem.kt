@@ -35,8 +35,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.button.IconButton
-import mozilla.components.compose.base.modifier.debouncedClickable
-import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
@@ -57,7 +55,7 @@ import mozilla.components.ui.icons.R as iconsR
  * @param title The title of the menu item.
  * @param modifier The modifier to apply to the menu item.
  * @param index The optional index of this item in the list.
- * @param onClickEvent [MenuEvent] to dispatch when the menu item is clicked.
+ * @param onClickEvent An optional [MenuEvent] to dispatch when the menu item is clicked.
  * @param onInteraction The callback to invoke when the menu item is interacted with.
  * @param contentDescription An optional content description for the menu item.
  * @param onShownEvent An optional [MenuEvent] to dispatch when the menu item is shown.
@@ -74,7 +72,7 @@ internal fun MenuListItem(
     title: Text,
     modifier: Modifier = Modifier,
     index: Int? = null,
-    onClickEvent: MenuEvent,
+    onClickEvent: MenuEvent?,
     onInteraction: (MenuEvent) -> Unit,
     contentDescription: Text?,
     onShownEvent: MenuEvent? = null,
@@ -120,9 +118,14 @@ internal fun MenuListItem(
                         }
                         contentDescriptionValue?.let { this.contentDescription = it }
                         liveRegion = LiveRegionMode.Polite
-                        this.role = role
                     }
-                    .thenConditional(Modifier.debouncedClickable { onInteraction(onClickEvent) }) { state != DISABLED }
+                    .menuItemClickableBehavior(
+                        state = state,
+                        role = role,
+                        onClickEvent = onClickEvent,
+                        onLongClickEvent = null,
+                        onInteraction = onInteraction,
+                    )
                     .padding(
                         horizontal = AcornTheme.layout.space.static200,
                         vertical = AcornTheme.layout.space.static100,
