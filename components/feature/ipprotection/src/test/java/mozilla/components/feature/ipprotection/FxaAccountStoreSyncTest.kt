@@ -182,7 +182,8 @@ class FxaAccountStoreSyncTest {
 
     @Test
     fun `WHEN onReady is called with an account THEN WarmingUp is forwarded`() {
-        val (ipProtectionStore, captureMiddleware) = buildStore()
+        val (ipProtectionStore, captureMiddleware) =
+            buildStore(buildIPProtectionState(accountStatus = AccountStatus.Uninitialized))
 
         val sync = FxaAccountStoreSync(syncStore, ipProtectionStore, lazyOf(accountManager), StandardTestDispatcher())
 

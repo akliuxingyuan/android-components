@@ -343,11 +343,18 @@ internal fun internalReducer(
                 AccountStatus.EnrolledAndEntitled -> state
 
                 AccountStatus.Uninitialized,
-                AccountStatus.WarmingUp,
                 AccountStatus.NeedsAuthentication,
                 AccountStatus.NeedsAuthorization,
                 AccountStatus.Authenticated -> {
                     state.copy(accountState = state.accountState.copy(status = action.status))
+                }
+
+                AccountStatus.WarmingUp -> {
+                    if (state.accountState.status == AccountStatus.Uninitialized) {
+                        state.copy(accountState = state.accountState.copy(status = action.status))
+                    } else {
+                        state
+                    }
                 }
 
                 AccountStatus.AuthFailed -> {
