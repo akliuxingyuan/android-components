@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -23,10 +24,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.LayoutDirection
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
@@ -92,11 +95,15 @@ internal fun PlaybackControls(
             )
         }
 
-        CenterControls(
-            articleProgressState = articleProgressState,
-            playbackUiState = playbackUiState,
-            onAction = onAction,
-        )
+        // Media player controls are always LTR:
+        // https://m3.material.io/foundations/layout/bidirectionality-rtl
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            CenterControls(
+                articleProgressState = articleProgressState,
+                playbackUiState = playbackUiState,
+                onAction = onAction,
+            )
+        }
 
         SpeedControls(
             speedState = speedState,

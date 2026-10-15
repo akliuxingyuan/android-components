@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -23,11 +24,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.offset
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
@@ -83,7 +90,9 @@ internal fun PlayerExpanded(
         val labelPattern = stringResource(R.string.mozac_feature_listentopage_playback_speed_option)
         val speedState =
             remember(speed, locale, labelPattern, onAction) {
-                speed.toSpeedState(locale, labelPattern) { onAction(ListenAction.Controls.PlaybackSpeedSelected(it)) }
+                speed.toSpeedState(locale, labelPattern) {
+                    onAction(ListenAction.Controls.PlaybackSpeedSelected(it))
+                }
             }
         PlaybackControls(
             articleProgressState = articleProgressState,
@@ -106,41 +115,64 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction
         derivedStateOf { DateUtils.formatElapsedTime(articleProgressState.value.durationMs / MS_PER_SECOND) }
     }
 
-    Column(
-        modifier =
-            Modifier.padding(
-                    start = AcornTheme.layout.space.static200,
-                    end = AcornTheme.layout.space.static200,
-                    top = AcornTheme.layout.space.static100,
-                )
-                .fillMaxWidth()
-    ) {
-        AudioProgressBar(
-            progress = progress,
-            type = AudioProgressBarType.Full,
-            onSeek = {
-                onAction(ListenAction.Playback.SeekRequested(it))
-            },
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+    // Media player controls are always LTR:
+    // https://m3.material.io/foundations/layout/bidirectionality-rtl
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Column(
+            modifier =
+                Modifier.padding(
+                        start = AcornTheme.layout.space.static200,
+                        end = AcornTheme.layout.space.static200,
+                        top = AcornTheme.layout.space.static100,
+                    )
+                    .fillMaxWidth()
         ) {
-            Text(
-                text = elapsedTime,
-                style = AcornTheme.typography.caption,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            AudioProgressBar(
+                progress = progress,
+                type = AudioProgressBarType.Full,
+                onSeek = {
+                    onAction(ListenAction.Playback.SeekRequested(it))
+                },
+                modifier = Modifier.extendTrackLength(thumbWidth = AcornTheme.layout.size.static200),
             )
-            Text(
-                text = totalTime,
-                style = AcornTheme.typography.caption,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = elapsedTime,
+                    style = AcornTheme.typography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = totalTime,
+                    style = AcornTheme.typography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Extends the component's width by the Thumb's width, and then places it in the center. This allows the track to run up
+ * to the edge of the component. Note that this causes the Thumb to hang off the edge of the component's reported width.
+ *
+ * @param thumbWidth Used to extend the track width, must match the resting Slider thumb width.
+ */
+private fun Modifier.extendTrackLength(thumbWidth: Dp): Modifier {
+    return this.layout { measurable, constraints ->
+        val thumbPx = thumbWidth.roundToPx()
+        val placeable = measurable.measure(constraints.offset(horizontal = thumbPx))
+        layout((placeable.width - thumbPx).coerceAtLeast(0), placeable.height) {
+            placeable.placeRelative(-thumbPx / 2, 0)
         }
     }
 }
 
 @PreviewLightDark
+@Preview(name = "RTL - Arabic", locale = "ar")
 @Composable
 private fun PlayerExpandedPreview(@PreviewParameter(PlaybackUIStatePreviewProvider::class) state: PlaybackUiState) {
     AcornTheme {
