@@ -74,24 +74,23 @@ internal class FxaAccountStoreSync(
                 .map { it.accountState }
                 .distinctUntilChanged()
                 .collect { state ->
-                    when (state) {
-                        AccountState.Authenticated -> {
-                            if (lazyAccountManager.value.containsScope(SCOPE_IPPROTECTION)) {
-                                AccountStatus.Authenticated
-                            } else {
-                                AccountStatus.NeedsAuthorization
+                    ipProtectionStore.dispatch(
+                        InternalAction.AccountManagerStateChanged(
+                            when (state) {
+                                AccountState.Authenticated -> {
+                                    if (lazyAccountManager.value.containsScope(SCOPE_IPPROTECTION)) {
+                                        AccountStatus.Authenticated
+                                    } else {
+                                        AccountStatus.NeedsAuthorization
+                                    }
+                                }
+                                AccountState.AuthenticationProblem -> AccountStatus.NeedsAuthentication
+                                AccountState.NotAuthenticated -> AccountStatus.NoAccount
+                                // Initialization step; once finished, the state will pop up in onReady()
+                                AccountState.Unknown -> AccountStatus.Uninitialized
                             }
-                        }
-                        AccountState.AuthenticationProblem -> AccountStatus.NeedsAuthentication
-                        AccountState.NotAuthenticated -> AccountStatus.NoAccount
-                        // Initialization step; once finished, the state will pop up in onReady()
-                        AccountState.Unknown -> AccountStatus.Uninitialized
-                        // this state is never fired, and should be removed in
-                        // https://bugzilla.mozilla.org/show_bug.cgi?id=2041509
-                        is AccountState.Authenticating -> null
-                    }?.let {
-                        ipProtectionStore.dispatch(InternalAction.AccountManagerStateChanged(it))
-                    }
+                        )
+                    )
                 }
         }
     }

@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 160.0 (In Development)
+* **service-firefox-accounts**
+    * ⚠️ **Breaking change**: Removed `AccountState.Authenticating`. [Bug 2041509](https://bugzilla.mozilla.org/show_bug.cgi?id=2041509)
 * **feature-awesomebar**
     * Suggestions from `HistoryStorageSuggestionProvider`, including those `CombinedHistorySuggestionProvider` gets from history storage, now have the `HISTORY` flag, like the other history and bookmark suggestions. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
     * `SessionSuggestionProvider` falls back to the URL formatted by `URLStringUtils.toLosslessDisplayUrl` when a tab has no title. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)

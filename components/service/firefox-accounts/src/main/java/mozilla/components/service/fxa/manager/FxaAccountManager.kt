@@ -533,7 +533,6 @@ open class FxaAccountManager(
                 FxaEvent.WebChannelPasswordChange(jsonPayload = event.jsonPayload)
             // This is the one ProgressEvent that's considered a "public event" in app-services
             is Event.Progress.AuthData -> FxaEvent.CompleteOAuthFlow(event.authData.code, event.authData.state)
-            else -> null
         }
 
     /**
