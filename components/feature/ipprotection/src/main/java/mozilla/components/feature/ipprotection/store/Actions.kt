@@ -171,9 +171,6 @@ internal sealed class InternalAction : IPProtectionAction() {
     /** Reports a change in whether the user qualifies for IP Protection. */
     data class EligibilityChanged(val eligibility: EligibilityStatus) : InternalAction()
 
-    /** Reports a change in new service state that happen from IP Protection. */
-    data class UpdateServiceState(val serviceState: ServiceState) : InternalAction()
-
     /** Puts the auth flow into an intermediary state while an incomplete authentication is occurring. */
     data class AwaitingAuth(val status: AccountStatus) : InternalAction()
 }

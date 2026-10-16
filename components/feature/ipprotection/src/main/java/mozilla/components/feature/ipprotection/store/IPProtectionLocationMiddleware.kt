@@ -68,8 +68,7 @@ class IPProtectionLocationMiddleware(
             is InternalAction.AwaitingAuth,
             is InternalAction.EligibilityChanged,
             is InternalAction.FinishingAuthFlow,
-            is InternalAction.FinishingEnrollment,
-            is InternalAction.UpdateServiceState -> {
+            is InternalAction.FinishingEnrollment -> {
                 // no-op
             }
         }

@@ -334,8 +334,6 @@ internal fun internalReducer(
             state.copy(accountState = state.accountState.copy(status = AccountStatus.AwaitingEnrollment))
         }
 
-        is InternalAction.UpdateServiceState -> state.copy(serviceStatus = action.serviceState)
-
         // Do nothing while we wait for our pending authentication to change.
         is InternalAction.AwaitingAuth -> state.copy(accountState = state.accountState.copy(status = action.status))
 

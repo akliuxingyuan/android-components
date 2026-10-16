@@ -711,17 +711,6 @@ class IPProtectionReducerTest {
     }
 
     @Test
-    fun `WHEN UpdateServiceState is dispatched THEN serviceStatus records the snapshot`() {
-        val resultState =
-            iPProtectionReducer(
-                buildIPProtectionState(),
-                InternalAction.UpdateServiceState(ServiceState.Ready),
-            )
-
-        assertEquals(ServiceState.Ready, resultState.serviceStatus)
-    }
-
-    @Test
     fun `WHEN AwaitingAuth is dispatched THEN the account is parked at the given intermediary status`() {
         val resultState =
             iPProtectionReducer(
