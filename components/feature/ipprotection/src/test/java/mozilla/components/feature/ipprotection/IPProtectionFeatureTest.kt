@@ -9,7 +9,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.Engine
-import mozilla.components.concept.engine.ipprotection.IPProtectionHandler.StateInfo
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
@@ -65,9 +64,7 @@ class IPProtectionFeatureTest {
             testScheduler.advanceUntilIdle()
             store.dispatch(IPProtectionAction.EligibilityChanged(EligibilityStatus.Eligible))
             testScheduler.advanceUntilIdle()
-            store.dispatch(
-                IPProtectionAction.EngineStateChanged(StateInfo(serviceState = ServiceState.Unauthenticated))
-            )
+            store.dispatch(IPProtectionAction.ServiceStateChanged(ServiceState.Unauthenticated))
             testScheduler.advanceUntilIdle()
 
             assertEquals(
