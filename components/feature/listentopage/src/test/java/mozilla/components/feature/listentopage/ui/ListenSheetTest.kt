@@ -129,6 +129,28 @@ class ListenSheetTest {
     }
 
     @Test
+    fun `GIVEN buffering WHEN it lasts past the delay THEN the playback button shows a loading indicator`() {
+        composeTestRule.mainClock.autoAdvance = false
+        setContent(expanded = false, playbackPhase = PlaybackPhase.Buffering)
+
+        composeTestRule.mainClock.advanceTimeBy(LOADING_INDICATOR_DELAY_MS / 2)
+        composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_LOADING_TEST_TAG).assertDoesNotExist()
+
+        composeTestRule.mainClock.advanceTimeBy(LOADING_INDICATOR_DELAY_MS)
+        composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_LOADING_TEST_TAG).assertExists()
+    }
+
+    @Test
+    fun `GIVEN playing WHEN shown THEN the playback button shows no loading indicator`() {
+        composeTestRule.mainClock.autoAdvance = false
+        setContent(expanded = false, playbackPhase = PlaybackPhase.Playing)
+
+        composeTestRule.mainClock.advanceTimeBy(LOADING_INDICATOR_DELAY_MS * 2)
+
+        composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_LOADING_TEST_TAG).assertDoesNotExist()
+    }
+
+    @Test
     fun `GIVEN paused WHEN shown THEN the playback button has a play label`() {
         setContent(expanded = false, playbackPhase = PlaybackPhase.Paused)
 

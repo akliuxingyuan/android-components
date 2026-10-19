@@ -318,6 +318,21 @@ class ListenMiddlewareTest {
     }
 
     @Test
+    fun `test that a session shows buffering while its opening is made`() = runTest {
+        val synthesizer = FakeSpeechSynthesizer(timePerRequest = 1.seconds)
+        val store =
+            storeWith(synthesizerProvider = { synthesizer }) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+
+        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+        advanceTimeBy(500.milliseconds)
+
+        assertTrue("the opening was already made", synthesizer.files.isEmpty())
+        assertEquals(PlaybackPhase.Buffering, store.state.playbackState.phase)
+    }
+
+    @Test
     fun `test that a press of play while the opening is made does not read the article out twice`() = runTest {
         val synthesizer = FakeSpeechSynthesizer(timePerRequest = 1.seconds)
         val playback = FakePlaybackController()

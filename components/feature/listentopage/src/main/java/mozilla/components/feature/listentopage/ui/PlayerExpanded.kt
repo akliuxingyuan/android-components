@@ -81,7 +81,8 @@ internal fun PlayerExpanded(
             ArticleHeading(
                 article = article,
                 playbackUiState = playbackUiState,
-                shouldScrollTitle = playbackUiState is PlaybackUiState.Playing,
+                shouldScrollTitle =
+                    playbackUiState is PlaybackUiState.Playing || playbackUiState is PlaybackUiState.Buffering,
             )
         }
 

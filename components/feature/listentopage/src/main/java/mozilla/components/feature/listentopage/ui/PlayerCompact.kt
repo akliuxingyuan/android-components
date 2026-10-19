@@ -72,7 +72,8 @@ internal fun PlayerCompact(
                     Modifier.weight(1f)
                         .heightIn(min = AcornTheme.layout.size.static600)
                         .clickable(role = Role.Button, onClick = onExpandClicked),
-                shouldScrollTitle = playbackUiState is PlaybackUiState.Playing,
+                shouldScrollTitle =
+                    playbackUiState is PlaybackUiState.Playing || playbackUiState is PlaybackUiState.Buffering,
                 playbackUiState = playbackUiState,
             )
 

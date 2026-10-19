@@ -11,6 +11,8 @@ import mozilla.components.feature.listentopage.PlaybackPhase
 internal sealed interface PlaybackUiState {
     data object Playing : PlaybackUiState
 
+    data object Buffering : PlaybackUiState
+
     data object Paused : PlaybackUiState
 
     data class Error(val listenError: ListenError) : PlaybackUiState
@@ -19,7 +21,8 @@ internal sealed interface PlaybackUiState {
 internal fun PlaybackPhase.toUiState(error: ListenError?): PlaybackUiState =
     when {
         error != null -> PlaybackUiState.Error(error)
-        this == PlaybackPhase.Playing || this == PlaybackPhase.Buffering -> PlaybackUiState.Playing
+        this == PlaybackPhase.Playing -> PlaybackUiState.Playing
+        this == PlaybackPhase.Buffering -> PlaybackUiState.Buffering
         else -> PlaybackUiState.Paused
     }
 
@@ -27,6 +30,7 @@ internal class PlaybackUIStatePreviewProvider : PreviewParameterProvider<Playbac
     val data =
         listOf(
             "Playing" to PlaybackUiState.Playing,
+            "Buffering" to PlaybackUiState.Buffering,
             "Paused" to PlaybackUiState.Paused,
             "Error:PlaybackFailed" to PlaybackUiState.Error(ListenError.PlaybackFailed),
             "Error:SynthesisFailed" to PlaybackUiState.Error(ListenError.SynthesisFailed),

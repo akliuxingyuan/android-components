@@ -321,6 +321,8 @@ class ListenMiddleware(
      * to default to. A language with no offline voice is not read out at all.
      */
     private fun ListenStore.loadVoicesAndPlay(langTag: String) {
+        // Shown as buffering from here until the opening plays
+        dispatch(ListenAction.Playback.PlaybackWaiting)
         voicesJob?.cancel()
         voicesJob = scope.launch {
             if (state.voiceState.loadState != VoiceLoadState.Loaded && !loadVoices(langTag)) {

@@ -41,8 +41,8 @@ class PlaybackUiStateTest {
     }
 
     @Test
-    fun `Test that when content is buffering and an error is not present, the state is playing`() {
+    fun `Test that when content is buffering and an error is not present, the state is buffering`() {
         val state = PlaybackPhase.Buffering.toUiState(error = null)
-        assertEquals(expected = PlaybackUiState.Playing, actual = state)
+        assertEquals(expected = PlaybackUiState.Buffering, actual = state)
     }
 }

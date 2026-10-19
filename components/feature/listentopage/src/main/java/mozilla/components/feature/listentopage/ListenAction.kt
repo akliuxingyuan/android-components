@@ -161,7 +161,10 @@ sealed interface ListenAction : Action {
          */
         data class SeekRequested(val fraction: Float) : Playback
 
-        /** The player read out every chunk it had been given and the article has more to come. */
+        /**
+         * Playback waits for audio that is still being made: the opening when a session starts, or the next chunk after
+         * the player read out every chunk it had been given.
+         */
         data object PlaybackWaiting : Playback
 
         /** The article was read to its end, or a seek moved playback to its end. */
