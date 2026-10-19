@@ -7,6 +7,7 @@ package mozilla.components.feature.listentopage
 import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
 import mozilla.components.feature.listentopage.playback.ArticleMeasurements
+import mozilla.components.feature.listentopage.playback.shownDurationMs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -373,7 +374,37 @@ class ListenReducerTest {
     fun `test that a seek moves the elapsed time to that share of the article`() {
         val state = listenReducer(fullState, ListenAction.Playback.SeekRequested(0.25f))
 
-        assertEquals(fullState.copy(articleProgress = fullState.articleProgress.copy(positionMs = 150_000)), state)
+        assertEquals(
+            fullState.copy(articleProgress = fullState.articleProgress.copy(positionMs = 150_000, barPosition = 0.25f)),
+            state,
+        )
+    }
+
+    @Test
+    fun `test that a seek lands against the estimated length, so the bar is back in step with it`() {
+        // A bar held back at a third while the estimate grows is drawn against 300s rather than the 600s estimated.
+        val held =
+            ListenState(
+                articleProgress = ArticleProgress(positionMs = 100_000, durationMs = 600_000, barPosition = 1 / 3f)
+            )
+
+        val state = listenReducer(held, ListenAction.Playback.SeekRequested(0.5f))
+
+        assertEquals(300_000, state.articleProgress.positionMs)
+        assertEquals(0.5f, state.articleProgress.fraction, 0f)
+        assertEquals(600_000, state.articleProgress.shownDurationMs())
+    }
+
+    @Test
+    fun `test that a seek to the end after the estimate grew lands at the end of the article`() {
+        val held =
+            ListenState(
+                articleProgress = ArticleProgress(positionMs = 100_000, durationMs = 600_000, barPosition = 1 / 3f)
+            )
+
+        val state = listenReducer(held, ListenAction.Playback.SeekRequested(1f))
+
+        assertEquals("the end of the drawn length was taken as the end", 600_000, state.articleProgress.positionMs)
     }
 
     @Test
@@ -390,6 +421,41 @@ class ListenReducerTest {
         val state = listenReducer(ListenState(), ListenAction.Playback.SeekRequested(0.5f))
 
         assertEquals(ArticleProgress(), state.articleProgress)
+    }
+
+    @Test
+    fun `test that the end of the article fills the bar`() {
+        val playing = fullState.copy(articleProgress = ArticleProgress(positionMs = 590_000, durationMs = 600_000))
+
+        val state = listenReducer(playing, ListenAction.Playback.PlaybackEnded)
+
+        assertEquals(PlaybackPhase.Ended, state.playbackState.phase)
+        assertEquals(600_000, state.articleProgress.positionMs)
+        assertEquals(1f, state.articleProgress.fraction, 0f)
+    }
+
+    @Test
+    fun `test that a seek away from an article a seek finished leaves it paused while it waits`() {
+        val finished =
+            fullState.copy(
+                playbackState = fullState.playbackState.copy(phase = PlaybackPhase.Ended),
+                playlist = Playlist().finished(),
+            )
+
+        val seeking = listenReducer(finished, PlaylistAction.SeekStarted(articlePositionMs = 300_000, chunkIndex = 2))
+        val waiting = listenReducer(seeking, ListenAction.Playback.PlaybackWaiting)
+
+        assertEquals(PlaybackPhase.Paused, seeking.playbackState.phase)
+        assertEquals(PlaybackPhase.Paused, waiting.playbackState.phase)
+    }
+
+    @Test
+    fun `test that a seek away from an article read to its end does not pause it`() {
+        val readOut = fullState.copy(playbackState = fullState.playbackState.copy(phase = PlaybackPhase.Ended))
+
+        val state = listenReducer(readOut, PlaylistAction.SeekStarted(articlePositionMs = 300_000, chunkIndex = 2))
+
+        assertEquals(PlaybackPhase.Ended, state.playbackState.phase)
     }
 
     @Test

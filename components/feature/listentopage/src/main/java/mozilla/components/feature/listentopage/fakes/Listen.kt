@@ -196,6 +196,7 @@ class FakeAudioFileCache : AudioFileCache {
  * @property restartChunkStartsMs Where in the article each chunk it was restarted on starts, in order.
  * @property articleDurationsMs Every article duration it was told about, in order.
  * @property stopAndBufferPositionsMs Every article position it was asked to stop and buffer at for a seek, in order.
+ * @property finishedAtPositionsMs Every article position it was asked to finish the article at, in order.
  * @property fileDurationsMs How long each file it was given lasts, in the order the files were given.
  * @property playbackSpeedSet Every speed it was asked to read at, in order.
  */
@@ -217,6 +218,7 @@ class FakePlaybackController(var positionMs: Long = 0L, private val shouldReport
     val articleDurationsMs = mutableListOf<Long>()
     val fileDurationsMs = mutableListOf<Long?>()
     val stopAndBufferPositionsMs = mutableListOf<Long>()
+    val finishedAtPositionsMs = mutableListOf<Long>()
     val playbackSpeedSet = mutableListOf<PlaybackSpeed>()
     var released = false
 
@@ -288,6 +290,13 @@ class FakePlaybackController(var positionMs: Long = 0L, private val shouldReport
         restartedPositionsMs.add(positionMs)
         restartChunkStartsMs.add(chunkStartMs)
         played.add(chunk.file)
+    }
+
+    override suspend fun finishAt(positionMs: Long) {
+        finishedAtPositionsMs.add(positionMs)
+
+        // Like the session, which pauses the player and shows the end.
+        status.value = status.value.copy(phase = PlaybackPhase.Paused, positionMs = positionMs)
     }
 
     override suspend fun stopAndBufferAt(positionMs: Long) {

@@ -173,6 +173,7 @@ internal class ListenSessionCallback(
             commands.add(SessionCommand(COMMAND_SET_SESSION_ACTIVITY, Bundle.EMPTY))
             commands.add(SessionCommand(COMMAND_SET_ARTICLE_DURATION, Bundle.EMPTY))
             commands.add(SessionCommand(COMMAND_STOP_AND_BUFFER_AT, Bundle.EMPTY))
+            commands.add(SessionCommand(COMMAND_FINISH_AT, Bundle.EMPTY))
         }
 
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
@@ -192,6 +193,7 @@ internal class ListenSessionCallback(
             COMMAND_SET_SESSION_ACTIVITY -> session.setSessionActivity(args.sessionActivity())
             COMMAND_SET_ARTICLE_DURATION -> sessionPlayer.setArticleDuration(args.getLong(KEY_DURATION_MS))
             COMMAND_STOP_AND_BUFFER_AT -> sessionPlayer.bufferAt(args.getLong(KEY_POSITION_MS))
+            COMMAND_FINISH_AT -> sessionPlayer.finishAt(args.getLong(KEY_POSITION_MS))
 
             else -> return super.onCustomCommand(session, controller, customCommand, args)
         }

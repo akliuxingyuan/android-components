@@ -45,12 +45,13 @@ class ListenSheetTest {
         onExpandClicked: () -> Unit = {},
         playbackPhase: PlaybackPhase = PlaybackPhase.Playing,
         error: ListenError? = null,
+        articleProgress: ArticleProgress = ArticleProgress(),
     ) {
         composeTestRule.setContent {
             AcornTheme {
                 ListenSheet(
                     article = ArticleDetails(title = TITLE, site = "bbc.co.uk"),
-                    articleProgressState = remember { mutableStateOf(ArticleProgress()) },
+                    articleProgressState = remember { mutableStateOf(articleProgress) },
                     playbackPhase = playbackPhase,
                     speed = PlaybackSpeed.Default,
                     voiceState = VoiceState(),
@@ -101,6 +102,16 @@ class ListenSheetTest {
         setContent(expanded = false, playbackPhase = PlaybackPhase.Buffering)
 
         composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_TEST_TAG).assert(hasContentDescription(pause))
+    }
+
+    @Test
+    fun `GIVEN a bar catching up with a changed estimate WHEN shown THEN the length is the one the bar is drawn against`() {
+        setContent(
+            expanded = true,
+            articleProgress = ArticleProgress(positionMs = 60_000, durationMs = 600_000, barPosition = 0.2f),
+        )
+
+        composeTestRule.onNodeWithText("05:00").assertExists()
     }
 
     @Test

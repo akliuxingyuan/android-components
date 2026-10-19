@@ -42,6 +42,7 @@ import mozilla.components.feature.listentopage.ListenAction
 import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
 import mozilla.components.feature.listentopage.VoiceState
+import mozilla.components.feature.listentopage.playback.shownDurationMs
 import mozilla.components.ui.icons.R as iconsR
 
 private const val MS_PER_SECOND = 1000L
@@ -112,7 +113,7 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction
         derivedStateOf { DateUtils.formatElapsedTime(articleProgressState.value.positionMs / MS_PER_SECOND) }
     }
     val totalTime by remember {
-        derivedStateOf { DateUtils.formatElapsedTime(articleProgressState.value.durationMs / MS_PER_SECOND) }
+        derivedStateOf { DateUtils.formatElapsedTime(articleProgressState.value.shownDurationMs() / MS_PER_SECOND) }
     }
 
     // Media player controls are always LTR:

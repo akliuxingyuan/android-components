@@ -137,11 +137,13 @@ sealed interface ListenAction : Action {
          * @property positionMs How far into the article.
          * @property durationMs How long the whole article lasts.
          * @property chunkDurationsMs How long each chunk lasts, as they stood when this was worked out.
+         * @property barPosition Where the progress bar is drawn. See [ArticleProgress.barPosition].
          */
         data class ArticleProgressReverted(
             val positionMs: Long,
             val durationMs: Long,
             val chunkDurationsMs: List<Long> = emptyList(),
+            val barPosition: Float? = null,
         ) : Playback
 
         /**
@@ -162,7 +164,7 @@ sealed interface ListenAction : Action {
         /** The player read out every chunk it had been given and the article has more to come. */
         data object PlaybackWaiting : Playback
 
-        /** The player read the last chunk of the article out. */
+        /** The article was read to its end, or a seek moved playback to its end. */
         data object PlaybackEnded : Playback
 
         /** The player could not read the article out. */
@@ -224,6 +226,9 @@ internal sealed interface PlaylistAction : ListenAction {
 
     /** The seek was given up. */
     data object SeekAbandoned : PlaylistAction
+
+    /** A seek moved playback to the end of the article, which finished it there. */
+    data object Finished : PlaylistAction
 
     /**
      * The player was given a new playlist that starts on the chunk at [chunkIndex], [startMs] into the article.

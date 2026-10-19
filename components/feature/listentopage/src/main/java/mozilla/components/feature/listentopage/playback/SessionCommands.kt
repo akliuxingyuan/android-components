@@ -20,6 +20,9 @@ internal const val COMMAND_SET_ARTICLE_DURATION = "mozilla.components.feature.li
 /** Sent by the app to stop the audio and show [KEY_POSITION_MS] until the chunk a seek needs has been made. */
 internal const val COMMAND_STOP_AND_BUFFER_AT = "mozilla.components.feature.listentopage.STOP_AND_BUFFER_AT"
 
+/** Sent by the app to stop the audio where a seek finished the article, and show [KEY_POSITION_MS], its end. */
+internal const val COMMAND_FINISH_AT = "mozilla.components.feature.listentopage.FINISH_AT"
+
 /**
  * Sent by the session to the app with the position into the article the notification asked for, in [KEY_POSITION_MS].
  */

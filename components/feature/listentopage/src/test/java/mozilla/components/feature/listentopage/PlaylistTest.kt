@@ -64,6 +64,34 @@ class PlaylistTest {
     }
 
     @Test
+    fun `test that an end of the chunk a playlist restarted on is read, when it is the first report from it`() {
+        playlist = playlist.restarted(chunkIndex = 6, chunkDurationsBeforePlaylistMs = emptyList(), startMs = 61_000)
+
+        val ended = PlaybackState(phase = PlaybackPhase.Ended, chunk = ChunkState(index = 6), positionMs = 61_500)
+
+        assertEquals(PlaybackPhase.Ended, send(ended)?.phase)
+    }
+
+    @Test
+    fun `test that an end of another chunk after a restart is still left over from the playlist it replaced`() {
+        playlist = playlist.restarted(chunkIndex = 6, chunkDurationsBeforePlaylistMs = emptyList(), startMs = 61_000)
+
+        assertNull(send(PlaybackState(phase = PlaybackPhase.Ended, chunk = ChunkState(index = 2), positionMs = 70_000)))
+    }
+
+    @Test
+    fun `test that nothing the player reports is read once a seek finished the article, until playback moves again`() {
+        playlist = playlist.finished()
+
+        assertNull(send(playing(chunk = 2, positionMs = 12_000)))
+        assertNull(send(PlaybackState(phase = PlaybackPhase.Paused, positionMs = 12_000)))
+
+        playlist = playlist.seeking(0, chunkIndex = 0)
+
+        assertEquals(0L, send(playing(chunk = 0, positionMs = 0))?.positionMs)
+    }
+
+    @Test
     fun `test that what the player reports from before a seek reaches it is not read`() {
         playlist = playlist.seeking(150_000, chunkIndex = 12)
 

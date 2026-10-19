@@ -313,6 +313,79 @@ class SessionPlayerTest {
     }
 
     @Test
+    fun `test that finishing the article pauses the player and shows its end as the position`() {
+        val chunk = ChunkPlayer()
+        val player = SessionPlayer(chunk) {}
+        player.setMediaItem(playlistFirstItem(ArticleTimeline(playlistStartMs = 75_000, durationMs = 600_000)))
+        player.play()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        player.finishAt(600_000)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertFalse("the player was not paused", chunk.shouldPlay)
+        assertFalse(player.playWhenReady)
+        assertEquals(600_000L, player.currentPosition)
+    }
+
+    @Test
+    fun `test that playing a finished article asks for its top rather than playing on, and plays once it is there`() {
+        val chunk = ChunkPlayer()
+        val articleSeeks = mutableListOf<Long>()
+        val player = SessionPlayer(chunk) { articleSeeks.add(it) }
+        player.setMediaItem(playlistFirstItem(ArticleTimeline(playlistStartMs = 0, durationMs = 600_000)))
+        player.finishAt(600_000)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        player.play()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(listOf(0L), articleSeeks)
+        assertFalse("the audio from before the finish was played on", chunk.shouldPlay)
+        assertEquals(600_000L, player.currentPosition)
+
+        player.seekTo(0, 0)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(listOf(0 to 0L), chunk.seeks)
+        assertTrue("the top of the article was not played", chunk.shouldPlay)
+        assertEquals(FIRST_CHUNK_MS + 15_000, player.currentPosition)
+    }
+
+    @Test
+    fun `test that playing a finished article plays its top once it is made again`() {
+        val chunk = ChunkPlayer()
+        val player = SessionPlayer(chunk) {}
+        player.setMediaItem(playlistFirstItem(ArticleTimeline(playlistStartMs = 0, durationMs = 600_000)))
+        player.finishAt(600_000)
+        player.play()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        player.bufferAt(0)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertTrue("the player made a sound while the top was made", chunk.stopped)
+        assertEquals(0L, player.currentPosition)
+
+        player.setMediaItem(File("chunk").toMediaItem(ArticleDisplayData(), durationMs = FIRST_CHUNK_MS))
+        player.prepare()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertTrue("the top of the article was not played", chunk.shouldPlay)
+        assertTrue(player.playWhenReady)
+    }
+
+    @Test
+    fun `test that a new playlist stops showing the end of a finished article`() {
+        val player = SessionPlayer(ChunkPlayer()) {}
+        player.finishAt(600_000)
+
+        player.setMediaItem(playlistFirstItem(ArticleTimeline(playlistStartMs = 0, durationMs = 600_000)))
+
+        assertEquals(FIRST_CHUNK_MS + 15_000, player.currentPosition)
+    }
+
+    @Test
     fun `test that everything else the player reports is passed on unchanged`() {
         val chunk = ChunkPlayer()
         assertEquals(Player.STATE_READY, chunk.playbackState)
@@ -434,6 +507,9 @@ private class ChunkPlayer(private val firstChunkLoaded: Boolean = true) : Simple
     var stopped = false
         private set
 
+    var shouldPlay = false
+        private set
+
     /** Stops the player, as buffering for a seek does, and reports it. */
     fun stopAndReport() {
         stopped = true
@@ -466,7 +542,13 @@ private class ChunkPlayer(private val firstChunkLoaded: Boolean = true) : Simple
             .setSeekBackIncrementMs(SEEK_BACK_MS)
             .setSeekForwardIncrementMs(SEEK_FORWARD_MS)
             .setContentPositionMs(15_000)
+            .setPlayWhenReady(shouldPlay, Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
             .build()
+
+    override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+        shouldPlay = playWhenReady
+        return Futures.immediateVoidFuture()
+    }
 
     override fun handleStop(): ListenableFuture<*> {
         stopped = true

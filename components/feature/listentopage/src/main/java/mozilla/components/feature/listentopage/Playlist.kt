@@ -34,6 +34,7 @@ private const val MAX_REPORTS_BEFORE_SEEK = 2
  *   there, or [NO_CHUNK].
  * @property lastReadReport The last report the player sent, or `null` when it was left over from before the last seek
  *   or restart.
+ * @property isFinished Whether a seek moved playback to the end of the article, until playback moves again.
  */
 @ConsistentCopyVisibility
 data class Playlist
@@ -46,6 +47,7 @@ internal constructor(
     private val restartedAtMs: Long? = null,
     private val seekingToMs: Long? = null,
     private val reportsBeforeSeek: Int = 0,
+    internal val isFinished: Boolean = false,
 ) {
     /** The next chunk to hand to the player. */
     internal val nextToQueue: Int
@@ -59,7 +61,10 @@ internal constructor(
 
     /** Playback is being moved to [positionMs] into the article, which is inside the chunk at [chunkIndex]. */
     internal fun seeking(positionMs: Long, chunkIndex: Int) =
-        copy(seekingToMs = positionMs, seekingToChunkIndex = chunkIndex, reportsBeforeSeek = 0)
+        copy(seekingToMs = positionMs, seekingToChunkIndex = chunkIndex, reportsBeforeSeek = 0, isFinished = false)
+
+    /** A seek moved playback to the end of the article, which finished it there. */
+    internal fun finished() = copy(isFinished = true, lastReadReport = null)
 
     /** The seek was given up, so what the player reports is read again whatever its position. */
     internal fun seekAbandoned() = copy(seekingToMs = null, seekingToChunkIndex = NO_CHUNK)
@@ -82,6 +87,7 @@ internal constructor(
             playingChunkIndex = chunkIndex,
             lastQueuedChunkIndex = chunkIndex,
             restartedAtMs = startMs,
+            isFinished = false,
         )
 
     /**
@@ -90,6 +96,8 @@ internal constructor(
      * failed.
      */
     internal fun received(report: PlaybackState): Playlist {
+        if (isFinished) return copy(lastReadReport = null)
+
         val isFailure = report.phase == PlaybackPhase.Failed
 
         // A report far from where a seek went was taken before the move. A few are ignored, then the seek is given up.
@@ -99,8 +107,11 @@ internal constructor(
         }
         val afterSeek = seekAbandoned()
 
-        // A report that is not playing from a restarted playlist is left over from the playlist it replaced.
-        if (afterSeek.restartedAtMs != null && !isFailure && !report.isFromRestartAt(afterSeek.restartedAtMs)) {
+        // A report that is not from a restarted playlist is left over from the playlist it replaced.
+        val isLeftOver =
+            afterSeek.restartedAtMs != null &&
+                !report.isFromRestartAt(afterSeek.restartedAtMs, afterSeek.playingChunkIndex)
+        if (isLeftOver && !isFailure) {
             return afterSeek.copy(lastReadReport = null)
         }
         return afterSeek.copy(restartedAtMs = null, lastReadReport = report)
@@ -111,10 +122,9 @@ internal constructor(
 private fun PlaybackState.isFromSeekTo(targetMs: Long): Boolean =
     positionMs in (targetMs - SEEK_REPORT_BEFORE_MS)..(targetMs + SEEK_REPORT_AFTER_MS)
 
-/**
- * Whether this report comes from the playlist restarted at [startMs] into the article: playing or paused there rather
- * than buffering for a seek, ended or still loading, and no earlier than where it was restarted.
- */
-private fun PlaybackState.isFromRestartAt(startMs: Long): Boolean =
-    (phase == PlaybackPhase.Playing || phase == PlaybackPhase.Paused) &&
-        positionMs >= startMs - RESTART_REPORT_TOLERANCE_MS
+/** Whether this report comes from the playlist restarted at [startMs] into the article, on the chunk at [chunkIndex] */
+private fun PlaybackState.isFromRestartAt(startMs: Long, chunkIndex: Int): Boolean {
+    val isAtRestart = positionMs >= startMs - RESTART_REPORT_TOLERANCE_MS
+    val hasEndedRestartedChunk = phase == PlaybackPhase.Ended && chunk.index == chunkIndex
+    return isAtRestart && (phase == PlaybackPhase.Playing || phase == PlaybackPhase.Paused || hasEndedRestartedChunk)
+}

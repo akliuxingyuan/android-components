@@ -2249,6 +2249,152 @@ class ListenMiddlewareTest {
     }
 
     @Test
+    fun `test that a seek near the end of the article ends it, even when the player only reports that it ended`() =
+        runTest {
+            val playback = FakePlaybackController()
+            val store =
+                storeWith(
+                    synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                    playbackController = playback,
+                ) {
+                    Result.success(Content(text = longArticle(), languageTag = "en-US"))
+                }
+            store.listenAndPlay(TAB_ID, URL)
+            advanceUntilIdle()
+            playback.status.value = PlaybackState(phase = PlaybackPhase.Playing)
+            advanceUntilIdle()
+
+            // Short of the end, so it is played rather than finished at once, with little of the last chunk left.
+            val durationMs = store.state.articleProgress.durationMs
+            store.dispatch(ListenAction.Playback.SeekRequested((durationMs - 1_000).toFloat() / durationMs))
+            advanceUntilIdle()
+            assertEquals("the last chunk was not restarted on", 1, playback.restartedPositionsMs.size)
+
+            // The little audio left plays out between two reports, so the first report from it is that it ended.
+            playback.status.value =
+                PlaybackState(
+                    phase = PlaybackPhase.Ended,
+                    chunk = ChunkState(index = playback.restartedChunks.last()),
+                    positionMs = playback.restartedPositionsMs.last() + 500,
+                )
+            advanceUntilIdle()
+
+            assertEquals(PlaybackPhase.Ended, store.state.playbackState.phase)
+        }
+
+    @Test
+    fun `test that a seek to the end of the article finishes it at once, without making or playing anything`() =
+        runTest {
+            val playback = FakePlaybackController()
+            val store =
+                storeWith(
+                    synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                    playbackController = playback,
+                ) {
+                    Result.success(Content(text = longArticle(), languageTag = "en-US"))
+                }
+            store.listenAndPlay(TAB_ID, URL)
+            advanceUntilIdle()
+            playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 2_000)
+            advanceUntilIdle()
+
+            store.dispatch(ListenAction.Playback.SeekRequested(1f))
+            advanceUntilIdle()
+
+            assertTrue("the last chunk was made to be played", playback.restartedPositionsMs.isEmpty())
+            assertEquals(listOf(store.state.articleProgress.durationMs), playback.finishedAtPositionsMs)
+            assertEquals(PlaybackPhase.Ended, store.state.playbackState.phase)
+            assertEquals(1f, store.state.articleProgress.fraction, 0f)
+
+            // The player stops where it was, and says so.
+            playback.status.value = PlaybackState(phase = PlaybackPhase.Paused, positionMs = 2_000)
+            advanceUntilIdle()
+
+            assertEquals("the article went back to where it was", PlaybackPhase.Ended, store.state.playbackState.phase)
+            assertEquals(1f, store.state.articleProgress.fraction, 0f)
+        }
+
+    @Test
+    fun `test that playing an article a seek finished starts it again from the top`() = runTest {
+        val playback = FakePlaybackController(shouldReportSeek = true)
+        val store =
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root) },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 2_000)
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Playback.SeekRequested(1f))
+        advanceUntilIdle()
+
+        store.dispatch(ListenAction.Controls.PlayPauseClicked)
+        advanceUntilIdle()
+
+        assertEquals(listOf(0 to 0L), playback.seekedChunkPositions)
+        assertEquals(1, playback.resumed)
+        assertEquals(0L, store.state.articleProgress.positionMs)
+    }
+
+    @Test
+    fun `test that a seek back from an article a seek finished stays paused while its chunk is made`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 2_000)
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Playback.SeekRequested(1f))
+        advanceUntilIdle()
+
+        val phases = mutableListOf<PlaybackPhase>()
+        store.observeManually { phases.add(it.playbackState.phase) }.resume()
+
+        store.dispatch(ListenAction.Playback.SeekRequested(0.5f))
+        runCurrent()
+
+        assertTrue("the chunk was not made again", playback.stopAndBufferPositionsMs.isNotEmpty())
+        assertFalse("the article was shown playing on the way", PlaybackPhase.Buffering in phases)
+        assertEquals(PlaybackPhase.Paused, store.state.playbackState.phase)
+    }
+
+    @Test
+    fun `test that playing an article a seek finished shows it waiting while its top is made`() = runTest {
+        val playback = FakePlaybackController()
+        val store =
+            storeWith(
+                synthesizerProvider = {
+                    FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, timePerRequest = 1.seconds)
+                },
+                playbackController = playback,
+            ) {
+                Result.success(Content(text = longArticle(), languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        playback.status.value = PlaybackState(phase = PlaybackPhase.Playing, positionMs = 2_000)
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Playback.SeekRequested(1f))
+        advanceUntilIdle()
+
+        store.dispatch(ListenAction.Controls.PlayPauseClicked)
+        runCurrent()
+
+        assertEquals(PlaybackPhase.Buffering, store.state.playbackState.phase)
+    }
+
+    @Test
     fun `test that a seek past what is queued stays at the time it moved the article to`() = runTest {
         val positions = mutableListOf<Long>()
         val playback = FakePlaybackController(shouldReportSeek = true)
@@ -2483,14 +2629,16 @@ class ListenMiddlewareTest {
     }
 
     @Test
-    fun `test that skipping forward near the end of the article stops at the end`() = runTest {
+    fun `test that skipping forward past the end of the article finishes it`() = runTest {
         val playback = FakePlaybackController()
         val store = storeWithTwoChunkProgress(playback, positionMs = 70_000)
 
         store.dispatch(ListenAction.Controls.ForwardClicked)
         advanceUntilIdle()
 
-        assertEquals(listOf(1 to 80_000L), playback.seekedChunkPositions)
+        assertTrue("playback was moved to the end to play nothing", playback.seekedChunkPositions.isEmpty())
+        assertEquals(PlaybackPhase.Ended, store.state.playbackState.phase)
+        assertEquals(80_000, store.state.articleProgress.positionMs)
     }
 
     @Test
@@ -3301,7 +3449,9 @@ class ListenMiddlewareTest {
         dispatch(ListenAction.Controls.PlayPauseClicked)
     }
 
-    /** Seeks to [positionMs] into the article, as the progress bar does: as a share of how long the article lasts. */
+    /**
+     * Seeks to [positionMs] into the article, as the progress bar does: as a share of the article's estimated length.
+     */
     private fun ListenStore.seekTo(positionMs: Long) =
         dispatch(ListenAction.Playback.SeekRequested(positionMs.toFloat() / state.articleProgress.durationMs))
 

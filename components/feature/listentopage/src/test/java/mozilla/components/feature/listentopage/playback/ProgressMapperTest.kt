@@ -106,12 +106,13 @@ class ProgressMapperTest {
     @Test
     fun `test that a chunk with audio but no measured duration is sized from its characters`() {
         // The second chunk has audio, because the window ran ahead and made it, and no duration: the file is added
-        // before it is read. It has to count as the twenty seconds its characters are worth rather than as nothing.
+        // before it is read. It has to count as the sixteen seconds its characters are worth at the rate the first
+        // chunk measured at, rather than as nothing.
         val progress =
             mapper(listOf(100, 200), measured = mapOf(0 to 8.seconds))
                 .updatedProgress(ArticleProgress(), 1_000, isArticleFinished = false)
 
-        assertEquals(28_000, progress.durationMs)
+        assertEquals(24_000, progress.durationMs)
     }
 
     @Test
@@ -225,9 +226,9 @@ class ProgressMapperTest {
     fun `test that the lengths are measured where they can be and estimated where they cannot`() {
         val mapper = mapper(chunkChars = listOf(100, 200, 300), measured = mapOf(1 to 5.seconds))
 
-        // Ten characters a second sizes the chunks that have not been made, and the one that has counts for what it
-        // measured rather than for the twenty seconds its characters imply.
-        assertEquals(listOf(10_000L, 5_000L, 30_000L), mapper.chunkDurationsMs())
+        // The one that has been made counts for what it measured, and the forty characters a second it measured at
+        // sizes the others, rather than the ten the opening was given.
+        assertEquals(listOf(2_500L, 5_000L, 7_500L), mapper.chunkDurationsMs())
     }
 
     @Test
@@ -297,12 +298,12 @@ class ProgressMapperTest {
     fun `test that a held set of lengths resolves the same after the article has moved on`() {
         val shown = mapper(chunkChars = listOf(100, 200, 300)).chunkDurationsMs()
 
-        // The middle chunk turns out to be far shorter than its characters implied, which pulls everything after it
-        // earlier. The lengths taken before that still answer where they did.
+        // The middle chunk turns out to be far shorter than its characters implied, which sizes the others at its rate
+        // too and pulls everything after it earlier. The lengths taken before that still answer where they did.
         val moved = mapper(chunkChars = listOf(100, 200, 300), measured = mapOf(1 to 1.seconds)).chunkDurationsMs()
 
         assertEquals(ChunkPosition(chunkIndex = 1, offsetMs = 15_000), shown.chunkPositionAt(25_000))
-        assertEquals(ChunkPosition(chunkIndex = 2, offsetMs = 14_000), moved.chunkPositionAt(25_000))
+        assertEquals(ChunkPosition(chunkIndex = 2, offsetMs = 1_500), moved.chunkPositionAt(25_000))
     }
 
     @Test
@@ -337,5 +338,62 @@ class ProgressMapperTest {
 
         assertEquals(listOf(10_000L, 5_000L, 5_000L), mapper.chunkDurationsMs())
         assertEquals(20_000L, mapper.updatedProgress(ArticleProgress(), 12_000, false).durationMs)
+    }
+
+    @Test
+    fun `test that a chunk far past the measured ones is estimated from the nearest of them, not as nothing`() {
+        // Only the start has been made, as after a seek far ahead of the window.
+        val lengths =
+            mapper(chunkChars = List(20) { 100 }, measured = mapOf(0 to 10.seconds, 1 to 10.seconds), rate = null)
+                .chunkDurationsMs()
+
+        assertEquals(10_000L, lengths[19])
+    }
+
+    @Test
+    fun `test that a chunk that has not been measured is estimated from the measured chunks nearest it`() {
+        // Ten seconds a hundred characters at the start, and twenty at the end, as references at the end of an article
+        // are read out more slowly than the text before them.
+        val lengths =
+            mapper(
+                    chunkChars = List(10) { 100 },
+                    measured = mapOf(0 to 10.seconds, 1 to 10.seconds, 8 to 20.seconds, 9 to 20.seconds),
+                    rate = null,
+                )
+                .chunkDurationsMs()
+
+        // Weighted by how near each measured chunk is: a third chunk mostly like the start, an eighth like the end.
+        assertEquals(11_711.0, lengths[2].toDouble(), 1.0)
+        assertEquals(18_289.0, lengths[7].toDouble(), 1.0)
+    }
+
+    @Test
+    fun `test that a slow part measured at one end does not stretch the estimate of the other`() {
+        val chunkChars = List(10) { 100 }
+        val start = mapOf(0 to 10.seconds, 1 to 10.seconds)
+
+        val before = mapper(chunkChars, measured = start, rate = null).chunkDurationsMs()
+        val after =
+            mapper(chunkChars, measured = start + mapOf(8 to 20.seconds, 9 to 20.seconds), rate = null)
+                .chunkDurationsMs()
+
+        assertEquals(10_000L, before[2])
+        // Averaged over the whole article, it would have gone to fifteen seconds.
+        assertTrue("the start was stretched to ${after[2]}", after[2] < 12_000)
+    }
+
+    @Test
+    fun `test that a short opening counts for little in the estimate of the chunk after it`() {
+        // A site's name read out slowly, then a full chunk read out at the rate of the rest of the article.
+        val lengths =
+            mapper(
+                    chunkChars = listOf(15, 500, 500),
+                    measured = mapOf(0 to 2_500.milliseconds, 2 to 30.seconds),
+                    rate = null,
+                )
+                .chunkDurationsMs()
+
+        // Counting the opening as much as the full chunk would have made the second chunk about fifty-seven seconds.
+        assertEquals(31_553.0, lengths[1].toDouble(), 1.0)
     }
 }

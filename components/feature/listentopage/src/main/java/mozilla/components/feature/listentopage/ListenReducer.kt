@@ -22,7 +22,7 @@ fun listenReducer(state: ListenState, action: ListenAction): ListenState =
         is ListenAction.Controls -> reduceControls(state, action)
         is ListenAction.Playback -> reducePlayback(state, action)
         is ListenAction.Synthesis -> reduceSynthesis(state, action)
-        is PlaylistAction -> state.copy(playlist = reducePlaylist(state.playlist, action))
+        is PlaylistAction -> reducePlaylistAction(state, action)
         is ListenAction.ModeChanged -> state.copy(mode = action.mode)
         ListenAction.ErrorDismissed -> state.copy(error = null)
     }
@@ -109,7 +109,10 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
             }
 
         ListenAction.Playback.PlaybackEnded ->
-            state.copy(playbackState = state.playbackState.copy(phase = PlaybackPhase.Ended))
+            state.copy(
+                playbackState = state.playbackState.copy(phase = PlaybackPhase.Ended),
+                articleProgress = state.articleProgress.atEnd(),
+            )
 
         ListenAction.Playback.PlaybackFailed ->
             state.copy(
@@ -118,17 +121,29 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
             )
         is ListenAction.Playback.SeekRequested -> {
             val durationMs = state.articleProgress.durationMs
-            state.copy(
-                articleProgress =
-                    state.articleProgress.copy(
-                        positionMs = (durationMs * action.fraction.coerceIn(0f, 1f)).roundToLong()
-                    )
-            )
+            val fraction = action.fraction.coerceIn(0f, 1f)
+            if (durationMs <= 0) {
+                state
+            } else {
+                state.copy(
+                    articleProgress =
+                        state.articleProgress.copy(
+                            positionMs = (durationMs * fraction).roundToLong(),
+                            barPosition = fraction,
+                        )
+                )
+            }
         }
         is ListenAction.Playback.ArticleProgressReverted ->
             state.copy(
                 articleProgress =
-                    ArticleProgress(action.positionMs, action.durationMs, action.chunkDurationsMs).correctLength()
+                    ArticleProgress(
+                            action.positionMs,
+                            action.durationMs,
+                            action.chunkDurationsMs,
+                            action.barPosition,
+                        )
+                        .correctLength()
             )
     }
 
@@ -149,10 +164,26 @@ private fun ArticleMeasurements.progressAt(
         .correctLength()
 }
 
+/** This progress at the end of the article, with the bar full, however the article got there. */
+private fun ArticleProgress.atEnd(): ArticleProgress =
+    if (durationMs > 0) copy(positionMs = durationMs, barPosition = 1f) else this
+
 /** This progress with a length of at least zero, and a position inside it. */
 private fun ArticleProgress.correctLength(): ArticleProgress {
     val lengthMs = durationMs.coerceAtLeast(0)
     return copy(positionMs = positionMs.coerceIn(0, lengthMs), durationMs = lengthMs)
+}
+
+private fun reducePlaylistAction(state: ListenState, action: PlaylistAction): ListenState {
+    val playlist = reducePlaylist(state.playlist, action)
+
+    // The player stays paused where a seek finished the article, so a seek away from there is a paused one.
+    val isSeekStartedAfterPlaybackFinish = action is PlaylistAction.SeekStarted && state.playlist.isFinished
+    return if (isSeekStartedAfterPlaybackFinish && state.playbackState.phase == PlaybackPhase.Ended) {
+        state.copy(playlist = playlist, playbackState = state.playbackState.copy(phase = PlaybackPhase.Paused))
+    } else {
+        state.copy(playlist = playlist)
+    }
 }
 
 private fun reducePlaylist(playlist: Playlist, action: PlaylistAction): Playlist =
@@ -162,6 +193,7 @@ private fun reducePlaylist(playlist: Playlist, action: PlaylistAction): Playlist
         is PlaylistAction.ChunkQueued -> playlist.queued(action.chunkIndex)
         is PlaylistAction.SeekStarted -> playlist.seeking(action.articlePositionMs, action.chunkIndex)
         PlaylistAction.SeekAbandoned -> playlist.seekAbandoned()
+        PlaylistAction.Finished -> playlist.finished()
         is PlaylistAction.Restarted ->
             playlist.restarted(action.chunkIndex, action.chunkDurationsBeforePlaylistMs, action.startMs)
     }

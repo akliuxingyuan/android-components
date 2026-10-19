@@ -40,6 +40,7 @@ import mozilla.components.feature.listentopage.playback.SynthesisJobPriorityLock
 import mozilla.components.feature.listentopage.playback.articlePositionOf
 import mozilla.components.feature.listentopage.playback.chunkPositionAt
 import mozilla.components.feature.listentopage.playback.offsetInMeasuredChunk
+import mozilla.components.feature.listentopage.playback.shownDurationMs
 import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.NothingToReadException
@@ -213,13 +214,15 @@ class ListenMiddleware(
     private fun ListenStore.reportPlayback(report: PlaybackState) {
         // The reducer moves the article on from the report. A report left over from a seek or restart is not read at
         // all.
-        val previousDurationMs = state.articleProgress.durationMs
+        val previousShownDurationMs = state.articleProgress.shownDurationMs()
         dispatch(PlayerReportReceived(report))
         val playback = playlist.lastReadReport ?: return
 
-        val durationMs = state.articleProgress.durationMs
-        if (durationMs != previousDurationMs) {
-            scope.launch { playbackController.setArticleDuration(durationMs) }
+        // The notification draws its bar from the position and the length alone, so it is given the length that puts
+        // its bar where the sheet's is.
+        val shownDurationMs = state.articleProgress.shownDurationMs()
+        if (shownDurationMs != previousShownDurationMs) {
+            scope.launch { playbackController.setArticleDuration(shownDurationMs) }
         }
 
         when (playback.phase) {
@@ -360,6 +363,7 @@ class ListenMiddleware(
             PlaybackPhase.Failed -> scope.launch { playbackController.resume() }
 
             PlaybackPhase.Ended -> {
+                dispatch(ListenAction.Playback.PlaybackWaiting)
                 seekToArticlePosition(0)
                 scope.launch { playbackController.resume() }
             }
@@ -602,6 +606,16 @@ class ListenMiddleware(
         }
     }
 
+    /** Seeks to [positionMs] into the article. A seek to its end finishes it, since there is nothing left to play. */
+    private fun ListenStore.seekToArticlePosition(positionMs: Long, progressBeforeSeek: ArticleProgress? = null) {
+        val articleMs = state.articleProgress.durationMs
+        if (articleMs in 1..positionMs) {
+            finishArticle()
+        } else {
+            moveToArticlePosition(positionMs, progressBeforeSeek)
+        }
+    }
+
     /**
      * Moves playback to [positionMs] into the article.
      *
@@ -609,7 +623,7 @@ class ListenMiddleware(
      * reported to the player, so this keeps them in sync even if the queue has been actively synthesizing lengths for
      * other chunks.
      */
-    private fun ListenStore.seekToArticlePosition(positionMs: Long, progressBeforeSeek: ArticleProgress? = null) {
+    private fun ListenStore.moveToArticlePosition(positionMs: Long, progressBeforeSeek: ArticleProgress?) {
         val revert: () -> Unit = {
             if (progressBeforeSeek != null) {
                 revertArticleProgress(progressBeforeSeek)
@@ -644,21 +658,38 @@ class ListenMiddleware(
         }
     }
 
+    /**
+     * Finishes the article where a seek moved playback to its end: the audio stops, and nothing more is made for it.
+     */
+    private fun ListenStore.finishArticle() {
+        // Claimed and let go of at once, so that a seek still waiting on its chunk does not restart playback after
+        // this.
+        synthesisJobPriorityLock.tryClaim(PlaybackIntent.Seek)?.release()
+        val articleEndMs = state.articleProgress.durationMs
+        dispatch(PlaylistAction.Finished)
+        scope.launch { playbackController.finishAt(articleEndMs) }
+        dispatch(ListenAction.Playback.PlaybackEnded)
+    }
+
     private fun ListenStore.revertArticleProgress(progress: ArticleProgress) {
         dispatch(
             ListenAction.Playback.ArticleProgressReverted(
                 positionMs = progress.positionMs,
                 durationMs = progress.durationMs,
                 chunkDurationsMs = progress.chunkDurationsMs,
+                barPosition = progress.barPosition,
             )
         )
     }
 
-    /** Seeks to [positionMs] into the article, which the notification asked for, as a share of the article's length. */
+    /**
+     * Seeks to [positionMs] into the article, which the notification asked for. The notification was given the length
+     * the bar is drawn against, so the share of it is where the reader let go on the notification's bar.
+     */
     private fun ListenStore.seekFromNotification(positionMs: Long) {
-        val durationMs = state.articleProgress.durationMs
-        if (durationMs > 0) {
-            dispatch(ListenAction.Playback.SeekRequested(positionMs.toFloat() / durationMs))
+        val shownDurationMs = state.articleProgress.shownDurationMs()
+        if (shownDurationMs > 0) {
+            dispatch(ListenAction.Playback.SeekRequested(positionMs.toFloat() / shownDurationMs))
         }
     }
 

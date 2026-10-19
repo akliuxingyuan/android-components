@@ -123,6 +123,12 @@ interface PlaybackController {
      */
     suspend fun stopAndBufferAt(positionMs: Long)
 
+    /**
+     * Stops the audio where a seek finished the article, and shows [positionMs], its end, until playback is moved or
+     * started again. A play from outside the app, such as the notification, then starts the article again from the top.
+     */
+    suspend fun finishAt(positionMs: Long)
+
     /** Reads the rest of the article out at [speed]. */
     suspend fun setSpeed(speed: PlaybackSpeed)
 
@@ -297,6 +303,13 @@ internal constructor(
 
         // Prepared but not played: a player that was paused stays paused.
         it.prepare()
+    }
+
+    override suspend fun finishAt(positionMs: Long) = onController {
+        it.sendCustomCommand(
+            SessionCommand(COMMAND_FINISH_AT, Bundle.EMPTY),
+            Bundle().apply { putLong(KEY_POSITION_MS, positionMs) },
+        )
     }
 
     // The session stops the player itself once it has the position to buffer at.
