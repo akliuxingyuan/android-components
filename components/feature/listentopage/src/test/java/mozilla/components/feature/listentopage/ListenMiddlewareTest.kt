@@ -262,23 +262,18 @@ class ListenMiddlewareTest {
     }
 
     @Test
-    fun `test that a session is not read out until play is pressed`() = runTest {
+    fun `test that a session is read out as soon as it starts, without a press of play`() = runTest {
         val synthesizer = FakeSpeechSynthesizer()
         val playback = FakePlaybackController()
         val store =
             storeWith(synthesizerProvider = { synthesizer }, playbackController = playback) {
                 Result.success(Content(text = "Article text.", languageTag = "en-US"))
             }
+
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
         advanceUntilIdle()
 
         assertEquals(listOf("en-US"), synthesizer.voiceRequests)
-        assertTrue(synthesizer.requests.isEmpty())
-        assertTrue(playback.played.isEmpty())
-
-        store.dispatch(ListenAction.Controls.PlayPauseClicked)
-        advanceUntilIdle()
-
         assertEquals(listOf("Article text."), synthesizer.requests)
         assertEquals(listOf(File("/audio/1.wav")), playback.played)
     }
@@ -323,27 +318,19 @@ class ListenMiddlewareTest {
     }
 
     @Test
-    fun `test that picking a voice before play is pressed reads nothing out`() = runTest {
-        val synthesizer =
-            FakeSpeechSynthesizer(voices = listOf(Voice("en-us-female", Locale.US), Voice("en-us-male", Locale.US)))
+    fun `test that a press of play while the opening is made does not read the article out twice`() = runTest {
+        val synthesizer = FakeSpeechSynthesizer(timePerRequest = 1.seconds)
         val playback = FakePlaybackController()
         val store =
             storeWith(synthesizerProvider = { synthesizer }, playbackController = playback) {
                 Result.success(Content(text = "Article text.", languageTag = "en-US"))
             }
+
         store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
-        advanceUntilIdle()
-
-        store.dispatch(ListenAction.Voices.VoiceSelected(Voice("en-us-male", Locale.US)))
-        advanceUntilIdle()
-
-        assertEquals(Voice("en-us-male", Locale.US), synthesizer.voicesSet.last())
-        assertTrue(synthesizer.requests.isEmpty())
-        assertTrue(playback.played.isEmpty())
-
         store.dispatch(ListenAction.Controls.PlayPauseClicked)
         advanceUntilIdle()
 
+        assertEquals(listOf("Article text."), synthesizer.requests)
         assertEquals(listOf(File("/audio/1.wav")), playback.played)
     }
 
@@ -425,17 +412,18 @@ class ListenMiddlewareTest {
     }
 
     @Test
-    fun `test that the store holds the title and site the notification shows, before play is pressed`() = runTest {
-        val store =
-            storeWith(browserStore = browserStoreWithOpenTabs(title = "An article")) {
-                Result.success(Content(text = "Article text.", languageTag = "en-US"))
-            }
-        store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
-        advanceUntilIdle()
+    fun `test that the store holds the title and site the notification shows, before the article is read out`() =
+        runTest {
+            val store =
+                storeWith(browserStore = browserStoreWithOpenTabs(title = "An article")) {
+                    Result.success(Content(text = "Article text.", languageTag = "en-US"))
+                }
+            store.dispatch(ListenAction.Session.ListenRequested(TAB_ID, URL))
+            advanceUntilIdle()
 
-        assertEquals("An article", store.state.title)
-        assertEquals("example.org", store.state.site)
-    }
+            assertEquals("An article", store.state.title)
+            assertEquals("example.org", store.state.site)
+        }
 
     @Test
     fun `test that the article is opened on its first sentence`() = runTest {
@@ -3443,10 +3431,9 @@ class ListenMiddlewareTest {
             )
         )
 
-    /** Starts a session on [tabId] and presses play, which is what a user does to hear an article. */
+    /** Starts a session, which reads the article out as soon as it can. */
     private fun ListenStore.listenAndPlay(tabId: String, url: String) {
         dispatch(ListenAction.Session.ListenRequested(tabId, url))
-        dispatch(ListenAction.Controls.PlayPauseClicked)
     }
 
     /**

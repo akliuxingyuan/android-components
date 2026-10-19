@@ -51,6 +51,7 @@ internal enum class AudioProgressBarType {
  *   position update from recomposing the player around it.
  * @param modifier Optional modifier for further customisation of this bar.
  * @param type Which visual variant to draw.
+ * @param isSeekable Whether the thumb can be dragged. It cannot while the audio has no length to seek in yet.
  */
 @Composable
 internal fun AudioProgressBar(
@@ -58,6 +59,7 @@ internal fun AudioProgressBar(
     onSeek: (Float) -> Unit,
     modifier: Modifier = Modifier,
     type: AudioProgressBarType,
+    isSeekable: Boolean = true,
 ) {
     val playedFraction = { progress().let { if (it.isNaN()) 0f else it.coerceIn(0f, 1f) } }
     when (type) {
@@ -65,13 +67,18 @@ internal fun AudioProgressBar(
             MiniBar(playedFraction = playedFraction, modifier = modifier)
         }
         AudioProgressBarType.Full -> {
-            FullBar(playedFraction = playedFraction, onSeek = onSeek, modifier = modifier)
+            FullBar(playedFraction = playedFraction, onSeek = onSeek, isSeekable = isSeekable, modifier = modifier)
         }
     }
 }
 
 @Composable
-private fun FullBar(playedFraction: () -> Float, onSeek: (Float) -> Unit, modifier: Modifier = Modifier) {
+private fun FullBar(
+    playedFraction: () -> Float,
+    onSeek: (Float) -> Unit,
+    isSeekable: Boolean,
+    modifier: Modifier = Modifier,
+) {
     // Temporary local state so the thumb follows the user's input while scrubbing
     var scrubFraction by remember { mutableStateOf<Float?>(null) }
     Slider(
@@ -83,6 +90,7 @@ private fun FullBar(playedFraction: () -> Float, onSeek: (Float) -> Unit, modifi
             scrubFraction?.let { onSeek(it) }
             scrubFraction = null
         },
+        isEnabled = isSeekable,
         modifier =
             modifier
                 .fillMaxWidth()

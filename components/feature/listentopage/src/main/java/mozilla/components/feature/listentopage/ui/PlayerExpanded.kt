@@ -112,6 +112,8 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction
     val elapsedTime by remember {
         derivedStateOf { DateUtils.formatElapsedTime(articleProgressState.value.positionMs / MS_PER_SECOND) }
     }
+    // Seeking needs a length to seek in, which the article only has once its opening has been made.
+    val isSeekable by remember { derivedStateOf { articleProgressState.value.durationMs > 0 } }
     val totalTime by remember {
         derivedStateOf { DateUtils.formatElapsedTime(articleProgressState.value.shownDurationMs() / MS_PER_SECOND) }
     }
@@ -135,6 +137,7 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction
                     onAction(ListenAction.Playback.SeekRequested(it))
                 },
                 modifier = Modifier.extendTrackLength(thumbWidth = AcornTheme.layout.size.static200),
+                isSeekable = isSeekable,
             )
 
             Row(

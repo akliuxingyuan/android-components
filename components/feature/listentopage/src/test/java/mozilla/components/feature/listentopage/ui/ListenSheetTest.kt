@@ -115,6 +115,20 @@ class ListenSheetTest {
     }
 
     @Test
+    fun `GIVEN an article with no length yet WHEN shown THEN the bar cannot be dragged`() {
+        setContent(expanded = true)
+
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `GIVEN an article with a length WHEN shown THEN the bar can be dragged`() {
+        setContent(expanded = true, articleProgress = ArticleProgress(positionMs = 60_000, durationMs = 600_000))
+
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertIsEnabled()
+    }
+
+    @Test
     fun `GIVEN paused WHEN shown THEN the playback button has a play label`() {
         setContent(expanded = false, playbackPhase = PlaybackPhase.Paused)
 

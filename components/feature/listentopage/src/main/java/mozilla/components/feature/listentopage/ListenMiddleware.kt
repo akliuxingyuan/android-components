@@ -105,10 +105,6 @@ class ListenMiddleware(
     // What the session has made of the article, held so that the audio can be thrown away when the session ends.
     private var synthesisQueue: SynthesisQueue? = null
 
-    // Whether the user has asked this session to start reading. The article and its voices are made ready as soon as
-    // the session starts, but nothing is synthesized or played until then.
-    private var playRequested = false
-
     // Which chunks have been handed to the player. Kept in the store, so that only the reducer changes it.
     private val ListenStore.playlist: Playlist
         get() = state.playlist
@@ -155,7 +151,7 @@ class ListenMiddleware(
 
             is ListenAction.Session.StopRequested -> store.endSession(releasePlayback = true)
 
-            is ListenAction.Content.ContentReady -> store.loadVoicesAndPlayIfRequested(action.languageTag)
+            is ListenAction.Content.ContentReady -> store.loadVoicesAndPlay(action.languageTag)
 
             is ListenAction.Voices.VoiceSelected -> {
                 // Saved even when the voice is the one already reading, because the voice a load picks for itself is
@@ -317,44 +313,26 @@ class ListenMiddleware(
     }
 
     /**
-     * Loads the voices of the article language, unless they are loaded already, and then reads the article out if the
-     * user has already asked for it.
+     * Loads the voices of the article language, unless they are loaded already, and then reads the article out. A
+     * session reads as soon as it starts, so the reader hears the article from a single tap.
      *
      * The load and the synthesis are one job rather than two because the engine reads with the voice it was last given:
      * starting the synthesis alongside the load reads the opening of the article in whichever voice the engine happens
      * to default to. A language with no offline voice is not read out at all.
      */
-    private fun ListenStore.loadVoicesAndPlayIfRequested(langTag: String) {
+    private fun ListenStore.loadVoicesAndPlay(langTag: String) {
         voicesJob?.cancel()
         voicesJob = scope.launch {
             if (state.voiceState.loadState != VoiceLoadState.Loaded && !loadVoices(langTag)) {
                 return@launch
             }
 
-            if (playRequested) {
-                synthesizeAndPlay(state.tabId)
-            }
+            synthesizeAndPlay(state.tabId)
         }
     }
 
-    /**
-     * Starts reading the article on the first press, and afterwards pauses or resumes it depending on what the player
-     * last reported.
-     *
-     * A press before the article is ready is remembered, and the article is read out once its voices are loaded.
-     */
+    /** Pauses or resumes the article, depending on what the player last reported. */
     private fun ListenStore.togglePlayback() {
-        if (!playRequested) {
-            playRequested = true
-
-            // Without an article the voice load has not started yet, and while it runs it reads the article out once
-            // it is done.
-            if (article != null && voicesJob?.isActive != true) {
-                voicesJob = scope.launch { synthesizeAndPlay(state.tabId) }
-            }
-            return
-        }
-
         when (state.playbackState.phase) {
             PlaybackPhase.Playing,
             PlaybackPhase.Buffering -> scope.launch { playbackController.pause() }
@@ -482,9 +460,7 @@ class ListenMiddleware(
 
             withContext(ioDispatcher) { synthesizer().setVoice(voice) }
 
-            if (playRequested) {
-                synthesizeAndPlay(state.tabId, resumeAtMs)
-            }
+            synthesizeAndPlay(state.tabId, resumeAtMs)
         }
     }
 
@@ -884,7 +860,6 @@ class ListenMiddleware(
         refreshVoicesJob?.cancel()
         tabClosureJob?.cancel()
         article = null
-        playRequested = false
 
         val emptying = synthesisQueue
         synthesisQueue = null
