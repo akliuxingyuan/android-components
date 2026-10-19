@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.testTag
@@ -29,7 +30,6 @@ import mozilla.components.compose.base.theme.AcornTheme
 
 /** Height of an [AudioProgressBarType.Mini] bar, exposed so callers can reserve room for it. */
 internal val MiniAudioProgressBarHeight = 2.dp
-
 private const val AUDIO_PROGRESS_BAR_TEST_TAG = "AudioProgressBar"
 internal const val AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT = "$AUDIO_PROGRESS_BAR_TEST_TAG.Compact"
 internal const val AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED = "$AUDIO_PROGRESS_BAR_TEST_TAG.Expanded"
@@ -49,25 +49,35 @@ internal enum class AudioProgressBarType {
  * @param progress Fraction of the audio that has played, from `0` to `1`. Values outside that range, and `NaN`, are
  *   clamped. This is a lambda so that the value is read while drawing rather than while composing, which keeps a
  *   position update from recomposing the player around it.
- * @param modifier Optional modifier for further customisation of this bar.
+ * @param onSeek Called with the new fraction once the user finishes scrubbing. Only the [AudioProgressBarType.Full]
+ *   variant supports seeking; the mini bar never invokes this.
  * @param type Which visual variant to draw.
+ * @param isEnabled Whether playback is usable. When `false` the bar is dimmed and cannot be scrubbed.
+ * @param modifier Optional modifier for further customisation of this bar.
  * @param isSeekable Whether the thumb can be dragged. It cannot while the audio has no length to seek in yet.
  */
 @Composable
 internal fun AudioProgressBar(
     progress: () -> Float,
     onSeek: (Float) -> Unit,
-    modifier: Modifier = Modifier,
     type: AudioProgressBarType,
+    modifier: Modifier = Modifier,
     isSeekable: Boolean = true,
+    isEnabled: Boolean = true,
 ) {
     val playedFraction = { progress().let { if (it.isNaN()) 0f else it.coerceIn(0f, 1f) } }
     when (type) {
         AudioProgressBarType.Mini -> {
-            MiniBar(playedFraction = playedFraction, modifier = modifier)
+            MiniBar(playedFraction = playedFraction, isEnabled = isEnabled, modifier = modifier)
         }
         AudioProgressBarType.Full -> {
-            FullBar(playedFraction = playedFraction, onSeek = onSeek, isSeekable = isSeekable, modifier = modifier)
+            FullBar(
+                playedFraction = playedFraction,
+                onSeek = onSeek,
+                isSeekable = isSeekable,
+                isEnabled = isEnabled,
+                modifier = modifier,
+            )
         }
     }
 }
@@ -77,6 +87,7 @@ private fun FullBar(
     playedFraction: () -> Float,
     onSeek: (Float) -> Unit,
     isSeekable: Boolean,
+    isEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     // Temporary local state so the thumb follows the user's input while scrubbing
@@ -86,11 +97,11 @@ private fun FullBar(
         onValueChange = {
             scrubFraction = it
         },
+        isEnabled = isEnabled && isSeekable,
         onValueChangeFinished = {
             scrubFraction?.let { onSeek(it) }
             scrubFraction = null
         },
-        isEnabled = isSeekable,
         modifier =
             modifier
                 .fillMaxWidth()
@@ -100,12 +111,16 @@ private fun FullBar(
 }
 
 @Composable
-private fun MiniBar(playedFraction: () -> Float, modifier: Modifier = Modifier) {
+private fun MiniBar(playedFraction: () -> Float, isEnabled: Boolean, modifier: Modifier = Modifier) {
     val progressColor = MaterialTheme.colorScheme.primary
-    val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+    val trackColor = MaterialTheme.colorScheme.outline
     Canvas(
         modifier =
-            modifier.fillMaxWidth().height(MiniAudioProgressBarHeight).testTag(AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT)
+            modifier
+                .fillMaxWidth()
+                .height(MiniAudioProgressBarHeight)
+                .alpha(if (isEnabled) 1f else DISABLED_ALPHA)
+                .testTag(AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT)
     ) {
         val cornerRadius = CornerRadius(size.height / 2f)
 

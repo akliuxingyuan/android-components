@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +47,8 @@ import mozilla.components.feature.listentopage.playback.shownDurationMs
 import mozilla.components.ui.icons.R as iconsR
 
 private const val MS_PER_SECOND = 1000L
+internal const val ELAPSED_TIME_TEST_TAG_EXPANDED = "PlayerExpandedElapsedTime"
+internal const val TOTAL_TIME_TEST_TAG_EXPANDED = "PlayerExpandedTotalTime"
 
 /** Listen to page audio player in expanded state */
 @Composable
@@ -86,7 +89,11 @@ internal fun PlayerExpanded(
             )
         }
 
-        AudioProgress(articleProgressState = articleProgressState, onAction = onAction)
+        AudioProgress(
+            articleProgressState = articleProgressState,
+            isEnabled = playbackUiState !is PlaybackUiState.Error,
+            onAction = onAction,
+        )
 
         val locale = LocalConfiguration.current.locales[0]
         val labelPattern = stringResource(R.string.mozac_feature_listentopage_playback_speed_option)
@@ -107,7 +114,11 @@ internal fun PlayerExpanded(
 }
 
 @Composable
-private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction: (ListenAction) -> Unit) {
+private fun AudioProgress(
+    articleProgressState: State<ArticleProgress>,
+    isEnabled: Boolean,
+    onAction: (ListenAction) -> Unit,
+) {
     // Reading articleProgressState here instead of inside the lambda would defeat the point of hoisting it as a State.
     val progress = { articleProgressState.value.fraction }
     val elapsedTime by remember {
@@ -139,8 +150,14 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction
                 },
                 modifier = Modifier.extendTrackLength(thumbWidth = AcornTheme.layout.size.static200),
                 isSeekable = isSeekable,
+                isEnabled = isEnabled,
             )
-
+            val textColor =
+                if (isEnabled) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DISABLED_ALPHA)
+                }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -148,12 +165,14 @@ private fun AudioProgress(articleProgressState: State<ArticleProgress>, onAction
                 Text(
                     text = elapsedTime,
                     style = AcornTheme.typography.caption,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = textColor,
+                    modifier = Modifier.testTag(ELAPSED_TIME_TEST_TAG_EXPANDED),
                 )
                 Text(
                     text = totalTime,
                     style = AcornTheme.typography.caption,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = textColor,
+                    modifier = Modifier.testTag(TOTAL_TIME_TEST_TAG_EXPANDED),
                 )
             }
         }

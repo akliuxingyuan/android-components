@@ -4,17 +4,27 @@
 
 package mozilla.components.feature.listentopage.ui
 
+import android.text.format.DateUtils
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.ListenError
@@ -28,8 +38,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+// The expanded player is taller than Robolectric's default window, so `assertIsDisplayed` on anything
+// below the progress bar needs a window the whole card fits in.
 @RunWith(RobolectricTestRunner::class)
+@Config(qualifiers = "w840dp-h1200dp")
 class ListenSheetTest {
 
     @get:Rule val composeTestRule = createComposeRule()
@@ -38,28 +52,39 @@ class ListenSheetTest {
     private val rewind = testContext.getString(R.string.mozac_feature_listentopage_back_10_sec)
     private val pause = testContext.getString(R.string.mozac_feature_listentopage_pause)
     private val play = testContext.getString(R.string.mozac_feature_listentopage_play)
+    private val voices = testContext.getString(R.string.mozac_feature_listentopage_audio)
+    private val playbackSpeedNormal =
+        testContext.getString(R.string.mozac_feature_listentopage_notification_playback_speed_1)
     private val close = testContext.getString(R.string.mozac_feature_listentopage_close)
+
+    // The player formats times with DateUtils, whose exact output is platform dependent (Robolectric
+    // zero-pads the minutes where a device does not), so the expected value comes from the same call.
+    private fun formatted(seconds: Long) = DateUtils.formatElapsedTime(seconds / 1000)
 
     private fun setContent(
         expanded: Boolean,
         onExpandClicked: () -> Unit = {},
+        articleProgress: ArticleProgress = ArticleProgress(LESS_THAN_ONE_SEC_ELAPSED_TIME_MS, TOTAL_DURATION_MS),
         playbackPhase: PlaybackPhase = PlaybackPhase.Playing,
         error: ListenError? = null,
-        articleProgress: ArticleProgress = ArticleProgress(),
+        availableWidth: Dp = NARROW_WINDOW_WIDTH,
     ) {
         composeTestRule.setContent {
             AcornTheme {
-                ListenSheet(
-                    article = ArticleDetails(title = TITLE, site = "bbc.co.uk"),
-                    articleProgressState = remember { mutableStateOf(articleProgress) },
-                    playbackPhase = playbackPhase,
-                    speed = PlaybackSpeed.Default,
-                    voiceState = VoiceState(),
-                    onAction = {},
-                    onExpandClicked = onExpandClicked,
-                    expanded = expanded,
-                    error = error,
-                )
+                Box(modifier = Modifier.requiredWidth(availableWidth)) {
+                    ListenSheet(
+                        article = ArticleDetails(title = TITLE, site = "bbc.co.uk"),
+                        articleProgressState = remember { mutableStateOf(articleProgress) },
+                        playbackPhase = playbackPhase,
+                        speed = PlaybackSpeed.Default,
+                        voiceState = VoiceState(),
+                        onAction = {},
+                        onExpandClicked = onExpandClicked,
+                        expanded = expanded,
+                        error = error,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }
@@ -68,16 +93,34 @@ class ListenSheetTest {
     fun `WHEN the sheet is expanded THEN the full controls are shown`() {
         setContent(expanded = true)
 
+        composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_TEST_TAG).assertExists()
+        composeTestRule.onNodeWithContentDescription(playbackSpeedNormal).assertExists()
+        composeTestRule.onNodeWithContentDescription(voices).assertExists()
+        composeTestRule.onNodeWithContentDescription(close).assertExists()
         composeTestRule.onNodeWithContentDescription(rewind).assertExists()
         composeTestRule.onNodeWithContentDescription(forward).assertExists()
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertExists()
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT).assertDoesNotExist()
+        composeTestRule
+            .onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED)
+            .assertTextEquals(formatted(LESS_THAN_ONE_SEC_ELAPSED_TIME_MS))
+        composeTestRule.onNodeWithTag(TOTAL_TIME_TEST_TAG_EXPANDED).assertTextEquals(formatted(TOTAL_DURATION_MS))
     }
 
     @Test
     fun `WHEN the sheet is compact THEN only the compact controls are shown`() {
         setContent(expanded = false)
 
+        composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_TEST_TAG).assertExists()
+        composeTestRule.onNodeWithContentDescription(playbackSpeedNormal).assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription(voices).assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription(close).assertExists()
         composeTestRule.onNodeWithContentDescription(rewind).assertExists()
         composeTestRule.onNodeWithContentDescription(forward).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT).assertExists()
+        composeTestRule.onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(TOTAL_TIME_TEST_TAG_EXPANDED).assertDoesNotExist()
     }
 
     @Test
@@ -90,6 +133,7 @@ class ListenSheetTest {
         assertTrue(expandClicked)
     }
 
+    // Play button tests
     @Test
     fun `GIVEN playing WHEN shown THEN the playback button has a pause label`() {
         setContent(expanded = false, playbackPhase = PlaybackPhase.Playing)
@@ -116,7 +160,7 @@ class ListenSheetTest {
 
     @Test
     fun `GIVEN an article with no length yet WHEN shown THEN the bar cannot be dragged`() {
-        setContent(expanded = true)
+        setContent(expanded = true, articleProgress = ArticleProgress())
 
         composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertIsNotEnabled()
     }
@@ -157,6 +201,30 @@ class ListenSheetTest {
         composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_TEST_TAG).assert(hasContentDescription(play))
     }
 
+    // Rewind button tests
+    @Test
+    fun `WHEN audio has played less than 1 sec THEN the rewind button is disabled`() {
+        setContent(
+            expanded = false,
+            playbackPhase = PlaybackPhase.Playing,
+            articleProgress = ArticleProgress(LESS_THAN_ONE_SEC_ELAPSED_TIME_MS, TOTAL_DURATION_MS),
+        )
+
+        composeTestRule.onNodeWithContentDescription(rewind).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `WHEN audio has played more than 1 sec THEN the rewind button is enabled`() {
+        setContent(
+            expanded = false,
+            playbackPhase = PlaybackPhase.Playing,
+            articleProgress = ArticleProgress(MORE_THAN_ONE_SEC_ELAPSED_TIME_MS, TOTAL_DURATION_MS),
+        )
+
+        composeTestRule.onNodeWithContentDescription(rewind).assertIsEnabled()
+    }
+
+    // Error state tests
     @Test
     fun `GIVEN an error WHEN shown THEN the error message is shown`() {
         setContent(expanded = false, playbackPhase = PlaybackPhase.Playing, error = ListenError.PlaybackFailed)
@@ -167,15 +235,74 @@ class ListenSheetTest {
     }
 
     @Test
-    fun `GIVEN an error WHEN shown THEN all buttons are disabled except for the close button`() {
-        setContent(expanded = true, playbackPhase = PlaybackPhase.Playing, error = ListenError.PlaybackFailed)
+    fun `GIVEN an error WHEN shown expanded THEN all buttons are disabled except for the close button`() {
+        setContent(
+            expanded = true,
+            articleProgress = ArticleProgress(MORE_THAN_ONE_SEC_ELAPSED_TIME_MS, TOTAL_DURATION_MS),
+            playbackPhase = PlaybackPhase.Playing,
+            error = ListenError.PlaybackFailed,
+        )
         composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_TEST_TAG).assertIsNotEnabled()
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertIsNotEnabled()
+        composeTestRule.onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TOTAL_TIME_TEST_TAG_EXPANDED).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(playbackSpeedNormal).assertIsNotEnabled()
+        composeTestRule.onNodeWithContentDescription(voices).assertIsNotEnabled()
         composeTestRule.onNodeWithContentDescription(rewind).assertIsNotEnabled()
         composeTestRule.onNodeWithContentDescription(forward).assertIsNotEnabled()
         composeTestRule.onNodeWithContentDescription(close).assertIsEnabled()
     }
 
+    @Test
+    fun `GIVEN an error WHEN shown compact THEN all buttons are disabled except for the close button`() {
+        setContent(
+            expanded = false,
+            articleProgress = ArticleProgress(MORE_THAN_ONE_SEC_ELAPSED_TIME_MS, TOTAL_DURATION_MS),
+            playbackPhase = PlaybackPhase.Playing,
+            error = ListenError.PlaybackFailed,
+        )
+        composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_TEST_TAG).assertIsNotEnabled()
+        // The compact bar is a Canvas with no interaction, so it carries no enabled semantics to assert on.
+        composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT).assertExists()
+        composeTestRule.onNodeWithContentDescription(rewind).assertIsNotEnabled()
+        composeTestRule.onNodeWithContentDescription(close).assertIsEnabled()
+    }
+
+    // Screen size adaptability tests
+    @Test
+    fun `GIVEN a window wider than the player WHEN the sheet is compact THEN the player stops growing at its max width`() {
+        setContent(expanded = false, availableWidth = WIDE_WINDOW_WIDTH)
+
+        composeTestRule.onNodeWithTag(LISTEN_SHEET_PLAYER_CARD_TEST_TAG).assertWidthIsEqualTo(PlayerMaxWidth)
+    }
+
+    @Test
+    fun `GIVEN a window wider than the player WHEN the sheet is expanded THEN the player stops growing at its max width`() {
+        setContent(expanded = true, availableWidth = WIDE_WINDOW_WIDTH)
+
+        composeTestRule.onNodeWithTag(LISTEN_SHEET_PLAYER_CARD_TEST_TAG).assertWidthIsEqualTo(PlayerMaxWidth)
+    }
+
+    @Test
+    fun `GIVEN a window narrower than the player WHEN the sheet is expanded THEN the player fills the window`() {
+        setContent(expanded = true, availableWidth = NARROW_WINDOW_WIDTH)
+
+        composeTestRule.onNodeWithTag(LISTEN_SHEET_PLAYER_CARD_TEST_TAG).assertWidthIsEqualTo(NARROW_WINDOW_WIDTH)
+    }
+
+    @Test
+    fun `GIVEN a window narrower than the player WHEN the sheet is compact THEN the player fills the window`() {
+        setContent(expanded = false, availableWidth = NARROW_WINDOW_WIDTH)
+
+        composeTestRule.onNodeWithTag(LISTEN_SHEET_PLAYER_CARD_TEST_TAG).assertWidthIsEqualTo(NARROW_WINDOW_WIDTH)
+    }
+
     private companion object {
         const val TITLE = "Match Preview: Wrexham AFC vs Sunderland AFC"
+        const val TOTAL_DURATION_MS = 45000L
+        const val LESS_THAN_ONE_SEC_ELAPSED_TIME_MS = 300L
+        const val MORE_THAN_ONE_SEC_ELAPSED_TIME_MS = 1200L
+        val NARROW_WINDOW_WIDTH = 400.dp
+        val WIDE_WINDOW_WIDTH = 840.dp
     }
 }

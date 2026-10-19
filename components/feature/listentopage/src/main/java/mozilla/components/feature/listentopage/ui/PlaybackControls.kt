@@ -51,7 +51,7 @@ internal fun PlaybackControls(
 ) {
     var voicesExpanded by remember { mutableStateOf(false) }
     var speedsExpanded by remember { mutableStateOf(false) }
-
+    val buttonsEnabled = playbackUiState !is PlaybackUiState.Error
     Row(
         modifier =
             modifier
@@ -67,7 +67,7 @@ internal fun PlaybackControls(
         // Voices
         Box {
             IconButton(
-                enabled = playbackUiState !is PlaybackUiState.Error,
+                enabled = buttonsEnabled,
                 onClick = {
                     onAction(ListenAction.Controls.VoicesClicked)
                     voicesExpanded = true
@@ -77,7 +77,6 @@ internal fun PlaybackControls(
                 Icon(
                     painter = painterResource(iconsR.drawable.mozac_ic_audio_wave_24),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
             VoiceSelection(
@@ -108,7 +107,7 @@ internal fun PlaybackControls(
         SpeedControls(
             speedState = speedState,
             speedsExpanded = speedsExpanded,
-            enabled = playbackUiState !is PlaybackUiState.Error,
+            enabled = buttonsEnabled,
             onClick = {
                 onAction(ListenAction.Controls.PlaybackSpeedClicked)
                 speedsExpanded = true
@@ -138,7 +137,6 @@ private fun SpeedControls(
             Icon(
                 painter = painterResource(speedState.icon),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
         PlaybackSpeedMenu(
@@ -161,8 +159,9 @@ private fun CenterControls(
         horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
         modifier = modifier,
     ) {
+        val enabled = playbackUiState !is PlaybackUiState.Error
         RewindButton(
-            enabled = playbackUiState !is PlaybackUiState.Error,
+            enabled = enabled,
             articleProgressState = articleProgressState,
             onAction = onAction,
         )
@@ -174,7 +173,7 @@ private fun CenterControls(
         )
         // Forward
         IconButton(
-            enabled = playbackUiState !is PlaybackUiState.Error,
+            enabled = enabled,
             onClick = { onAction(ListenAction.Controls.ForwardClicked) },
             contentDescription = stringResource(R.string.mozac_feature_listentopage_forward_30_sec),
         ) {
@@ -182,7 +181,6 @@ private fun CenterControls(
             Icon(
                 painter = painterResource(iconsR.drawable.mozac_ic_playback_forward_24),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
@@ -198,15 +196,16 @@ internal fun RewindButton(
         // at least one second has played
         derivedStateOf { articleProgressState.value.positionMs >= 1000L }
     }
+    // button is enabled only in non-error state and when audio has played for at least 1 sec
+    val displayAsEnabled = enabled && hasPlayed
     IconButton(
-        enabled = enabled,
+        enabled = displayAsEnabled,
         onClick = { onAction(ListenAction.Controls.RewindClicked) },
         contentDescription = stringResource(R.string.mozac_feature_listentopage_back_10_sec),
     ) {
         Icon(
             painter = painterResource(iconsR.drawable.mozac_ic_playback_rewind_24),
             contentDescription = null,
-            tint = if (hasPlayed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

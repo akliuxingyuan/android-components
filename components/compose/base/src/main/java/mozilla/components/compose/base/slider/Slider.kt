@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornShapes
@@ -34,6 +35,9 @@ import mozilla.components.compose.base.theme.AcornTheme
 
 private const val START_VALUE = 0f
 private const val END_VALUE = 1f
+
+/** Opacity of a slider that is present but not interactive. */
+private const val DISABLED_ALPHA = 0.38f
 
 /**
  * Acorn component for M3 slider. Implements an oblong thumb button with an expanding animation for the button and track
@@ -58,18 +62,18 @@ fun Slider(
             onValueChange(newInput)
         },
         valueRange = start..end,
-        modifier = modifier,
+        modifier = modifier.alpha(if (isEnabled) 1f else DISABLED_ALPHA),
         enabled = isEnabled,
         onValueChangeFinished = {
             onValueChangeFinished()
         },
         interactionSource = interactionSource,
-        thumb = { Thumb(isEnabled = isEnabled, isDragInProgress = isDragInProgress) },
+        thumb = { Thumb(isDragInProgress = isDragInProgress) },
         track = { _ ->
             // Calculate fraction of the slider that is active
             // remembering this doesn't save anything since it has to be recalculated on any value update
             val fraction = activeTrackFraction(value = value, start = start, end = end)
-            Track(fraction = fraction, isDragInProgress = isDragInProgress, isEnabled = isEnabled)
+            Track(fraction = fraction, isDragInProgress = isDragInProgress)
         },
     )
 }
@@ -80,13 +84,7 @@ internal fun activeTrackFraction(value: Float, start: Float, end: Float): Float 
 
 /** Thumb is the draggable handle of the slider that user moves to change the value. */
 @Composable
-private fun Thumb(isEnabled: Boolean, isDragInProgress: Boolean) {
-    val color =
-        if (isEnabled) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHighest
-        }
+private fun Thumb(isDragInProgress: Boolean) {
     val width by
         animateDpAsState(if (isDragInProgress) AcornTheme.layout.size.static400 else AcornTheme.layout.size.static200)
     val height by
@@ -102,18 +100,18 @@ private fun Thumb(isEnabled: Boolean, isDragInProgress: Boolean) {
                 // so a slider that expands on drag needs a separate renderable size
                 // and drawable size
                 .requiredSize(width = width, height = height)
-                .background(color = color, shape = AcornShapes.large)
+                .background(color = MaterialTheme.colorScheme.primary, shape = AcornShapes.large)
     )
 }
 
 @Composable
-private fun Track(fraction: Float, isDragInProgress: Boolean, isEnabled: Boolean) {
+private fun Track(fraction: Float, isDragInProgress: Boolean) {
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = Modifier.fillMaxWidth(),
     ) {
         EmptyTrack()
-        FilledTrack(fraction = fraction, isDragInProgress = isDragInProgress, isEnabled = isEnabled)
+        FilledTrack(fraction = fraction, isDragInProgress = isDragInProgress)
     }
 }
 
@@ -124,29 +122,28 @@ private fun EmptyTrack() {
             Modifier.fillMaxWidth()
                 .height(AcornTheme.layout.size.static50)
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    color = MaterialTheme.colorScheme.outline,
                     shape = MaterialTheme.shapes.medium,
                 )
     ) {}
 }
 
 @Composable
-private fun FilledTrack(fraction: Float, isDragInProgress: Boolean, isEnabled: Boolean) {
-    val color = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest
+private fun FilledTrack(fraction: Float, isDragInProgress: Boolean) {
     val height =
         animateDpAsState(
-            (if (isDragInProgress) {
+            if (isDragInProgress) {
                 AcornTheme.layout.size.static100
             } else {
                 AcornTheme.layout.size.static50
-            })
+            }
         )
     Box(
         modifier =
             Modifier.fillMaxWidth(fraction)
                 .height(height.value)
                 .background(
-                    color = color,
+                    color = MaterialTheme.colorScheme.primary,
                     shape = MaterialTheme.shapes.medium,
                 )
     ) {}

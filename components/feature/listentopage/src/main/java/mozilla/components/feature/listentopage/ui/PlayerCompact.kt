@@ -95,12 +95,17 @@ internal fun PlayerCompact(
 
 /** The compact player's progress bar, to be aligned to the bottom of the card. */
 @Composable
-internal fun AudioProgressBarCompact(progress: () -> Float, modifier: Modifier = Modifier) {
+internal fun AudioProgressBarCompact(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+    isEnabled: Boolean = true,
+) {
     AudioProgressBar(
         progress = progress,
         modifier = modifier.padding(horizontal = AcornTheme.layout.space.static400),
         type = AudioProgressBarType.Mini,
         onSeek = {}, // Compact bar does not support seeking
+        isEnabled = isEnabled,
     )
 }
 

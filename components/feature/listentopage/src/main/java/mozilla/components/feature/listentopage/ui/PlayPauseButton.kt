@@ -62,7 +62,7 @@ internal fun PlayPauseButton(
     val icon =
         when (playbackUiState) {
             PlaybackUiState.Playing,
-            PlaybackUiState.Buffering -> painterResource(iconsR.drawable.mozac_ic_pause_outline_24)
+            PlaybackUiState.Buffering -> painterResource(iconsR.drawable.mozac_ic_pause_fill_24)
             PlaybackUiState.Paused -> painterResource(iconsR.drawable.mozac_ic_play_fill_24)
             is PlaybackUiState.Error -> painterResource(playbackUiState.listenError.displayIcon)
         }
@@ -122,14 +122,6 @@ internal val ListenError.displayIcon: Int
             ListenError.SynthesisFailed -> iconsR.drawable.mozac_ic_arrow_clockwise_24
         }
 
-@PreviewLightDark
-@Composable
-private fun PlayPauseButtonPreview(@PreviewParameter(PlaybackUIStatePreviewProvider::class) state: PlaybackUiState) {
-    Box {
-        PlayPauseButton(state, {})
-    }
-}
-
 @get:StringRes
 internal val ListenError.userFacingMessage: Int
     get() =
@@ -139,3 +131,11 @@ internal val ListenError.userFacingMessage: Int
             ListenError.SynthesisFailed,
             ListenError.PlaybackFailed -> string.mozac_feature_listentopage_error_could_not_finish_playing_audio
         }
+
+@PreviewLightDark
+@Composable
+private fun PlayPauseButtonPreview(@PreviewParameter(PlaybackUIStatePreviewProvider::class) state: PlaybackUiState) {
+    Box {
+        PlayPauseButton(state, {})
+    }
+}

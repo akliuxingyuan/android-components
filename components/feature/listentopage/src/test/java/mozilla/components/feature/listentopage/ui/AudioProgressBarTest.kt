@@ -23,10 +23,15 @@ class AudioProgressBarTest {
 
     private val seeks = mutableListOf<Float>()
 
-    private fun setContent(progress: Float) {
+    private fun setContent(progress: Float, isEnabled: Boolean = true) {
         composeTestRule.setContent {
             AcornTheme {
-                AudioProgressBar(progress = { progress }, onSeek = { seeks.add(it) }, type = AudioProgressBarType.Full)
+                AudioProgressBar(
+                    progress = { progress },
+                    onSeek = { seeks.add(it) },
+                    type = AudioProgressBarType.Full,
+                    isEnabled = isEnabled,
+                )
             }
         }
     }
