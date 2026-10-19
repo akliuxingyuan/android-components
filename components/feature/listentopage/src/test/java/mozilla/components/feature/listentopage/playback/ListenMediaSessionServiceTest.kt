@@ -40,11 +40,14 @@ import org.robolectric.android.controller.ServiceController
 @RunWith(AndroidJUnit4::class)
 class ListenMediaSessionServiceTest {
 
-    private var serviceController: ServiceController<ListenMediaSessionService>? = null
+    // Every service a test started, each holding a session. A session left open keeps its id, which no session built
+    // later in the same process can then take.
+    private val services = mutableListOf<ServiceController<ListenMediaSessionService>>()
 
     @After
-    fun clear() {
-        serviceController?.destroy()
+    fun tearDown() {
+        services.forEach { runCatching { it.destroy() } }
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
     @Test
@@ -91,7 +94,7 @@ class ListenMediaSessionServiceTest {
         val session = startSession()
         val openTab = openTabPendingIntent()
 
-        ListenSessionCallback(ownPackage = testContext.packageName)
+        ListenSessionCallback(session.player as SessionPlayer, ownPackage = testContext.packageName)
             .onCustomCommand(
                 session,
                 controllerFrom(testContext.packageName),
@@ -205,7 +208,7 @@ class ListenMediaSessionServiceTest {
     }
 
     private fun startService(): ListenMediaSessionService =
-        Robolectric.buildService(ListenMediaSessionService::class.java).create().also { serviceController = it }.get()
+        Robolectric.buildService(ListenMediaSessionService::class.java).create().also { services.add(it) }.get()
 
     @OptIn(UnstableApi::class)
     private fun startSession(): MediaSession = checkNotNull(startService().onGetSession(mock()))

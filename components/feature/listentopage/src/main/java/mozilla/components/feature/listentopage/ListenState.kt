@@ -7,6 +7,7 @@ package mozilla.components.feature.listentopage
 import java.util.Locale
 import kotlin.math.abs
 import mozilla.components.feature.listentopage.PlaybackSpeed.Companion.Default
+import mozilla.components.feature.listentopage.playback.ArticleMeasurements
 import mozilla.components.lib.state.State
 
 /**
@@ -24,6 +25,9 @@ import mozilla.components.lib.state.State
  * @property voiceState State relating to narrator voice.
  * @property playbackState State relating to the audio being played.
  * @property articleProgress How far through the whole article the playback has gotten.
+ * @property articleMeasurements What the article's length is estimated from, or `null` while nothing is being
+ *   synthesized.
+ * @property playlist Which chunks have been handed to the player, and how its reports are read.
  */
 data class ListenState(
     val tabId: String? = null,
@@ -36,6 +40,8 @@ data class ListenState(
     val voiceState: VoiceState = VoiceState(),
     val playbackState: PlaybackState = PlaybackState(),
     val articleProgress: ArticleProgress = ArticleProgress(),
+    internal val articleMeasurements: ArticleMeasurements? = null,
+    internal val playlist: Playlist = Playlist(),
 ) : State
 
 /** The expanded or compact player. */
@@ -125,8 +131,7 @@ data class PlaybackState(
 /**
  * Current chunk state related to playback.
  *
- * @property index Which chunk of the article it is. The player holds the article as one playlist in reading order, so
- *   the item it is on is the chunk it is on.
+ * @property index Which chunk of the article the player is on.
  * @property durationMs How long it is, or `null` while the player does not know yet.
  */
 data class ChunkState(

@@ -5,6 +5,8 @@
 package mozilla.components.feature.listentopage
 
 import java.util.Locale
+import kotlin.time.Duration.Companion.seconds
+import mozilla.components.feature.listentopage.playback.ArticleMeasurements
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -337,7 +339,7 @@ class ListenReducerTest {
 
     @Test
     fun `test that how far through the article playback has got is recorded`() {
-        val state = listenReducer(ListenState(), ListenAction.Playback.ArticleProgressChanged(30_000, 600_000))
+        val state = listenReducer(ListenState(), ListenAction.Playback.ArticleProgressReverted(30_000, 600_000))
 
         assertEquals(ArticleProgress(positionMs = 30_000, durationMs = 600_000), state.articleProgress)
         assertEquals(0.05f, state.articleProgress.fraction, 0.0001f)
@@ -347,21 +349,21 @@ class ListenReducerTest {
     // would hold the bar at full while there is still audio to play.
     @Test
     fun `test that a position outside a shortened article is pulled back inside it`() {
-        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressChanged(90_000, 60_000))
+        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressReverted(90_000, 60_000))
 
         assertEquals(ArticleProgress(positionMs = 60_000, durationMs = 60_000), state.articleProgress)
     }
 
     @Test
     fun `test that article progress leaves the rest of the session alone`() {
-        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressChanged(1_000, 2_000))
+        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressReverted(1_000, 2_000))
 
         assertEquals(fullState.copy(articleProgress = ArticleProgress(1_000, 2_000)), state)
     }
 
     @Test
     fun `test that an article of no length reads as no progress rather than as not a number`() {
-        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressChanged(0, 0))
+        val state = listenReducer(fullState, ListenAction.Playback.ArticleProgressReverted(0, 0))
 
         assertEquals(ArticleProgress(), state.articleProgress)
         assertEquals(0f, state.articleProgress.fraction, 0f)
@@ -457,4 +459,82 @@ class ListenReducerTest {
 
         assertEquals(ListenError.SynthesisFailed, state.error)
     }
+
+    @Test
+    fun `test that a report the playlist reads moves the article on from what synthesis has measured`() {
+        val sized =
+            ListenState(
+                articleMeasurements =
+                    ArticleMeasurements(chunkCharacters = listOf(100, 200), measuredDurations = mapOf(0 to 10.seconds))
+            )
+
+        val state = listenReducer(sized, PlayerReportReceived(playing(positionMs = 4_000)))
+
+        assertEquals(4_000, state.articleProgress.positionMs)
+        // The second chunk is sized at the rate the first one measured at: a hundred characters in ten seconds.
+        assertEquals(listOf(10_000L, 20_000L), state.articleProgress.chunkDurationsMs)
+        assertEquals(30_000, state.articleProgress.durationMs)
+    }
+
+    @Test
+    fun `test that a report the playlist does not read leaves the article where it was`() {
+        val restarted =
+            ListenState(
+                articleProgress = ArticleProgress(positionMs = 61_000, durationMs = 120_000),
+                articleMeasurements =
+                    ArticleMeasurements(chunkCharacters = listOf(100), measuredDurations = mapOf(0 to 10.seconds)),
+                playlist =
+                    Playlist()
+                        .restarted(chunkIndex = 0, chunkDurationsBeforePlaylistMs = emptyList(), startMs = 61_000),
+            )
+
+        val state = listenReducer(restarted, PlayerReportReceived(playing(positionMs = 1_000)))
+
+        assertNull(state.playlist.lastReadReport)
+        assertEquals(restarted.articleProgress, state.articleProgress)
+    }
+
+    @Test
+    fun `test that a report with nothing being synthesized is read but does not move the article`() {
+        val state = listenReducer(fullState, PlayerReportReceived(playing(positionMs = 4_000)))
+
+        assertEquals(4_000L, state.playlist.lastReadReport?.positionMs)
+        assertEquals(fullState.articleProgress, state.articleProgress)
+    }
+
+    @Test
+    fun `test that a measured chunk is kept until synthesis is cleared`() {
+        val started = listenReducer(ListenState(), MeasurementAction.Started)
+
+        val measured = listenReducer(started, MeasurementAction.ChunkMeasured(index = 3, duration = 7.seconds))
+        assertEquals(mapOf(3 to 7.seconds), measured.articleMeasurements?.measuredDurations)
+
+        assertNull(listenReducer(measured, MeasurementAction.Cleared).articleMeasurements)
+    }
+
+    @Test
+    fun `test that a chunk measured with nothing being synthesized is ignored`() {
+        val state = listenReducer(ListenState(), MeasurementAction.ChunkMeasured(index = 3, duration = 7.seconds))
+
+        assertNull(state.articleMeasurements)
+    }
+
+    @Test
+    fun `test that the playlist records what is handed to the player`() {
+        val restarted =
+            listenReducer(
+                ListenState(),
+                PlaylistAction.Restarted(
+                    chunkIndex = 6,
+                    chunkDurationsBeforePlaylistMs = List(6) { 10_000L },
+                    startMs = 61_000,
+                ),
+            )
+        val queued = listenReducer(restarted, PlaylistAction.ChunkQueued(7))
+
+        assertEquals(7, queued.playlist.lastQueuedChunkIndex)
+        assertEquals(List(6) { 10_000L }, queued.playlist.chunkDurationsBeforePlaylistMs)
+    }
+
+    private fun playing(positionMs: Long) = PlaybackState(phase = PlaybackPhase.Playing, positionMs = positionMs)
 }

@@ -26,6 +26,7 @@ import mozilla.components.feature.listentopage.playback.AUDIO_WINDOW_RADIUS
 import mozilla.components.feature.listentopage.playback.ChunkAudio
 import mozilla.components.feature.listentopage.playback.DirectoryAudioFileCache
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -79,7 +80,7 @@ class SynthesisQueueTest {
         val queue = queueWith(slow)
 
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         val firstChunk = slow.requests[1]
         assertTrue("Chunk of ${firstChunk.length} characters", firstChunk.length <= 12.5.secondsOfSpeech())
@@ -93,7 +94,7 @@ class SynthesisQueueTest {
         val queue = queueWith(engine)
 
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         assertTrue("Chunk of ${engine.requests[1].length} characters", engine.requests[1].length > CHARS_PER_MINUTE / 2)
     }
@@ -104,7 +105,7 @@ class SynthesisQueueTest {
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
 
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         // The opening plus the chunks ahead of it. Nothing behind chunk 0 to keep.
         assertEquals(AUDIO_WINDOW_RADIUS + 1, engine.requests.size)
@@ -117,10 +118,10 @@ class SynthesisQueueTest {
         val engine = FakeSpeechSynthesizer()
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
         val made = engine.requests.size
 
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         assertEquals(made, engine.requests.size)
     }
@@ -131,7 +132,7 @@ class SynthesisQueueTest {
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
 
-        assertFailsWith<IOException> { queue.moveWindowTo(playingChunk = 0) }
+        assertFailsWith<IOException> { queue.moveWindowTo(playingChunkIndex = 0) }
 
         // The opening and the chunk after it still play, and nothing tried the failed one again.
         assertNotNull(queue.fileFor(0))
@@ -146,7 +147,7 @@ class SynthesisQueueTest {
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
 
-        assertFailsWith<SpeechSynthesisException> { queue.moveWindowTo(playingChunk = 0) }
+        assertFailsWith<SpeechSynthesisException> { queue.moveWindowTo(playingChunkIndex = 0) }
 
         assertNotNull(queue.fileFor(1))
         assertEquals(3, engine.requests.size)
@@ -172,7 +173,7 @@ class SynthesisQueueTest {
         val queue = queueWith(engine, audioLength = null)
 
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         // No rate to size the chunks in seconds, so they fall back to the engine's limit. Longer chunks, but the
         // article is still in pieces the engine accepts and the reader still hears it.
@@ -181,11 +182,35 @@ class SynthesisQueueTest {
     }
 
     @Test
+    fun `test that a chunk a seek is moving into is kept behind the window`() = runTest {
+        val queue = queueWith(FakeSpeechSynthesizer())
+        queue.startReading(article(sentences = 200), "en-US")
+        queue.moveWindowTo(playingChunkIndex = 2)
+        val sought = checkNotNull(queue.fileFor(0))
+
+        queue.moveWindowTo(playingChunkIndex = 4, seekingToChunkIndex = 0)
+
+        assertFalse("the chunk sought was thrown away", sought in cache.deleted)
+        assertTrue("the chunk between it and the window was kept", queue.fileFor(1) != null)
+    }
+
+    @Test
+    fun `test that the window makes the chunks ahead first, and says when each is made`() = runTest {
+        val queue = queueWith(FakeSpeechSynthesizer())
+        queue.startReading(article(sentences = 400), "en-US")
+        val made = mutableListOf<Int>()
+
+        queue.moveWindowTo(playingChunkIndex = 4, onChunkMade = { made.add(it) })
+
+        assertEquals(listOf(4, 5, 6, 3, 2), made)
+    }
+
+    @Test
     fun `test that clearing throws away every chunk's audio and forgets the article`() = runTest {
         val engine = FakeSpeechSynthesizer()
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
         val made = (0..AUDIO_WINDOW_RADIUS).mapNotNull { queue.fileFor(it) }
 
         queue.clear()
@@ -208,7 +233,7 @@ class SynthesisQueueTest {
             )
 
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         // The opening is 25 characters of 2.5 seconds, so ten a second, so a minute is 600. Without the measurement
         // this would have fallen back to the engine's 4000 and made one chunk of the article.
@@ -274,11 +299,11 @@ class SynthesisQueueTest {
         val engine = FakeSpeechSynthesizer()
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
         val madeBefore = engine.requests.size
 
         cache.reclaim(engine.files[1])
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         assertEquals(madeBefore + 1, engine.requests.size)
         assertNotNull(queue.fileFor(1))
@@ -304,7 +329,7 @@ class SynthesisQueueTest {
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
 
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         // The opening and everything the window made, not the opening alone. A progress bar covering the article has
         // to add up the real lengths of the chunks behind it.
@@ -316,10 +341,10 @@ class SynthesisQueueTest {
     fun `test that a chunk keeps its measured length after its audio is thrown away`() = runTest {
         val queue = queueWith(FakeSpeechSynthesizer())
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         // Far enough that chunk 0 falls out of the window, so its file goes.
-        queue.moveWindowTo(playingChunk = AUDIO_WINDOW_RADIUS * 2 + 1)
+        queue.moveWindowTo(playingChunkIndex = AUDIO_WINDOW_RADIUS * 2 + 1)
 
         assertNull("The audio should have gone", queue.fileFor(0))
         assertEquals("Its length should not have", OPENING_AUDIO, queue.durationOf(0))
@@ -334,7 +359,7 @@ class SynthesisQueueTest {
         // no rate either here, which is the case a caller has to expect rather than the unusual one.
         assertNull(queue.durationOf(0))
         assertNull(queue.speechRate)
-        assertTrue("Chunk of ${queue.lengthOf(0)} characters", queue.lengthOf(0) > 0)
+        assertTrue("Chunk of ${queue.charactersIn(0)} characters", queue.charactersIn(0) > 0)
     }
 
     @Test
@@ -371,7 +396,7 @@ class SynthesisQueueTest {
         val queue = queueWith(engine, audioLength = Duration.ZERO)
 
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         assertTrue(queue.chunkCount > 1)
         engine.requests.forEach { assertTrue("Request of ${it.length}", it.length <= engine.maxInputLength) }
@@ -383,7 +408,7 @@ class SynthesisQueueTest {
         val queue = queueWith(slow)
 
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         assertTrue("Chunk of ${slow.requests[1].length}", slow.requests[1].length < CHARS_PER_MINUTE / 2)
         assertTrue(
@@ -409,6 +434,27 @@ class SynthesisQueueTest {
     }
 
     @Test
+    fun `test that each chunk is reported once it is made and measured`() = runTest {
+        val measured = mutableListOf<Pair<Int, Duration>>()
+        val queue =
+            SynthesisQueue(
+                synthesizer = FakeSpeechSynthesizer(),
+                audio = ChunkAudio(cache),
+                chunker = TextChunker.android(),
+                workDispatcher = Dispatchers.Unconfined,
+                measureAudio = { OPENING_AUDIO },
+                elapsedMs = { testScheduler.currentTime },
+                onMeasured = { index, duration -> measured.add(index to duration) },
+            )
+
+        queue.startReading(article(sentences = 100), "en-US")
+        assertEquals(listOf(0 to OPENING_AUDIO), measured)
+
+        queue.audioFor(2)
+        assertEquals(listOf(0 to OPENING_AUDIO, 2 to OPENING_AUDIO), measured)
+    }
+
+    @Test
     fun `test that a first sentence too long for one request is sized like the rest of the article`() = runTest {
         val engine = FakeSpeechSynthesizer()
         val queue =
@@ -423,7 +469,7 @@ class SynthesisQueueTest {
         val openingSentence = "word ".repeat(1200).trim() + " and then it ends."
 
         queue.startReading("$openingSentence ${article(sentences = 100)}", "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
 
         assertTrue("Only ${queue.chunkCount} chunks", queue.chunkCount > 3)
         engine.requests.drop(1).forEach {
@@ -460,7 +506,7 @@ class SynthesisQueueTest {
         val engine = FakeSpeechSynthesizer()
         val queue = queueWith(engine)
         queue.startReading(article(sentences = 200), "en-US")
-        queue.moveWindowTo(playingChunk = 0)
+        queue.moveWindowTo(playingChunkIndex = 0)
         val made = engine.requests.size
 
         assertEquals(queue.fileFor(1), queue.audioFor(1))
