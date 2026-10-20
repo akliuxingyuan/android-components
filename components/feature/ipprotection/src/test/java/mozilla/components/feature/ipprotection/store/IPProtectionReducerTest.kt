@@ -375,7 +375,7 @@ class IPProtectionReducerTest {
     @Test
     fun `WHEN Toggle is dispatched while the service cannot run THEN the state is left untouched`() {
         // There is nothing to turn on or off until the service reaches a usable state.
-        listOf(ServiceState.OptedOut, ServiceState.Unavailable, ServiceState.Uninitialized).forEach { serviceStatus ->
+        listOf(ServiceState.Unavailable, ServiceState.Uninitialized).forEach { serviceStatus ->
             val state = buildIPProtectionState(serviceStatus = serviceStatus)
 
             assertEquals(
@@ -506,7 +506,7 @@ class IPProtectionReducerTest {
     @Test
     fun `WHEN the engine reports it cannot authenticate THEN a queued activation is dropped`() {
         // The engine cannot honour the pending activation, so the request must not linger.
-        listOf(ServiceState.Unauthenticated, ServiceState.OptedOut, ServiceState.Unavailable).forEach { serviceStatus ->
+        listOf(ServiceState.Unauthenticated, ServiceState.Unavailable).forEach { serviceStatus ->
             val state =
                 buildIPProtectionState(
                     proxyStatus = Authorized.Idle,
@@ -525,7 +525,7 @@ class IPProtectionReducerTest {
 
     @Test
     fun `GIVEN no active proxy AND the service cannot run WHEN the service or the proxy reports THEN no deactivation is requested`() {
-        listOf(ServiceState.Unauthenticated, ServiceState.OptedOut, ServiceState.Unavailable).forEach { serviceState ->
+        listOf(ServiceState.Unauthenticated, ServiceState.Unavailable).forEach { serviceState ->
             val actions =
                 listOf(
                     IPProtectionAction.ServiceStateChanged(serviceState),
@@ -548,7 +548,7 @@ class IPProtectionReducerTest {
 
     @Test
     fun `GIVEN the service cannot run WHEN the proxy reports THEN a deactivation is requested only if the proxy was active before the report`() {
-        listOf(ServiceState.Unauthenticated, ServiceState.OptedOut, ServiceState.Unavailable).forEach { serviceState ->
+        listOf(ServiceState.Unauthenticated, ServiceState.Unavailable).forEach { serviceState ->
             val wasActive = buildIPProtectionState(serviceStatus = serviceState, proxyStatus = Authorized.Active)
             val wasIdle = buildIPProtectionState(serviceStatus = serviceState, proxyStatus = Authorized.Idle)
 

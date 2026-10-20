@@ -97,7 +97,6 @@ internal fun iPProtectionReducer(
 
         is IPProtectionAction.Toggle -> {
             when (state.serviceStatus) {
-                ServiceState.OptedOut,
                 ServiceState.Unavailable,
                 ServiceState.Uninitialized -> {
                     return state
@@ -431,8 +430,7 @@ private fun IPProtectionState.newPendingActivationRequest(
         ServiceState.Uninitialized -> null
 
         ServiceState.Unavailable,
-        ServiceState.Unauthenticated,
-        ServiceState.OptedOut -> maybeDeactivate()
+        ServiceState.Unauthenticated -> maybeDeactivate()
 
         ServiceState.Ready ->
             when (newProxyStatus) {

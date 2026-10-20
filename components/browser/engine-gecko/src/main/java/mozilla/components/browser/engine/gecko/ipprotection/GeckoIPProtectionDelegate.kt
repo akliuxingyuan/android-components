@@ -57,7 +57,6 @@ internal fun Int.toServiceState(): ServiceState =
         GeckoViewIPProtectionController.SERVICE_STATE_UNAVAILABLE -> ServiceState.Unavailable
         GeckoViewIPProtectionController.SERVICE_STATE_UNAUTHENTICATED -> ServiceState.Unauthenticated
         GeckoViewIPProtectionController.SERVICE_STATE_READY -> ServiceState.Ready
-        GeckoViewIPProtectionController.SERVICE_STATE_OPTED_OUT -> ServiceState.OptedOut
         else -> {
             ServiceState.Unavailable
         }

@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 160.0 (In Development)
+* **concept-engine**
+    * ⚠️ **Breaking change**: Removed `ServiceState.OptedOut`. Gecko does not report an opted-out IP Protection service state. [Bug 2082578](https://bugzilla.mozilla.org/show_bug.cgi?id=2082578)
 * **service-firefox-accounts**
     * ⚠️ **Breaking change**: Removed `AccountState.Authenticating`. [Bug 2041509](https://bugzilla.mozilla.org/show_bug.cgi?id=2041509)
 * **feature-awesomebar**

@@ -160,9 +160,6 @@ enum class ServiceState {
     /** The user is signed out but eligible. */
     Unauthenticated,
 
-    /** The user has opted out from using VPN. */
-    OptedOut,
-
     /** The service is ready to be activated. */
     Ready,
 }
