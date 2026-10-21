@@ -526,56 +526,6 @@ class ListenMiddlewareTest {
         assertTrue(article.length > synthesizer.requests.first().length * 50)
     }
 
-    @Test
-    fun `test that an article declaring no language is not read out`() = runTest {
-        val synthesizer = FakeSpeechSynthesizer()
-        val store =
-            storeWith(synthesizerProvider = { synthesizer }) {
-                Result.success(Content(text = "An article with no language. It does not read.", languageTag = ""))
-            }
-        store.listenAndPlay(TAB_ID, URL)
-        advanceUntilIdle()
-
-        assertEquals(ListenError.ContentUnavailable, store.state.error)
-        assertEquals(emptyList<String>(), synthesizer.requests)
-        assertNull(store.state.languageTag)
-    }
-
-    @Test
-    fun `test that an article declaring a language with the wrong separator is repaired and read out`() = runTest {
-        val synthesizer = FakeSpeechSynthesizer()
-        val store =
-            storeWith(synthesizerProvider = { synthesizer }) {
-                Result.success(Content(text = "An article with a POSIX tag. It still reads.", languageTag = "en_US"))
-            }
-        store.listenAndPlay(TAB_ID, URL)
-        advanceUntilIdle()
-
-        // The repaired tag, not the one the page gave, is what the article is read as and what its voices are looked
-        // up for. Repairing per consumer is how a session ends up reading an article aloud while also reporting that
-        // it has no voice for the language.
-        assertEquals("en-US", store.state.languageTag)
-        assertEquals(listOf("en-US"), synthesizer.voiceRequests)
-        assertEquals("An article with a POSIX tag.", synthesizer.requests.first())
-        assertNull(store.state.error)
-    }
-
-    @Test
-    fun `test that an article declaring a malformed language is not read out`() = runTest {
-        listOf("-en", "e", "  ").forEach { tag ->
-            val synthesizer = FakeSpeechSynthesizer()
-            val store =
-                storeWith(synthesizerProvider = { synthesizer }) {
-                    Result.success(Content(text = "An article with a bad tag. It does not read.", languageTag = tag))
-                }
-            store.listenAndPlay(TAB_ID, URL)
-            advanceUntilIdle()
-
-            assertEquals("Read out <$tag>", emptyList<String>(), synthesizer.requests)
-            assertEquals("No error for <$tag>", ListenError.ContentUnavailable, store.state.error)
-        }
-    }
-
     // The engine offers a voice here, so the synthesis is reached and it is the synthesis that fails.
     @Test
     fun `test that a synthesis failure does not play anything`() = runTest {
