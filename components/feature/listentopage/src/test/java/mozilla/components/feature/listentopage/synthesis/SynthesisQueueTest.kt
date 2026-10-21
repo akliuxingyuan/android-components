@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage.synthesis
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
+import kotlin.math.roundToLong
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.time.Duration
@@ -543,6 +544,7 @@ class SynthesisQueueTest {
                     length = OPENING.length,
                     synthesisMs = 500,
                     audioMs = OPENING_AUDIO.inWholeMilliseconds,
+                    fileKilobytes = null,
                 )
             ),
             chunkSyntheses(),
@@ -564,6 +566,7 @@ class SynthesisQueueTest {
                     length = engine.requests[index].length,
                     synthesisMs = 500,
                     audioMs = OPENING_AUDIO.inWholeMilliseconds,
+                    fileKilobytes = null,
                 )
             },
             chunkSyntheses(),
@@ -611,6 +614,21 @@ class SynthesisQueueTest {
         queue.moveWindowTo(playingChunkIndex = 0)
 
         assertEquals(1, facts.facts.count { it.item == ListenToPageFacts.Items.OPENING_SYNTHESIS_STARTED })
+    }
+
+    @Test
+    fun `test that each chunk reports how many kilobytes of disk its audio takes`() = runTest {
+        val engine = FakeSpeechSynthesizer(audioDirectory = temporaryFolder.root, audioDuration = OPENING_AUDIO)
+        val queue = queueWith(engine)
+        queue.startReading(article(sentences = 200), "en-US")
+
+        queue.moveWindowTo(playingChunkIndex = 0)
+
+        assertEquals(
+            engine.files.map { (it.length() / 1024.0).roundToLong() },
+            chunkSyntheses().map { it.fileKilobytes },
+        )
+        assertTrue(chunkSyntheses().all { (it.fileKilobytes ?: 0) > 0 })
     }
 
     private fun chunkSyntheses() =

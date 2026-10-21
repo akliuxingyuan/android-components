@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage.synthesis
 
 import android.os.SystemClock
 import java.io.File
+import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineDispatcher
@@ -99,7 +100,13 @@ internal class SynthesisQueue(
         // That is not a rate, so it has to read the same as a file whose header could not be understood.
         val audioLength = measure(0, file)
         emitChunkSynthesizedFact(
-            ListenToPageFacts.ChunkSynthesis(0, opening.length, synthesisMs, audioLength?.inWholeMilliseconds)
+            ListenToPageFacts.ChunkSynthesis(
+                index = 0,
+                length = opening.length,
+                synthesisMs = synthesisMs,
+                audioMs = audioLength?.inWholeMilliseconds,
+                fileKilobytes = kilobytesOf(file),
+            )
         )
         val rate = audioLength?.let { SpeechRate.measuredFrom(opening.length, it) }
         speechRate = rate
@@ -189,7 +196,13 @@ internal class SynthesisQueue(
         audio.add(index, file)
         val audioLength = measure(index, file)
         emitChunkSynthesizedFact(
-            ListenToPageFacts.ChunkSynthesis(index, chunk.length, synthesisMs, audioLength?.inWholeMilliseconds)
+            ListenToPageFacts.ChunkSynthesis(
+                index = index,
+                length = chunk.length,
+                synthesisMs = synthesisMs,
+                audioMs = audioLength?.inWholeMilliseconds,
+                fileKilobytes = kilobytesOf(file),
+            )
         )
 
         return file
@@ -208,6 +221,10 @@ internal class SynthesisQueue(
                 measured[index] = it
                 onMeasured(index, it)
             }
+
+    /** How many kilobytes on disk are taken by [file], or `null` if the file is empty or gone. */
+    private suspend fun kilobytesOf(file: File): Long? =
+        withContext(workDispatcher) { file.length() }.takeIf { it > 0 }?.let { (it / BYTES_PER_KILOBYTE).roundToLong() }
 
     /**
      * The article after its opening, in chunks of [CHUNK_TARGET], growing up to it from what this device managed while
@@ -286,6 +303,8 @@ internal class SynthesisQueue(
     }
 
     private companion object {
+        const val BYTES_PER_KILOBYTE = 1024.0
+
         // A floor under the first chunk, so that an engine which measured badly does not start on a chunk of a word or
         // two and spend more of the article growing than reading.
         val MIN_FIRST_TARGET = 5.seconds

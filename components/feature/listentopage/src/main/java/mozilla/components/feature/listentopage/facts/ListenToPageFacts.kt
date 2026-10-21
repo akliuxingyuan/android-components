@@ -30,12 +30,14 @@ class ListenToPageFacts {
      * @property length The characters in the chunk.
      * @property synthesisMs How long the engine took to make it.
      * @property audioMs How long its audio lasts, or `null` when it could not be measured.
+     * @property fileKilobytes How much disk its audio takes, or `null` when the file is empty or missing.
      */
     data class ChunkSynthesis(
         val index: Int,
         val length: Int,
         val synthesisMs: Long,
         val audioMs: Long?,
+        val fileKilobytes: Long?,
     )
 }
 
