@@ -15,6 +15,7 @@ class ListenToPageFacts {
     object Items {
         const val CHUNK_SYNTHESIZED = "chunk_synthesized"
         const val OPENING_SYNTHESIS_STARTED = "opening_synthesis_started"
+        const val ENGINE_BOUND = "engine_bound"
     }
 
     /** Keys of the metadata a fact carries. */
@@ -44,6 +45,21 @@ internal fun emitOpeningSynthesisStartedFact() {
             component = Component.FEATURE_LISTENTOPAGE,
             action = Action.IMPLEMENTATION_DETAIL,
             item = ListenToPageFacts.Items.OPENING_SYNTHESIS_STARTED,
+        )
+        .collect()
+}
+
+/**
+ * Reports that a session bound the speech engine.
+ *
+ * @param enginePackageName The package of the engine.
+ */
+internal fun emitEngineBoundFact(enginePackageName: String) {
+    Fact(
+            component = Component.FEATURE_LISTENTOPAGE,
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = ListenToPageFacts.Items.ENGINE_BOUND,
+            value = enginePackageName,
         )
         .collect()
 }

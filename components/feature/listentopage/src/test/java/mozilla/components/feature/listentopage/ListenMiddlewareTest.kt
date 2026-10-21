@@ -33,6 +33,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentProvider
 import mozilla.components.feature.listentopage.content.TextChunker
+import mozilla.components.feature.listentopage.facts.ListenToPageFacts
 import mozilla.components.feature.listentopage.fakes.FakeAudioFileCache
 import mozilla.components.feature.listentopage.fakes.FakePlaybackController
 import mozilla.components.feature.listentopage.fakes.FakeSpeechSynthesizer
@@ -48,6 +49,8 @@ import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailable
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesisException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
 import mozilla.components.lib.state.Middleware
+import mozilla.components.support.base.facts.Facts
+import mozilla.components.support.base.facts.processor.CollectionProcessor
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -98,7 +101,43 @@ class ListenMiddlewareTest {
     fun tearDown() {
         middlewareScopes.forEach { it.cancel() }
         middlewareScopes.clear()
+        Facts.clearProcessors()
     }
+
+    @Test
+    fun `test that binding the engine reports which engine it is`() = runTest {
+        val facts = CollectionProcessor().also { Facts.registerProcessor(it) }
+        val store =
+            storeWith(synthesizerProvider = { FakeSpeechSynthesizer(enginePackageName = ENGINE) }) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        assertEquals(listOf(ENGINE), facts.engineBoundValues())
+    }
+
+    @Test
+    fun `test that each session reports the engine it binds`() = runTest {
+        val facts = CollectionProcessor().also { Facts.registerProcessor(it) }
+        val store =
+            storeWith(synthesizerProvider = { FakeSpeechSynthesizer(enginePackageName = ENGINE) }) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Session.StopRequested())
+        advanceUntilIdle()
+
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        assertEquals(listOf(ENGINE, ENGINE), facts.engineBoundValues())
+    }
+
+    private fun CollectionProcessor.engineBoundValues() =
+        facts.filter { it.item == ListenToPageFacts.Items.ENGINE_BOUND }.map { it.value }
 
     @Test
     fun `test that the article of the requested tab is extracted and its language recorded`() = runTest {

@@ -27,6 +27,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentProvider
 import mozilla.components.feature.listentopage.content.TextChunker
+import mozilla.components.feature.listentopage.facts.emitEngineBoundFact
 import mozilla.components.feature.listentopage.playback.ArticleDisplayData
 import mozilla.components.feature.listentopage.playback.AudioFileCache
 import mozilla.components.feature.listentopage.playback.ChunkAudio
@@ -846,7 +847,10 @@ class ListenMiddleware(
 
     /** The engine for this session, bound on first use because binding it is IPC. */
     private suspend fun synthesizer(): SpeechSynthesizer = synthesizerLock.withLock {
-        synthesizer ?: withContext(ioDispatcher) { synthesizerProvider() }.also { synthesizer = it }
+        synthesizer
+            ?: withContext(ioDispatcher) { synthesizerProvider() }
+                .also { synthesizer = it }
+                .also { emitEngineBoundFact(it.enginePackageName) }
     }
 
     /**
