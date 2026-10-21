@@ -14,6 +14,7 @@ class ListenToPageFacts {
     /** Specify which fact occurred. */
     object Items {
         const val CHUNK_SYNTHESIZED = "chunk_synthesized"
+        const val OPENING_SYNTHESIS_STARTED = "opening_synthesis_started"
     }
 
     /** Keys of the metadata a fact carries. */
@@ -35,6 +36,16 @@ class ListenToPageFacts {
         val synthesisMs: Long,
         val audioMs: Long?,
     )
+}
+
+/** We measure this separately since we intentionally find a small opening chunk to decrease time-to-first-audio. */
+internal fun emitOpeningSynthesisStartedFact() {
+    Fact(
+            component = Component.FEATURE_LISTENTOPAGE,
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = ListenToPageFacts.Items.OPENING_SYNTHESIS_STARTED,
+        )
+        .collect()
 }
 
 internal fun emitChunkSynthesizedFact(chunkSynthesis: ListenToPageFacts.ChunkSynthesis) {

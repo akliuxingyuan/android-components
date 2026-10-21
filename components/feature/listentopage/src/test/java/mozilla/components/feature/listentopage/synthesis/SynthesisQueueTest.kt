@@ -591,6 +591,28 @@ class SynthesisQueueTest {
         assertEquals(reported, chunkSyntheses().size)
     }
 
+    @Test
+    fun `test that starting to read reports the opening request before the opening is made`() = runTest {
+        val queue = queueWith(FakeSpeechSynthesizer())
+
+        queue.startReading(article(sentences = 40), "en-US")
+
+        assertEquals(
+            listOf(ListenToPageFacts.Items.OPENING_SYNTHESIS_STARTED, ListenToPageFacts.Items.CHUNK_SYNTHESIZED),
+            facts.facts.map { it.item },
+        )
+    }
+
+    @Test
+    fun `test that making a later chunk does not report an opening request`() = runTest {
+        val queue = queueWith(FakeSpeechSynthesizer())
+        queue.startReading(article(sentences = 200), "en-US")
+
+        queue.moveWindowTo(playingChunkIndex = 0)
+
+        assertEquals(1, facts.facts.count { it.item == ListenToPageFacts.Items.OPENING_SYNTHESIS_STARTED })
+    }
+
     private fun chunkSyntheses() =
         facts.facts
             .filter { it.item == ListenToPageFacts.Items.CHUNK_SYNTHESIZED }

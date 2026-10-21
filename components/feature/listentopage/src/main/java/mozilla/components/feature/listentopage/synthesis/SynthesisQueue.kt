@@ -15,6 +15,7 @@ import mozilla.components.feature.listentopage.NO_CHUNK
 import mozilla.components.feature.listentopage.content.TextChunker
 import mozilla.components.feature.listentopage.facts.ListenToPageFacts
 import mozilla.components.feature.listentopage.facts.emitChunkSynthesizedFact
+import mozilla.components.feature.listentopage.facts.emitOpeningSynthesisStartedFact
 import mozilla.components.feature.listentopage.playback.ChunkAudio
 import mozilla.components.feature.listentopage.playback.audioWindow
 
@@ -88,6 +89,7 @@ internal class SynthesisQueue(
             withContext(workDispatcher) { chunker.splitFirstSentence(text, languageTag, synthesizer.maxInputLength) }
         val opening = split.firstChunks.firstOrNull() ?: throw NothingToReadException()
 
+        emitOpeningSynthesisStartedFact()
         val startedAt = elapsedMs()
         val file = synthesizer.synthesizeToFile(opening)
         val synthesisMs = elapsedMs() - startedAt
