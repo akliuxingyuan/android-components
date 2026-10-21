@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.components.feature.listentopage.NO_CHUNK
 import mozilla.components.feature.listentopage.content.TextChunker
+import mozilla.components.feature.listentopage.facts.ListenToPageFacts
+import mozilla.components.feature.listentopage.facts.emitChunkSynthesizedFact
 import mozilla.components.feature.listentopage.playback.ChunkAudio
 import mozilla.components.feature.listentopage.playback.audioWindow
 
@@ -94,6 +96,9 @@ internal class SynthesisQueue(
         // A file the system reclaimed, and one an interrupted request left behind, both measure as no audio at all.
         // That is not a rate, so it has to read the same as a file whose header could not be understood.
         val audioLength = measure(0, file)
+        emitChunkSynthesizedFact(
+            ListenToPageFacts.ChunkSynthesis(0, opening.length, synthesisMs, audioLength?.inWholeMilliseconds)
+        )
         val rate = audioLength?.let { SpeechRate.measuredFrom(opening.length, it) }
         speechRate = rate
 
@@ -175,9 +180,15 @@ internal class SynthesisQueue(
      * Makes chunk [index] and measures what came back. The one place a chunk is made, so neither caller can skip it.
      */
     private suspend fun make(index: Int): File {
-        val file = synthesizer.synthesizeToFile(chunks[index])
+        val chunk = chunks[index]
+        val startedAt = elapsedMs()
+        val file = synthesizer.synthesizeToFile(chunk)
+        val synthesisMs = elapsedMs() - startedAt
         audio.add(index, file)
-        measure(index, file)
+        val audioLength = measure(index, file)
+        emitChunkSynthesizedFact(
+            ListenToPageFacts.ChunkSynthesis(index, chunk.length, synthesisMs, audioLength?.inWholeMilliseconds)
+        )
 
         return file
     }

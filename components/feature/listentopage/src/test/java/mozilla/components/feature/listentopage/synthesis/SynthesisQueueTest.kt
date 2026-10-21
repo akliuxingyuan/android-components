@@ -20,16 +20,21 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import mozilla.components.feature.listentopage.content.TextChunker
+import mozilla.components.feature.listentopage.facts.ListenToPageFacts
 import mozilla.components.feature.listentopage.fakes.FakeAudioFileCache
 import mozilla.components.feature.listentopage.fakes.FakeSpeechSynthesizer
 import mozilla.components.feature.listentopage.playback.AUDIO_WINDOW_RADIUS
 import mozilla.components.feature.listentopage.playback.ChunkAudio
 import mozilla.components.feature.listentopage.playback.DirectoryAudioFileCache
+import mozilla.components.support.base.facts.Facts
+import mozilla.components.support.base.facts.processor.CollectionProcessor
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -50,6 +55,18 @@ class SynthesisQueueTest {
     @get:Rule val temporaryFolder = TemporaryFolder()
 
     private val cache = FakeAudioFileCache()
+
+    private val facts = CollectionProcessor()
+
+    @Before
+    fun setUp() {
+        Facts.registerProcessor(facts)
+    }
+
+    @After
+    fun tearDown() {
+        Facts.clearProcessors()
+    }
 
     @Test
     fun `test that the opening is one sentence and its audio is the first chunk's`() = runTest {
@@ -512,6 +529,74 @@ class SynthesisQueueTest {
         assertEquals(queue.fileFor(1), queue.audioFor(1))
         assertEquals(made, engine.requests.size)
     }
+
+    @Test
+    fun `test that making the opening reports how long it took`() = runTest {
+        val queue = queueWith(FakeSpeechSynthesizer(timePerRequest = 500.milliseconds))
+
+        queue.startReading(article(sentences = 40), "en-US")
+
+        assertEquals(
+            listOf(
+                ListenToPageFacts.ChunkSynthesis(
+                    index = 0,
+                    length = OPENING.length,
+                    synthesisMs = 500,
+                    audioMs = OPENING_AUDIO.inWholeMilliseconds,
+                )
+            ),
+            chunkSyntheses(),
+        )
+    }
+
+    @Test
+    fun `test that making the window reports every chunk it made`() = runTest {
+        val engine = FakeSpeechSynthesizer(timePerRequest = 500.milliseconds)
+        val queue = queueWith(engine)
+        queue.startReading(article(sentences = 200), "en-US")
+
+        queue.moveWindowTo(playingChunkIndex = 0)
+
+        assertEquals(
+            (0..AUDIO_WINDOW_RADIUS).map { index ->
+                ListenToPageFacts.ChunkSynthesis(
+                    index = index,
+                    length = engine.requests[index].length,
+                    synthesisMs = 500,
+                    audioMs = OPENING_AUDIO.inWholeMilliseconds,
+                )
+            },
+            chunkSyntheses(),
+        )
+    }
+
+    @Test
+    fun `test that a chunk whose audio cannot be measured is reported without a length`() = runTest {
+        val queue = queueWith(FakeSpeechSynthesizer(), audioLength = null)
+
+        queue.startReading(article(sentences = 40), "en-US")
+
+        assertNull(chunkSyntheses().single().audioMs)
+    }
+
+    @Test
+    fun `test that a chunk which already has audio is not reported again`() = runTest {
+        val queue = queueWith(FakeSpeechSynthesizer())
+        queue.startReading(article(sentences = 200), "en-US")
+        queue.moveWindowTo(playingChunkIndex = 0)
+        val reported = chunkSyntheses().size
+
+        queue.audioFor(1)
+
+        assertEquals(reported, chunkSyntheses().size)
+    }
+
+    private fun chunkSyntheses() =
+        facts.facts
+            .filter { it.item == ListenToPageFacts.Items.CHUNK_SYNTHESIZED }
+            .map {
+                it.metadata?.get(ListenToPageFacts.MetadataKeys.CHUNK_SYNTHESIS) as ListenToPageFacts.ChunkSynthesis
+            }
 
     private fun TestScope.queueWith(
         engine: FakeSpeechSynthesizer,
