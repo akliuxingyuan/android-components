@@ -361,7 +361,7 @@ open class FxaAccountManager(
         pairingUrl: String? = null,
         entrypoint: FxAEntryPoint,
         authScopes: Set<String> = scopes,
-        service: String = "",
+        service: String,
     ): String? =
         withContext(coroutineContext) {
             // When sync decoupling is enabled, we need to send empty scopes.

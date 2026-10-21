@@ -261,7 +261,7 @@ class FxaAccountManagerTest {
 
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
 
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
@@ -373,6 +373,7 @@ class FxaAccountManagerTest {
         fxaManager.beginAuthentication(
             pairingUrl = "http://test-oauth/example.com/pairing",
             entrypoint = entryPoint,
+            service = FxaService.Sync.identifier,
         )
 
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
@@ -402,7 +403,7 @@ class FxaAccountManagerTest {
         // Simulate the fxa client moving to the `Disconnected` state after `beginAuthentication()` is called.
         // This signals that the authentication failed at the very start.
         whenever(account.processEvent(any())).thenReturn(FxaState.Disconnected)
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
 
         verify(accountObserver, times(1)).onFlowError(AuthFlowError.FailedToBeginAuth)
     }
@@ -427,7 +428,7 @@ class FxaAccountManagerTest {
 
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
 
         // Simulate the fxa client moving to the `Disconnected` state after `finishAuthentication()` is called.
         // This signals that the authentication failed at the end.
@@ -503,7 +504,7 @@ class FxaAccountManagerTest {
 
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
 
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
@@ -533,7 +534,7 @@ class FxaAccountManagerTest {
 
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
 
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
@@ -563,7 +564,7 @@ class FxaAccountManagerTest {
         fxaManager.start()
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
         org.mockito.Mockito.reset(accountObserver)
@@ -598,7 +599,7 @@ class FxaAccountManagerTest {
         fxaManager.start()
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
         // Drive into AuthIssues via a sync auth error.
@@ -633,7 +634,7 @@ class FxaAccountManagerTest {
         fxaManager.start()
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
         org.mockito.Mockito.reset(accountObserver)
@@ -664,7 +665,7 @@ class FxaAccountManagerTest {
 
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
 
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
@@ -695,7 +696,7 @@ class FxaAccountManagerTest {
 
         whenever(account.processEvent(any()))
             .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaRustAuthState.CONNECTED))
-        fxaManager.beginAuthentication(entrypoint = entryPoint)
+        fxaManager.beginAuthentication(service = FxaService.Sync.identifier, entrypoint = entryPoint)
 
         whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
